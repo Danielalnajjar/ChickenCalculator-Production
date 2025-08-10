@@ -7,14 +7,14 @@ RUN apk update && apk upgrade && apk add --no-cache dumb-init
 # Build React Admin Portal
 WORKDIR /app/admin-portal
 COPY admin-portal/package*.json ./
-RUN npm ci --only=production --legacy-peer-deps
+RUN npm install --legacy-peer-deps
 COPY admin-portal/ ./
 RUN npm run build
 
 # Build main React frontend
 WORKDIR /app/frontend
 COPY frontend/package*.json ./
-RUN npm ci --only=production --legacy-peer-deps
+RUN npm install --legacy-peer-deps
 COPY frontend/ ./
 RUN npm run build
 
