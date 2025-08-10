@@ -34,7 +34,6 @@ FROM eclipse-temurin:17-jre-alpine
 # Install security updates and create non-root user
 RUN apk update && apk upgrade && apk add --no-cache \
     dumb-init \
-    nginx \
     curl \
     && addgroup -g 1000 appgroup \
     && adduser -u 1000 -G appgroup -s /bin/sh -D appuser \
@@ -47,16 +46,13 @@ COPY --from=backend-build --chown=appuser:appgroup /app/target/chicken-calculato
 COPY --from=frontend-build --chown=appuser:appgroup /app/admin-portal/build ./static/admin
 COPY --from=frontend-build --chown=appuser:appgroup /app/frontend/build ./static/app
 
-# Copy nginx configuration
-COPY --chown=appuser:appgroup nginx.conf /etc/nginx/http.d/default.conf
-
 # Create startup script with proper permissions
 COPY --chown=appuser:appgroup start.sh ./
 RUN chmod +x start.sh
 
-# Create directories for nginx and H2 database
-RUN mkdir -p /app/data /var/log/nginx /var/lib/nginx /run/nginx \
-    && chown -R appuser:appgroup /app/data /var/log/nginx /var/lib/nginx /run/nginx /etc/nginx
+# Create directory for H2 database
+RUN mkdir -p /app/data \
+    && chown -R appuser:appgroup /app/data
 
 # Switch to non-root user
 USER appuser
