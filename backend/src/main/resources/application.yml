@@ -2,13 +2,13 @@ spring:
   application:
     name: chicken-calculator
   datasource:
-    url: jdbc:h2:mem:testdb
+    url: jdbc:h2:file:./data/chicken-calculator-db;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1
     driverClassName: org.h2.Driver
     username: sa
     password: 
   h2:
     console:
-      enabled: true
+      enabled: false
   jpa:
     database-platform: org.hibernate.dialect.H2Dialect
     hibernate:

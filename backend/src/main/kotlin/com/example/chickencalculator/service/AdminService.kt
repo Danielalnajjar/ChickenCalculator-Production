@@ -65,22 +65,37 @@ class AdminService(private val adminUserRepository: AdminUserRepository) {
     
     // Initialize default admin user if none exists
     fun initializeDefaultAdmin() {
-        if (adminUserRepository.count() == 0L) {
+        println("🔄 Checking for existing admin users...")
+        val adminCount = adminUserRepository.count()
+        println("📊 Found $adminCount admin users in database")
+        
+        if (adminCount == 0L) {
+            val defaultEmail = System.getenv("ADMIN_DEFAULT_EMAIL") ?: "admin@yourcompany.com"
             val defaultPassword = System.getenv("ADMIN_DEFAULT_PASSWORD") 
                 ?: generateSecurePassword()
             
-            createAdminUser(
-                email = System.getenv("ADMIN_DEFAULT_EMAIL") ?: "admin@yourcompany.com",
+            println("🔨 Creating default admin user with email: $defaultEmail")
+            
+            val adminUser = createAdminUser(
+                email = defaultEmail,
                 password = defaultPassword,
                 name = "System Administrator",
                 role = AdminRole.ADMIN
             )
             
+            println("✅ Admin user created successfully with ID: ${adminUser.id}")
+            
             // Log the generated password in production (only once)
             if (System.getenv("ADMIN_DEFAULT_PASSWORD") == null) {
-                println("🔐 DEFAULT ADMIN PASSWORD GENERATED: $defaultPassword")
+                println("=".repeat(60))
+                println("🔐 DEFAULT ADMIN CREDENTIALS:")
+                println("📧 Email: $defaultEmail")
+                println("🔑 Password: $defaultPassword")
                 println("⚠️  CHANGE THIS PASSWORD IMMEDIATELY AFTER FIRST LOGIN!")
+                println("=".repeat(60))
             }
+        } else {
+            println("ℹ️ Admin users already exist, skipping creation")
         }
     }
     
