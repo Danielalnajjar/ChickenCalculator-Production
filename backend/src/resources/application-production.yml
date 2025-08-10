@@ -1,0 +1,55 @@
+spring:
+  application:
+    name: chicken-calculator
+  
+  # Database configuration for Railway PostgreSQL
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/railway}
+    username: ${DATABASE_USERNAME:postgres}
+    password: ${DATABASE_PASSWORD:password}
+    driver-class-name: org.postgresql.Driver
+    
+  # JPA Configuration
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    
+  # Disable H2 console in production
+  h2:
+    console:
+      enabled: false
+
+# Server configuration
+server:
+  port: ${PORT:8080}
+  forward-headers-strategy: native
+  
+# CORS configuration for production
+cors:
+  allowed-origins: 
+    - ${FRONTEND_URL:http://localhost:3000}
+    - ${RAILWAY_STATIC_URL:https://*.railway.app}
+    - ${CUSTOM_DOMAIN:https://your-domain.com}
+  allowed-methods: GET,POST,PUT,DELETE,OPTIONS
+  allowed-headers: "*"
+  allow-credentials: true
+
+# Actuator for health checks
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+      
+# Logging
+logging:
+  level:
+    com.example.chickencalculator: INFO
+    org.springframework.web: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
