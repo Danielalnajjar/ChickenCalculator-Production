@@ -2,6 +2,10 @@
 
 echo "🚀 Starting Chicken Calculator System..."
 
+# Create data directory for H2 database
+echo "📁 Creating data directory..."
+mkdir -p /app/data
+
 # Start nginx for frontend serving
 echo "📱 Starting frontend servers..."
 nginx -g "daemon on;"

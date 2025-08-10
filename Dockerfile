@@ -55,9 +55,9 @@ COPY --chown=appuser:appgroup nginx.conf /etc/nginx/http.d/default.conf
 COPY --chown=appuser:appgroup start.sh ./
 RUN chmod +x start.sh
 
-# Create directories for nginx and logs
-RUN mkdir -p /var/log/nginx /var/lib/nginx /run/nginx \
-    && chown -R appuser:appgroup /var/log/nginx /var/lib/nginx /run/nginx /etc/nginx
+# Create directories for nginx, logs, and H2 database
+RUN mkdir -p /var/log/nginx /var/lib/nginx /run/nginx /app/data \
+    && chown -R appuser:appgroup /var/log/nginx /var/lib/nginx /run/nginx /etc/nginx /app/data
 
 # Switch to non-root user
 USER appuser
