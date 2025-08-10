@@ -7,16 +7,16 @@ RUN apk update && apk upgrade && apk add --no-cache dumb-init
 # Build React Admin Portal
 WORKDIR /app/admin-portal
 COPY admin-portal/package.json ./
-RUN npm install --legacy-peer-deps
+RUN npm install --legacy-peer-deps --force
 COPY admin-portal/ ./
-RUN npx craco build
+RUN npm run build
 
 # Build main React frontend
 WORKDIR /app/frontend
 COPY frontend/package.json ./
-RUN npm install --legacy-peer-deps
+RUN npm install --legacy-peer-deps --force
 COPY frontend/ ./
-RUN npx craco build
+RUN npm run build
 
 # Build Spring Boot backend
 FROM maven:3.9.5-eclipse-temurin-17 AS backend-build

@@ -19,12 +19,32 @@
     "tailwindcss": "^3.3.5",
     "@headlessui/react": "^1.7.17",
     "autoprefixer": "^10.4.16",
-    "@craco/craco": "^7.1.0"
+    "@craco/craco": "^7.1.0",
+    "ajv": "^8.11.0",
+    "ajv-keywords": "^5.1.0"
+  },
+  "overrides": {
+    "react-scripts": {
+      "ajv": "^8.11.0",
+      "ajv-keywords": "^5.1.0"
+    },
+    "terser-webpack-plugin": {
+      "ajv": "^8.11.0",
+      "ajv-keywords": "^5.1.0"
+    },
+    "schema-utils": {
+      "ajv": "^8.11.0",
+      "ajv-keywords": "^5.1.0"
+    },
+    "fork-ts-checker-webpack-plugin": {
+      "ajv": "^8.11.0",
+      "ajv-keywords": "^5.1.0"
+    }
   },
   "scripts": {
-    "start": "craco start",
-    "build": "craco build",
-    "test": "craco test",
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {
