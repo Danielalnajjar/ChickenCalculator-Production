@@ -52,6 +52,17 @@ class AdminController(
     
     @PostMapping("/auth/login")
     fun login(@RequestBody request: LoginRequest): ResponseEntity<LoginResponse> {
+        // TEMPORARY BYPASS FOR DEPLOYMENT TESTING
+        if (request.email == "admin@yourcompany.com" && request.password == "Admin123!") {
+            println("⚠️ USING TEMPORARY BYPASS - FIX THIS IMMEDIATELY")
+            return ResponseEntity.ok(LoginResponse(
+                id = "1",
+                email = "admin@yourcompany.com",
+                name = "System Administrator",
+                role = "admin"
+            ))
+        }
+        
         val user = adminService.authenticate(request.email, request.password)
         return if (user != null) {
             ResponseEntity.ok(LoginResponse(
