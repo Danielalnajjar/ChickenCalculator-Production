@@ -6,16 +6,16 @@ echo "🚀 Starting Chicken Calculator System..."
 echo "📁 Creating data directory..."
 mkdir -p /app/data
 
-# Start nginx for frontend serving
-echo "📱 Starting frontend servers..."
-nginx -g "daemon on;"
-
-# Wait a moment for nginx to start
-sleep 2
-
-# Start Spring Boot backend
-echo "⚙️  Starting backend server..."
-exec java -Xmx512m \
+# Start Spring Boot backend on port 8081 in background
+echo "⚙️  Starting backend server on port 8081..."
+java -Xmx512m \
     -Dspring.profiles.active=production \
-    -Dserver.port=8080 \
-    -jar chicken-calculator-1.0.0.jar
+    -Dserver.port=8081 \
+    -jar chicken-calculator-1.0.0.jar &
+
+# Give Spring Boot time to start
+sleep 10
+
+# Start nginx on port 8080 as main entry point
+echo "📱 Starting nginx on port 8080..."
+exec nginx -g "daemon off;"
