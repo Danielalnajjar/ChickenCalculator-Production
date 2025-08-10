@@ -75,6 +75,7 @@ class AdminController(
     // Debug endpoint to check admin status (no auth required)
     @GetMapping("/debug/status")
     fun getAdminDebugStatus(): ResponseEntity<Map<String, Any>> {
+        println("🎯 DEBUG STATUS ENDPOINT HIT!")
         val adminCount = adminService.getAdminCount()
         val adminEmails = adminService.getAllAdminEmails()
         
@@ -83,8 +84,27 @@ class AdminController(
             "adminEmails" to adminEmails,
             "message" to "Check Railway logs for admin credentials",
             "defaultEmail" to "admin@yourcompany.com",
-            "defaultPassword" to "Check logs or set ADMIN_DEFAULT_PASSWORD env var"
+            "defaultPassword" to "Check logs or set ADMIN_DEFAULT_PASSWORD env var",
+            "timestamp" to System.currentTimeMillis()
         ))
+    }
+    
+    // Ultra simple test endpoint
+    @GetMapping("/test")
+    fun test(): ResponseEntity<String> {
+        println("🚀 TEST ENDPOINT HIT!")
+        return ResponseEntity.ok("API is working!")
+    }
+    
+    // OPTIONS handler for CORS preflight
+    @RequestMapping("/auth/login", method = [RequestMethod.OPTIONS])
+    fun loginOptions(): ResponseEntity<Void> {
+        println("📋 OPTIONS request for /auth/login")
+        return ResponseEntity.ok()
+            .header("Access-Control-Allow-Origin", "*")
+            .header("Access-Control-Allow-Methods", "POST, OPTIONS")
+            .header("Access-Control-Allow-Headers", "Content-Type")
+            .build()
     }
     
     @GetMapping("/stats")

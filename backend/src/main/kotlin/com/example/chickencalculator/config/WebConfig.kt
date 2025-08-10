@@ -11,17 +11,21 @@ import org.springframework.web.servlet.resource.PathResourceResolver
 class WebConfig : WebMvcConfigurer {
     
     override fun addResourceHandlers(registry: ResourceHandlerRegistry) {
+        println("🔧 Configuring static resource handlers...")
+        
         // Serve admin portal with React Router support
         registry.addResourceHandler("/admin/**")
             .addResourceLocations("file:/app/static/admin/")
             .resourceChain(true)
             .addResolver(object : PathResourceResolver() {
                 override fun getResource(resourcePath: String, location: Resource): Resource? {
+                    println("📂 Admin resource request: $resourcePath")
                     val resource = location.createRelative(resourcePath)
                     return if (resource.exists() && resource.isReadable) {
+                        println("   ✅ Found: ${resource.filename}")
                         resource
                     } else {
-                        // Fallback to index.html for React Router
+                        println("   ↩️ Fallback to index.html")
                         location.createRelative("index.html")
                     }
                 }
