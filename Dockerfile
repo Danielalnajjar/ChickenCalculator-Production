@@ -47,17 +47,16 @@ COPY --from=backend-build --chown=appuser:appgroup /app/target/chicken-calculato
 COPY --from=frontend-build --chown=appuser:appgroup /app/admin-portal/build ./static/admin
 COPY --from=frontend-build --chown=appuser:appgroup /app/frontend/build ./static/app
 
-# Create nginx configuration with security headers
-RUN mkdir -p /etc/nginx/http.d
+# Copy nginx configuration
 COPY --chown=appuser:appgroup nginx.conf /etc/nginx/http.d/default.conf
 
 # Create startup script with proper permissions
 COPY --chown=appuser:appgroup start.sh ./
 RUN chmod +x start.sh
 
-# Create directories for nginx, logs, and H2 database
-RUN mkdir -p /var/log/nginx /var/lib/nginx /run/nginx /app/data \
-    && chown -R appuser:appgroup /var/log/nginx /var/lib/nginx /run/nginx /etc/nginx /app/data
+# Create directories for nginx and H2 database
+RUN mkdir -p /app/data /var/log/nginx /var/lib/nginx /run/nginx \
+    && chown -R appuser:appgroup /app/data /var/log/nginx /var/lib/nginx /run/nginx /etc/nginx
 
 # Switch to non-root user
 USER appuser
