@@ -20,6 +20,9 @@
     "@headlessui/react": "^1.7.17",
     "autoprefixer": "^10.4.16"
   },
+  "overrides": {
+    "ajv": "^8.11.0"
+  },
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
