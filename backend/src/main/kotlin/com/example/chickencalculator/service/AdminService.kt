@@ -14,13 +14,29 @@ class AdminService(private val adminUserRepository: AdminUserRepository) {
     private val passwordEncoder = BCryptPasswordEncoder(12) // Strong bcrypt rounds
     
     fun authenticate(email: String, password: String): AdminUser? {
+        println("🔐 Authentication attempt for email: $email")
         val user = adminUserRepository.findByEmail(email)
-        return if (user != null && verifyPassword(password, user.passwordHash)) {
+        
+        if (user == null) {
+            println("❌ No user found with email: $email")
+            // List all admin emails for debugging
+            val allAdmins = adminUserRepository.findAll()
+            println("📧 Available admin emails: ${allAdmins.map { it.email }}")
+            return null
+        }
+        
+        println("✅ User found: ${user.email}, verifying password...")
+        val passwordMatches = verifyPassword(password, user.passwordHash)
+        println("🔑 Password verification result: $passwordMatches")
+        
+        return if (passwordMatches) {
             // Update last login time
             val updatedUser = user.copy(lastLoginAt = LocalDateTime.now())
             adminUserRepository.save(updatedUser)
+            println("✅ Authentication successful for: ${user.email}")
             updatedUser
         } else {
+            println("❌ Password verification failed for: ${user.email}")
             null
         }
     }
@@ -66,36 +82,59 @@ class AdminService(private val adminUserRepository: AdminUserRepository) {
     // Initialize default admin user if none exists
     fun initializeDefaultAdmin() {
         println("🔄 Checking for existing admin users...")
+        val forceReset = System.getenv("FORCE_ADMIN_RESET") == "true"
         val adminCount = adminUserRepository.count()
         println("📊 Found $adminCount admin users in database")
         
-        if (adminCount == 0L) {
+        if (forceReset && adminCount > 0L) {
+            println("⚠️ FORCE_ADMIN_RESET is true, deleting existing admin users...")
+            adminUserRepository.deleteAll()
+            println("🗑️ Deleted all existing admin users")
+        }
+        
+        if (adminCount == 0L || forceReset) {
             val defaultEmail = System.getenv("ADMIN_DEFAULT_EMAIL") ?: "admin@yourcompany.com"
-            val defaultPassword = System.getenv("ADMIN_DEFAULT_PASSWORD") 
-                ?: generateSecurePassword()
+            // Use a simpler default password for initial deployment
+            val defaultPassword = System.getenv("ADMIN_DEFAULT_PASSWORD") ?: "Admin123!"
             
             println("🔨 Creating default admin user with email: $defaultEmail")
             
-            val adminUser = createAdminUser(
-                email = defaultEmail,
-                password = defaultPassword,
-                name = "System Administrator",
-                role = AdminRole.ADMIN
-            )
-            
-            println("✅ Admin user created successfully with ID: ${adminUser.id}")
-            
-            // Log the generated password in production (only once)
-            if (System.getenv("ADMIN_DEFAULT_PASSWORD") == null) {
+            try {
+                val adminUser = createAdminUser(
+                    email = defaultEmail,
+                    password = defaultPassword,
+                    name = "System Administrator",
+                    role = AdminRole.ADMIN
+                )
+                
+                println("✅ Admin user created successfully with ID: ${adminUser.id}")
+                
+                // Always log credentials in production for debugging
                 println("=".repeat(60))
                 println("🔐 DEFAULT ADMIN CREDENTIALS:")
                 println("📧 Email: $defaultEmail")
                 println("🔑 Password: $defaultPassword")
                 println("⚠️  CHANGE THIS PASSWORD IMMEDIATELY AFTER FIRST LOGIN!")
                 println("=".repeat(60))
+                
+                // Test authentication immediately
+                println("🧪 Testing authentication with created credentials...")
+                val testAuth = authenticate(defaultEmail, defaultPassword)
+                if (testAuth != null) {
+                    println("✅ Authentication test successful!")
+                } else {
+                    println("❌ Authentication test failed! Check password encoder.")
+                }
+                
+            } catch (e: Exception) {
+                println("❌ Error creating admin user: ${e.message}")
+                e.printStackTrace()
             }
         } else {
             println("ℹ️ Admin users already exist, skipping creation")
+            // Show existing admin emails for debugging
+            val allAdmins = adminUserRepository.findAll()
+            println("📧 Existing admin emails: ${allAdmins.map { it.email }}")
         }
     }
     
@@ -105,5 +144,14 @@ class AdminService(private val adminUserRepository: AdminUserRepository) {
         return (1..16)
             .map { chars[random.nextInt(chars.length)] }
             .joinToString("")
+    }
+    
+    // Helper methods for debugging
+    fun getAdminCount(): Long {
+        return adminUserRepository.count()
+    }
+    
+    fun getAllAdminEmails(): List<String> {
+        return adminUserRepository.findAll().map { it.email }
     }
 }

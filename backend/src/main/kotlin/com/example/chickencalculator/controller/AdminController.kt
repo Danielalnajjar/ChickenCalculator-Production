@@ -65,6 +65,21 @@ class AdminController(
         }
     }
     
+    // Debug endpoint to check admin status (no auth required)
+    @GetMapping("/debug/status")
+    fun getAdminDebugStatus(): ResponseEntity<Map<String, Any>> {
+        val adminCount = adminService.getAdminCount()
+        val adminEmails = adminService.getAllAdminEmails()
+        
+        return ResponseEntity.ok(mapOf(
+            "adminCount" to adminCount,
+            "adminEmails" to adminEmails,
+            "message" to "Check Railway logs for admin credentials",
+            "defaultEmail" to "admin@yourcompany.com",
+            "defaultPassword" to "Check logs or set ADMIN_DEFAULT_PASSWORD env var"
+        ))
+    }
+    
     @GetMapping("/stats")
     fun getDashboardStats(): ResponseEntity<DashboardStats> {
         val locations = locationService.getAllLocations()
