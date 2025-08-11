@@ -35,7 +35,6 @@ class AdminServiceTest {
             name = "Test Admin",
             role = AdminRole.ADMIN,
             createdAt = LocalDateTime.now(),
-            updatedAt = LocalDateTime.now(),
             lastLoginAt = null
         )
     }
