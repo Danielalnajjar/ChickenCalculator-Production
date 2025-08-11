@@ -21,18 +21,6 @@ spring:
       hibernate:
         format_sql: true
         use_sql_comments: false
-  web:
-    cors:
-      allowed-origins:
-        - "http://localhost:3000"
-        - "http://localhost:8080"
-        - "${FRONTEND_URL:http://localhost:3000}"
-      allowed-methods: GET,POST,PUT,DELETE,OPTIONS
-      allowed-headers:
-        - "Content-Type"
-        - "Authorization"
-        - "X-Requested-With"
-      allow-credentials: true
 
 server:
   port: ${PORT:8080}

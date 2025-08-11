@@ -29,7 +29,11 @@
       "Bash(timeout:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "mcp__railway__deployment_status"
+      "mcp__railway__deployment_status",
+      "mcp__railway__service_info",
+      "Bash(rm:*)",
+      "Bash(del \"C:\\Users\\danie\\Code\\ChickenCalculator-Production\\backend\\src\\main\\kotlin\\com\\example\\chickencalculator\\controller\\StaticController.kt\")",
+      "Bash(git rm:*)"
     ],
     "deny": []
   }

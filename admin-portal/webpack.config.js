@@ -14,7 +14,7 @@ module.exports = {
   output: {
     path: path.resolve(__dirname, 'build'),
     filename: 'static/js/[name].[contenthash:8].js',
-    publicPath: publicUrl + '/',
+    publicPath: '/admin/',  // Use absolute path for consistency
     clean: true
   },
   module: {

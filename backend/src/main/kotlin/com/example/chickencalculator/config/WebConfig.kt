@@ -13,62 +13,60 @@ class WebConfig : WebMvcConfigurer {
     override fun addResourceHandlers(registry: ResourceHandlerRegistry) {
         println("🔧 Configuring static resource handlers...")
         
-        // Serve admin portal with React Router support
+        // Serve admin portal - MUST come before generic handler
         registry.addResourceHandler("/admin/**")
-            .addResourceLocations(
-                "file:/app/static/admin/",
-                "classpath:/static/admin/"
-            )
+            .addResourceLocations("classpath:/static/admin/")
             .setCachePeriod(3600)
             .resourceChain(true)
             .addResolver(object : PathResourceResolver() {
                 override fun getResource(resourcePath: String, location: Resource): Resource? {
-                    println("📂 Admin resource request: $resourcePath")
+                    val requested = location.createRelative(resourcePath)
                     
-                    // Try to find the exact resource
-                    val resource = location.createRelative(resourcePath)
-                    if (resource.exists() && resource.isReadable) {
-                        println("   ✅ Found: ${resource.filename}")
-                        return resource
+                    // Return the exact resource if it exists
+                    if (requested.exists() && requested.isReadable) {
+                        return requested
                     }
                     
-                    // For routes without file extensions (React Router paths), return index.html
-                    // But skip this for actual file requests (css, js, images, etc)
-                    val hasExtension = resourcePath.contains(".")
-                    if (!hasExtension) {
-                        println("   ↩️ Fallback to index.html for React route: $resourcePath")
-                        val indexResource = location.createRelative("index.html")
-                        if (indexResource.exists() && indexResource.isReadable) {
-                            return indexResource
+                    // For paths without extensions (React routes), return index.html
+                    if (!resourcePath.contains(".")) {
+                        val index = location.createRelative("index.html")
+                        if (index.exists() && index.isReadable) {
+                            return index
                         }
                     }
                     
-                    println("   ❌ Resource not found: $resourcePath")
                     return null
                 }
             })
             
-        // Serve main app with React Router support (excluding /api and /admin)
+        // Serve main app - handles everything else
         registry.addResourceHandler("/**")
-            .addResourceLocations(
-                "file:/app/static/app/",
-                "classpath:/static/app/",
-                "classpath:/static/"
-            )
+            .addResourceLocations("classpath:/static/app/", "classpath:/static/")
+            .setCachePeriod(3600)
             .resourceChain(true)
             .addResolver(object : PathResourceResolver() {
                 override fun getResource(resourcePath: String, location: Resource): Resource? {
-                    // Don't handle /api or /admin paths
+                    // Skip API and admin paths
                     if (resourcePath.startsWith("api") || resourcePath.startsWith("admin")) {
                         return null
                     }
-                    val resource = location.createRelative(resourcePath)
-                    return if (resource.exists() && resource.isReadable) {
-                        resource
-                    } else {
-                        // Fallback to index.html for React Router
-                        location.createRelative("index.html")
+                    
+                    val requested = location.createRelative(resourcePath)
+                    
+                    // Return the exact resource if it exists
+                    if (requested.exists() && requested.isReadable) {
+                        return requested
                     }
+                    
+                    // For paths without extensions (React routes), return index.html
+                    if (!resourcePath.contains(".")) {
+                        val index = location.createRelative("index.html")
+                        if (index.exists() && index.isReadable) {
+                            return index
+                        }
+                    }
+                    
+                    return null
                 }
             })
     }
