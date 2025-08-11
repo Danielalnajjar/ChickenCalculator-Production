@@ -40,9 +40,9 @@ data class DashboardStats(
 @RestController
 @RequestMapping("/api/admin")
 @CrossOrigin(
-    origins = ["*"],
-    allowCredentials = "false",
-    allowedHeaders = ["*"],
+    origins = ["http://localhost:3000", "http://localhost:8080", "https://yourcompany.com"],
+    allowCredentials = "true",
+    allowedHeaders = ["Content-Type", "Authorization", "X-Requested-With"],
     methods = [RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.OPTIONS]
 )
 class AdminController(
@@ -52,49 +52,22 @@ class AdminController(
     
     @PostMapping("/auth/login")
     fun login(@RequestBody request: LoginRequest): ResponseEntity<LoginResponse> {
-        println("=".repeat(60))
-        println("🔐 LOGIN ATTEMPT RECEIVED")
-        println("📧 Email: ${request.email}")
-        println("🔑 Password: ${request.password}")
-        println("=".repeat(60))
+        // Proper authentication using AdminService
+        val adminUser = adminService.authenticate(request.email, request.password)
         
-        // SUPER SIMPLE BYPASS - ANY LOGIN WORKS
-        if (request.email.isNotEmpty() && request.password.isNotEmpty()) {
-            println("✅ BYPASS ACTIVATED - ALLOWING ANY LOGIN")
-            return ResponseEntity.ok(LoginResponse(
-                id = "1",
-                email = request.email,
-                name = "System Administrator",
-                role = "admin"
+        return if (adminUser != null) {
+            ResponseEntity.ok(LoginResponse(
+                id = adminUser.id.toString(),
+                email = adminUser.email,
+                name = adminUser.name,
+                role = adminUser.role.name.lowercase()
             ))
+        } else {
+            ResponseEntity.status(401).build()
         }
-        
-        return ResponseEntity.status(401).build()
     }
     
-    // Debug endpoint to check admin status (no auth required)
-    @GetMapping("/debug/status")
-    fun getAdminDebugStatus(): ResponseEntity<Map<String, Any>> {
-        println("🎯 DEBUG STATUS ENDPOINT HIT!")
-        val adminCount = adminService.getAdminCount()
-        val adminEmails = adminService.getAllAdminEmails()
-        
-        return ResponseEntity.ok(mapOf(
-            "adminCount" to adminCount,
-            "adminEmails" to adminEmails,
-            "message" to "Check Railway logs for admin credentials",
-            "defaultEmail" to "admin@yourcompany.com",
-            "defaultPassword" to "Check logs or set ADMIN_DEFAULT_PASSWORD env var",
-            "timestamp" to System.currentTimeMillis()
-        ))
-    }
     
-    // Ultra simple test endpoint
-    @GetMapping("/test")
-    fun test(): ResponseEntity<String> {
-        println("🚀 TEST ENDPOINT HIT!")
-        return ResponseEntity.ok("API is working!")
-    }
     
     // OPTIONS handler for CORS preflight
     @RequestMapping("/auth/login", method = [RequestMethod.OPTIONS])

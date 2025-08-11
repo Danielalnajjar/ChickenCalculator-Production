@@ -296,11 +296,8 @@ class DeploymentService {
                 ProcessBuilder("/bin/bash", "-c", command).start()
             }
             
-            val reader = BufferedReader(InputStreamReader(process.inputStream))
-            val errorReader = BufferedReader(InputStreamReader(process.errorStream))
-            
-            val output = reader.readText()
-            val errorOutput = errorReader.readText()
+            val output = BufferedReader(InputStreamReader(process.inputStream)).use { it.readText() }
+            val errorOutput = BufferedReader(InputStreamReader(process.errorStream)).use { it.readText() }
             
             val exitCode = process.waitFor()
             

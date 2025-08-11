@@ -6,6 +6,7 @@ import com.example.chickencalculator.repository.LocationRepository
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
 
 @Service
@@ -24,6 +25,7 @@ class LocationService(
         return locationRepository.findById(id).orElse(null)
     }
     
+    @Transactional
     fun createLocation(
         name: String,
         domain: String,
@@ -47,6 +49,7 @@ class LocationService(
     }
     
     @Async
+    @Transactional
     fun deployLocation(location: Location) {
         logger.info("Starting deployment for location: ${location.name}")
         try {
@@ -90,6 +93,7 @@ class LocationService(
         }
     }
     
+    @Transactional
     fun deleteLocation(id: Long) {
         val location = getLocationById(id) ?: throw RuntimeException("Location not found")
         
@@ -106,6 +110,7 @@ class LocationService(
         logger.info("Deleted location: ${location.name}")
     }
     
+    @Transactional
     fun updateLocationHealth(domain: String) {
         val location = locationRepository.findByDomain(domain)
         if (location != null) {

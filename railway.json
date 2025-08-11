@@ -4,7 +4,6 @@
     "builder": "DOCKERFILE"
   },
   "deploy": {
-    "startCommand": "java -jar /app/chicken-calculator-1.0.0.jar",
     "healthcheckPath": "/actuator/health"
   }
 }

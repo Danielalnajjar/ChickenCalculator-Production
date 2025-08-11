@@ -4,6 +4,7 @@ import com.example.chickencalculator.entity.AdminUser
 import com.example.chickencalculator.entity.AdminRole
 import com.example.chickencalculator.repository.AdminUserRepository
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import java.time.LocalDateTime
 import java.security.SecureRandom
@@ -13,6 +14,7 @@ class AdminService(private val adminUserRepository: AdminUserRepository) {
     
     private val passwordEncoder = BCryptPasswordEncoder(10) // Reduced rounds for debugging
     
+    @Transactional
     fun authenticate(email: String, password: String): AdminUser? {
         println("🔐 Authentication attempt for email: $email")
         val user = adminUserRepository.findByEmail(email)
@@ -41,14 +43,13 @@ class AdminService(private val adminUserRepository: AdminUserRepository) {
         }
     }
     
+    @Transactional
     fun createAdminUser(email: String, password: String, name: String, role: AdminRole): AdminUser {
-        // TEMPORARY: Store plain password for debugging
-        println("⚠️ WARNING: Storing password in plain text for debugging")
-        println("📝 Creating user with email: $email and password: $password")
+        validatePassword(password) // Validate before hashing
         
         val adminUser = AdminUser(
             email = email,
-            passwordHash = password, // TEMPORARY: Plain text for debugging
+            passwordHash = hashPassword(password), // Use proper BCrypt hashing
             name = name,
             role = role
         )
@@ -61,9 +62,12 @@ class AdminService(private val adminUserRepository: AdminUserRepository) {
     }
     
     private fun verifyPassword(password: String, hash: String): Boolean {
-        // TEMPORARY: Direct comparison for debugging
-        println("🔍 Comparing password: '$password' with stored: '$hash'")
-        return password == hash
+        return try {
+            passwordEncoder.matches(password, hash)
+        } catch (e: Exception) {
+            // Handle legacy plain text passwords during migration
+            false
+        }
     }
     
     private fun validatePassword(password: String) {
@@ -85,6 +89,7 @@ class AdminService(private val adminUserRepository: AdminUserRepository) {
     }
     
     // Initialize default admin user if none exists
+    @Transactional
     fun initializeDefaultAdmin() {
         println("🔄 Checking for existing admin users...")
         val forceReset = System.getenv("FORCE_ADMIN_RESET") == "true"
@@ -114,11 +119,11 @@ class AdminService(private val adminUserRepository: AdminUserRepository) {
                 
                 println("✅ Admin user created successfully with ID: ${adminUser.id}")
                 
-                // Always log credentials in production for debugging
+                // Log creation success but not the password
                 println("=".repeat(60))
-                println("🔐 DEFAULT ADMIN CREDENTIALS:")
+                println("✅ DEFAULT ADMIN CREATED:")
                 println("📧 Email: $defaultEmail")
-                println("🔑 Password: $defaultPassword")
+                println("⚠️  Default password set from environment or defaults")
                 println("⚠️  CHANGE THIS PASSWORD IMMEDIATELY AFTER FIRST LOGIN!")
                 println("=".repeat(60))
                 

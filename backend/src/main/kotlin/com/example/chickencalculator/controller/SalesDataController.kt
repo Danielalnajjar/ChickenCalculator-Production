@@ -7,7 +7,11 @@ import org.springframework.web.bind.annotation.*
 
 @RestController
 @RequestMapping("/api/sales-data")
-@CrossOrigin(origins = ["http://localhost:3000"])
+@CrossOrigin(
+    origins = ["http://localhost:3000", "http://localhost:8080", "https://yourcompany.com"],
+    allowCredentials = "true",
+    allowedHeaders = ["Content-Type", "Authorization", "X-Requested-With"]
+)
 class SalesDataController(
     private val salesDataRepository: SalesDataRepository
 ) {

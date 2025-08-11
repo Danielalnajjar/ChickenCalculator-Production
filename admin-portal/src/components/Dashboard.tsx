@@ -42,31 +42,31 @@ const Dashboard: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        const [locationsResponse, statsResponse] = await Promise.all([
+          fetch('/api/admin/locations'),
+          fetch('/api/admin/stats'),
+        ]);
+
+        if (locationsResponse.ok && statsResponse.ok) {
+          const locationsData = await locationsResponse.json();
+          const statsData = await statsResponse.json();
+          setLocations(locationsData);
+          setStats(statsData);
+        }
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
     fetchDashboardData();
     // Refresh every 30 seconds
     const interval = setInterval(fetchDashboardData, 30000);
     return () => clearInterval(interval);
   }, []);
-
-  const fetchDashboardData = async () => {
-    try {
-      const [locationsResponse, statsResponse] = await Promise.all([
-        fetch('/api/admin/locations'),
-        fetch('/api/admin/stats'),
-      ]);
-
-      if (locationsResponse.ok && statsResponse.ok) {
-        const locationsData = await locationsResponse.json();
-        const statsData = await statsResponse.json();
-        setLocations(locationsData);
-        setStats(statsData);
-      }
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const getStatusIcon = (status: string) => {
     switch (status) {

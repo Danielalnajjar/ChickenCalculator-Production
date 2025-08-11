@@ -8,7 +8,11 @@ import java.time.LocalDateTime
 
 @RestController
 @RequestMapping("/api/marination-log")
-@CrossOrigin(origins = ["http://localhost:3000"])
+@CrossOrigin(
+    origins = ["http://localhost:3000", "http://localhost:8080", "https://yourcompany.com"],
+    allowCredentials = "true",
+    allowedHeaders = ["Content-Type", "Authorization", "X-Requested-With"]
+)
 class MarinationLogController(
     private val marinationLogRepository: MarinationLogRepository
 ) {
