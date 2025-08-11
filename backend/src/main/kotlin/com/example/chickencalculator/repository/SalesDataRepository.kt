@@ -17,6 +17,8 @@ interface SalesDataRepository : JpaRepository<SalesData, Long> {
     // Location-based queries for multi-tenancy
     fun findByLocationOrderByDateDesc(location: Location): List<SalesData>
     
+    fun findByLocationIdOrderByDateDesc(locationId: Long): List<SalesData>
+    
     fun findByLocationAndDateBetweenOrderByDateDesc(
         location: Location,
         startDate: LocalDate,
@@ -48,6 +50,18 @@ interface SalesDataRepository : JpaRepository<SalesData, Long> {
             COALESCE(SUM(s.portionsTurmeric), 0.0)
         )
         FROM SalesData s
+        WHERE s.location.id = :locationId
+    """)
+    fun getSalesTotalsByLocation(@Param("locationId") locationId: Long): SalesTotals
+    
+    @Query("""
+        SELECT new com.example.chickencalculator.model.SalesTotals(
+            COALESCE(SUM(s.totalSales), 0.0),
+            COALESCE(SUM(s.portionsSoy), 0.0),
+            COALESCE(SUM(s.portionsTeriyaki), 0.0),
+            COALESCE(SUM(s.portionsTurmeric), 0.0)
+        )
+        FROM SalesData s
         WHERE s.location = :location
         AND s.date BETWEEN :startDate AND :endDate
     """)
@@ -59,6 +73,8 @@ interface SalesDataRepository : JpaRepository<SalesData, Long> {
     
     // Bulk operations
     fun deleteByLocationAndDateBefore(location: Location, date: LocalDate): Long
+    
+    fun deleteByLocationId(locationId: Long)
     
     // Legacy methods (consider deprecating)
     @Query("""

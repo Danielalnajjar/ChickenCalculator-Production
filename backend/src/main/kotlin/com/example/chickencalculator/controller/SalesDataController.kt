@@ -2,8 +2,12 @@ package com.example.chickencalculator.controller
 
 import com.example.chickencalculator.entity.SalesData
 import com.example.chickencalculator.model.SalesTotals
+import com.example.chickencalculator.repository.LocationRepository
 import com.example.chickencalculator.repository.SalesDataRepository
+import org.slf4j.LoggerFactory
+import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.*
+import org.springframework.web.server.ResponseStatusException
 
 @RestController
 @RequestMapping("/api/sales-data")
@@ -13,31 +17,65 @@ import org.springframework.web.bind.annotation.*
     allowedHeaders = ["Content-Type", "Authorization", "X-Requested-With"]
 )
 class SalesDataController(
-    private val salesDataRepository: SalesDataRepository
+    private val salesDataRepository: SalesDataRepository,
+    private val locationRepository: LocationRepository
 ) {
+    
+    private val logger = LoggerFactory.getLogger(SalesDataController::class.java)
     
     @GetMapping
     fun getAllSalesData(): List<SalesData> {
-        return salesDataRepository.findAllByOrderByDateDesc()
+        // Return sales data for default location only (public access)
+        val defaultLocation = locationRepository.findByIsDefaultTrue()
+        return if (defaultLocation != null) {
+            salesDataRepository.findByLocationIdOrderByDateDesc(defaultLocation.id)
+        } else {
+            emptyList()
+        }
     }
     
     @GetMapping("/totals")
     fun getSalesTotals(): SalesTotals {
-        return salesDataRepository.getSalesTotals()
+        // Return totals for default location only
+        val defaultLocation = locationRepository.findByIsDefaultTrue()
+        return if (defaultLocation != null) {
+            salesDataRepository.getSalesTotalsByLocation(defaultLocation.id)
+        } else {
+            SalesTotals()
+        }
     }
     
     @PostMapping
     fun addSalesData(@RequestBody salesData: SalesData): SalesData {
-        return salesDataRepository.save(salesData)
+        // Auto-assign default location if not provided
+        val defaultLocation = locationRepository.findByIsDefaultTrue()
+            ?: throw ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Default location not found")
+        
+        // Create new sales data with default location
+        val salesDataWithLocation = salesData.copy(location = defaultLocation)
+        
+        logger.info("Adding sales data for default location: ${defaultLocation.name}")
+        return salesDataRepository.save(salesDataWithLocation)
     }
     
     @DeleteMapping("/{id}")
     fun deleteSalesData(@PathVariable id: Long) {
-        salesDataRepository.deleteById(id)
+        // Only allow deletion of sales data from default location
+        val defaultLocation = locationRepository.findByIsDefaultTrue()
+        if (defaultLocation != null) {
+            val salesData = salesDataRepository.findById(id).orElse(null)
+            if (salesData?.location?.id == defaultLocation.id) {
+                salesDataRepository.deleteById(id)
+            }
+        }
     }
     
     @DeleteMapping
     fun deleteAllSalesData() {
-        salesDataRepository.deleteAll()
+        // Only delete sales data for default location
+        val defaultLocation = locationRepository.findByIsDefaultTrue()
+        if (defaultLocation != null) {
+            salesDataRepository.deleteByLocationId(defaultLocation.id)
+        }
     }
 }

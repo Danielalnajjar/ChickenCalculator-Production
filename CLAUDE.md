@@ -389,3 +389,35 @@ All requests log with format:
 - JWT tokens for session management
 - CORS restricted to specific domains
 - All debug endpoints removed
+
+## Current Work in Progress (2025-08-11 Latest Session)
+
+### Active Issues Being Fixed
+
+1. **Location Management Refactoring**
+   - Moving from multi-deployment to single-app multi-tenancy
+   - Removed cloud provider selection (was showing DigitalOcean, AWS options)
+   - Auto-generating slug from location name instead of manual domain input
+   - **Files Changed:**
+     - `Location.kt` - Simplified entity (removed cloudProvider, region, serverIp, etc.)
+     - `DeploymentService.kt` - Deleted entirely
+     - `LocationService.kt` - Removed deployment logic, added slug generation
+     - `LocationRepository.kt` - Added findBySlug, findByIsDefaultTrue methods
+
+2. **Sales Data Access Issue**
+   - **Problem**: Main calculator can't add sales data (requires Location, requires auth)
+   - **Solution**: Create default location, make endpoints public
+   - **TODO**: 
+     - Create DefaultDataInitializer
+     - Update SalesDataController for public access
+     - Update SecurityConfig to allow `/api/sales-data/**` public
+
+3. **Admin Portal Location Creation**
+   - **Problem**: Shows cloud provider selector, expects manual domain
+   - **Solution**: Remove cloud UI, auto-generate slug
+   - **TODO**: Update CreateLocation.tsx and AdminController
+
+### Deployment Status
+- Main app working at: https://chickencalculator-production-production-2953.up.railway.app
+- Admin portal working at: /admin
+- Static files serving correctly after fixing controller patterns

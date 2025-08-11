@@ -4,15 +4,13 @@ import com.example.chickencalculator.entity.Location
 import com.example.chickencalculator.entity.LocationStatus
 import com.example.chickencalculator.repository.LocationRepository
 import org.slf4j.LoggerFactory
-import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
 
 @Service
 class LocationService(
-    private val locationRepository: LocationRepository,
-    private val deploymentService: DeploymentService
+    private val locationRepository: LocationRepository
 ) {
     
     private val logger = LoggerFactory.getLogger(LocationService::class.java)
@@ -25,97 +23,79 @@ class LocationService(
         return locationRepository.findById(id).orElse(null)
     }
     
+    fun getLocationBySlug(slug: String): Location? {
+        return locationRepository.findBySlug(slug)
+    }
+    
+    fun getDefaultLocation(): Location? {
+        return locationRepository.findByIsDefaultTrue()
+    }
+    
     @Transactional
     fun createLocation(
         name: String,
-        domain: String,
         address: String?,
         managerName: String,
-        managerEmail: String,
-        cloudProvider: String,
-        region: String
+        managerEmail: String
     ): Location {
+        // Generate slug from name
+        val slug = generateSlug(name)
+        
         val location = Location(
             name = name,
-            domain = domain,
+            slug = slug,
             address = address,
             managerName = managerName,
             managerEmail = managerEmail,
-            cloudProvider = cloudProvider,
-            region = region,
-            status = LocationStatus.DEPLOYING
+            status = LocationStatus.ACTIVE,
+            isDefault = false
         )
+        
+        logger.info("Creating new location: $name with slug: $slug")
         return locationRepository.save(location)
     }
     
-    @Async
     @Transactional
-    fun deployLocation(location: Location) {
-        logger.info("Starting deployment for location: ${location.name}")
-        try {
-            // Update status to deploying
-            val deployingLocation = location.copy(status = LocationStatus.DEPLOYING)
-            locationRepository.save(deployingLocation)
-            
-            // Start deployment process
-            val deploymentResult = deploymentService.deployToCloud(location)
-            
-            if (deploymentResult.success) {
-                // Update location with deployment details
-                val deployedLocation = location.copy(
-                    status = LocationStatus.ACTIVE,
-                    serverIp = deploymentResult.serverIp,
-                    databaseUrl = deploymentResult.databaseUrl,
-                    deployedAt = LocalDateTime.now(),
-                    lastSeenAt = LocalDateTime.now(),
-                    deploymentLogs = deploymentResult.logs
-                )
-                locationRepository.save(deployedLocation)
-                
-                logger.info("Successfully deployed location: ${location.name}")
-            } else {
-                // Update status to error
-                val errorLocation = location.copy(
-                    status = LocationStatus.ERROR,
-                    deploymentLogs = deploymentResult.errorMessage
-                )
-                locationRepository.save(errorLocation)
-                
-                logger.error("Failed to deploy location: ${location.name}, Error: ${deploymentResult.errorMessage}")
-            }
-        } catch (e: Exception) {
-            logger.error("Deployment failed for location: ${location.name}", e)
-            val errorLocation = location.copy(
-                status = LocationStatus.ERROR,
-                deploymentLogs = "Deployment failed: ${e.message}"
-            )
-            locationRepository.save(errorLocation)
-        }
+    fun updateLocation(
+        id: Long,
+        name: String? = null,
+        address: String? = null,
+        managerName: String? = null,
+        managerEmail: String? = null,
+        status: LocationStatus? = null
+    ): Location? {
+        val location = locationRepository.findById(id).orElse(null) ?: return null
+        
+        val updatedLocation = location.copy(
+            name = name ?: location.name,
+            slug = if (name != null) generateSlug(name) else location.slug,
+            address = address ?: location.address,
+            managerName = managerName ?: location.managerName,
+            managerEmail = managerEmail ?: location.managerEmail,
+            status = status ?: location.status,
+            updatedAt = LocalDateTime.now()
+        )
+        
+        return locationRepository.save(updatedLocation)
     }
     
     @Transactional
     fun deleteLocation(id: Long) {
-        val location = getLocationById(id) ?: throw RuntimeException("Location not found")
-        
-        // Mark as deleted and clean up resources
-        val deletedLocation = location.copy(
-            status = LocationStatus.DELETED,
-            lastSeenAt = LocalDateTime.now()
-        )
-        locationRepository.save(deletedLocation)
-        
-        // Trigger cleanup of cloud resources
-        deploymentService.cleanupLocation(location)
-        
-        logger.info("Deleted location: ${location.name}")
+        val location = locationRepository.findById(id).orElse(null)
+        if (location != null && !location.isDefault) {
+            logger.info("Deleting location: ${location.name}")
+            locationRepository.deleteById(id)
+        } else if (location?.isDefault == true) {
+            logger.warn("Cannot delete default location")
+            throw IllegalStateException("Cannot delete the default location")
+        }
     }
     
-    @Transactional
-    fun updateLocationHealth(domain: String) {
-        val location = locationRepository.findByDomain(domain)
-        if (location != null) {
-            val updatedLocation = location.copy(lastSeenAt = LocalDateTime.now())
-            locationRepository.save(updatedLocation)
-        }
+    private fun generateSlug(name: String): String {
+        return name.lowercase()
+            .replace(Regex("[^a-z0-9\\s-]"), "") // Remove special characters
+            .replace(Regex("\\s+"), "-") // Replace spaces with hyphens
+            .replace(Regex("-+"), "-") // Replace multiple hyphens with single
+            .trim('-') // Remove leading/trailing hyphens
     }
 }

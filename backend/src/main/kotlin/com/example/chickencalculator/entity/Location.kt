@@ -14,7 +14,7 @@ data class Location(
     val name: String,
     
     @Column(unique = true, nullable = false)
-    val domain: String,
+    val slug: String,  // Auto-generated from name, e.g., "las-vegas-store"
     
     val address: String? = null,
     
@@ -25,28 +25,17 @@ data class Location(
     val managerEmail: String,
     
     @Enumerated(EnumType.STRING)
-    val status: LocationStatus = LocationStatus.DEPLOYING,
-    
-    @Column(nullable = false)
-    val cloudProvider: String,
-    
-    @Column(nullable = false)
-    val region: String,
-    
-    val serverIp: String? = null,
-    
-    val databaseUrl: String? = null,
+    val status: LocationStatus = LocationStatus.ACTIVE,
     
     @Column(nullable = false)
     val createdAt: LocalDateTime = LocalDateTime.now(),
     
-    val deployedAt: LocalDateTime? = null,
+    val updatedAt: LocalDateTime = LocalDateTime.now(),
     
-    val lastSeenAt: LocalDateTime? = null,
-    
-    val deploymentLogs: String? = null
+    @Column(nullable = false)
+    val isDefault: Boolean = false  // Flag for the default/main calculator location
 )
 
 enum class LocationStatus {
-    DEPLOYING, ACTIVE, ERROR, MAINTENANCE, DELETED
+    ACTIVE, INACTIVE
 }

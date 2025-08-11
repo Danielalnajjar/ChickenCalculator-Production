@@ -33,7 +33,13 @@
       "mcp__railway__service_info",
       "Bash(rm:*)",
       "Bash(del \"C:\\Users\\danie\\Code\\ChickenCalculator-Production\\backend\\src\\main\\kotlin\\com\\example\\chickencalculator\\controller\\StaticController.kt\")",
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "Bash(find:*)",
+      "Bash(find:*)",
+      "Bash(dir:*)",
+      "Bash(npm audit:*)",
+      "mcp__railway__domain_list",
+      "WebFetch(domain:chickencalculator-production-production-2953.up.railway.app)"
     ],
     "deny": []
   }

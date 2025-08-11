@@ -39,10 +39,6 @@ data class CreateLocationRequest(
     @field:Size(min = 2, max = 100, message = "Name must be between 2 and 100 characters")
     val name: String,
     
-    @field:NotBlank(message = "Domain is required")
-    @field:Size(min = 3, max = 255, message = "Domain must be between 3 and 255 characters")
-    val domain: String,
-    
     val address: String?,
     
     @field:NotBlank(message = "Manager name is required")
@@ -51,20 +47,14 @@ data class CreateLocationRequest(
     
     @field:NotBlank(message = "Manager email is required")
     @field:Email(message = "Invalid manager email format")
-    val managerEmail: String,
-    
-    @field:NotBlank(message = "Cloud provider is required")
-    val cloudProvider: String,
-    
-    @field:NotBlank(message = "Region is required")
-    val region: String
+    val managerEmail: String
 )
 
 data class CreateLocationResponse(
     val id: Long,
     val message: String,
     val status: String,
-    val domain: String
+    val slug: String
 )
 
 data class DashboardStats(
@@ -176,8 +166,8 @@ class AdminController(
         val stats = DashboardStats(
             totalLocations = locations.size,
             activeLocations = locations.count { it.status == LocationStatus.ACTIVE },
-            deployingLocations = locations.count { it.status == LocationStatus.DEPLOYING },
-            errorLocations = locations.count { it.status == LocationStatus.ERROR }
+            deployingLocations = 0, // No longer deploying locations
+            errorLocations = locations.count { it.status == LocationStatus.INACTIVE }
         )
         return ResponseEntity.ok(stats)
     }
@@ -193,33 +183,26 @@ class AdminController(
         try {
             val location = locationService.createLocation(
                 name = request.name,
-                domain = if (request.domain.endsWith(".yourcompany.com")) {
-                    request.domain
-                } else {
-                    "${request.domain}.yourcompany.com"
-                },
                 address = request.address,
                 managerName = request.managerName,
-                managerEmail = request.managerEmail,
-                cloudProvider = request.cloudProvider,
-                region = request.region
+                managerEmail = request.managerEmail
             )
             
-            // Start deployment process asynchronously
-            locationService.deployLocation(location)
+            logger.info("Location created: ${location.name} with slug: ${location.slug}")
             
             return ResponseEntity.ok(CreateLocationResponse(
                 id = location.id,
-                message = "Location deployment started",
-                status = "deploying",
-                domain = location.domain
+                message = "Location created successfully",
+                status = "active",
+                slug = location.slug
             ))
         } catch (e: Exception) {
+            logger.error("Failed to create location: ${e.message}", e)
             return ResponseEntity.status(500).body(CreateLocationResponse(
                 id = 0,
                 message = "Failed to create location: ${e.message}",
                 status = "error",
-                domain = ""
+                slug = ""
             ))
         }
     }
