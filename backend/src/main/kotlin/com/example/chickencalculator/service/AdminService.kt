@@ -148,4 +148,8 @@ class AdminService(private val adminUserRepository: AdminUserRepository) {
     fun getAllAdminEmails(): List<String> {
         return adminUserRepository.findAll().map { it.email }
     }
+    
+    fun getAdminByEmail(email: String): AdminUser? {
+        return adminUserRepository.findByEmail(email)
+    }
 }

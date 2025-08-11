@@ -5,12 +5,13 @@ import com.example.chickencalculator.entity.Location
 import com.example.chickencalculator.entity.LocationStatus
 import com.example.chickencalculator.service.AdminService
 import com.example.chickencalculator.service.LocationService
+import com.example.chickencalculator.service.JwtService
 import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 data class LoginRequest(val email: String, val password: String)
-data class LoginResponse(val id: String, val email: String, val name: String, val role: String)
+data class LoginResponse(val id: String, val email: String, val name: String, val role: String, val token: String?)
 
 data class CreateLocationRequest(
     val name: String,
@@ -48,7 +49,8 @@ data class DashboardStats(
 )
 class AdminController(
     private val adminService: AdminService,
-    private val locationService: LocationService
+    private val locationService: LocationService,
+    private val jwtService: JwtService
 ) {
     private val logger = LoggerFactory.getLogger(AdminController::class.java)
     
@@ -58,18 +60,60 @@ class AdminController(
         val adminUser = adminService.authenticate(request.email, request.password)
         
         return if (adminUser != null) {
+            // Generate JWT token
+            val token = jwtService.generateToken(
+                email = adminUser.email,
+                userId = adminUser.id!!,
+                role = adminUser.role.name
+            )
+            
             ResponseEntity.ok(LoginResponse(
                 id = adminUser.id.toString(),
                 email = adminUser.email,
                 name = adminUser.name,
-                role = adminUser.role.name.lowercase()
+                role = adminUser.role.name.lowercase(),
+                token = token
             ))
         } else {
             ResponseEntity.status(401).build()
         }
     }
     
-    
+    @PostMapping("/auth/validate")
+    fun validateToken(@RequestHeader("Authorization") authHeader: String?): ResponseEntity<LoginResponse> {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return ResponseEntity.status(401).build()
+        }
+        
+        val token = authHeader.substring(7)
+        
+        if (!jwtService.validateToken(token)) {
+            return ResponseEntity.status(401).build()
+        }
+        
+        val email = jwtService.getEmailFromToken(token)
+        val userId = jwtService.getUserIdFromToken(token)
+        val role = jwtService.getRoleFromToken(token)
+        
+        if (email == null || userId == null || role == null) {
+            return ResponseEntity.status(401).build()
+        }
+        
+        // Get fresh user data from database
+        val adminUser = adminService.getAdminByEmail(email)
+        
+        return if (adminUser != null) {
+            ResponseEntity.ok(LoginResponse(
+                id = adminUser.id.toString(),
+                email = adminUser.email,
+                name = adminUser.name,
+                role = adminUser.role.name.lowercase(),
+                token = null // Don't regenerate token on validation
+            ))
+        } else {
+            ResponseEntity.status(401).build()
+        }
+    }
     
     // OPTIONS handler for CORS preflight
     @RequestMapping("/auth/login", method = [RequestMethod.OPTIONS])
