@@ -4,19 +4,22 @@ FROM node:18-alpine AS frontend-build
 # Install security updates
 RUN apk update && apk upgrade && apk add --no-cache dumb-init
 
+# Set Node memory limit
+ENV NODE_OPTIONS="--max-old-space-size=1024"
+
 # Build React Admin Portal
 WORKDIR /app/admin-portal
-COPY admin-portal/package.json ./
-RUN npm install --legacy-peer-deps --force
+COPY admin-portal/package*.json ./
+RUN npm ci --legacy-peer-deps || npm install --legacy-peer-deps
 COPY admin-portal/ ./
-RUN npm run build
+RUN npm run build || (echo "Admin portal build failed" && exit 1)
 
 # Build main React frontend
 WORKDIR /app/frontend
-COPY frontend/package.json ./
-RUN npm install --legacy-peer-deps --force
+COPY frontend/package*.json ./
+RUN npm ci --legacy-peer-deps || npm install --legacy-peer-deps
 COPY frontend/ ./
-RUN npm run build
+RUN npm run build || (echo "Frontend build failed" && exit 1)
 
 # Build Spring Boot backend
 FROM maven:3.9.5-eclipse-temurin-17 AS backend-build

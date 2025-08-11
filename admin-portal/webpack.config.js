@@ -61,27 +61,8 @@ module.exports = {
     })
   ],
   optimization: {
-    minimize: true,
-    minimizer: [
-      new TerserPlugin({
-        terserOptions: {
-          compress: {
-            drop_console: true
-          }
-        }
-      }),
-      new CssMinimizerPlugin()
-    ],
-    splitChunks: {
-      chunks: 'all',
-      cacheGroups: {
-        vendor: {
-          test: /[\\/]node_modules[\\/]/,
-          name: 'vendors',
-          priority: -10
-        }
-      }
-    }
+    minimize: false,
+    splitChunks: false
   },
   performance: {
     hints: false
