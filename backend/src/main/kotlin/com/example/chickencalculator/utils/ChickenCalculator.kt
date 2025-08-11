@@ -4,9 +4,11 @@ import com.example.chickencalculator.model.CalculationResult
 import com.example.chickencalculator.model.InventoryData
 import com.example.chickencalculator.model.ProjectedSales
 import com.example.chickencalculator.model.SalesTotals
-import kotlin.math.ceil
-import kotlin.math.floor
-import kotlin.math.max
+import java.math.BigDecimal
+import java.math.RoundingMode
+
+// Extension function for BigDecimal max operation
+fun BigDecimal.max(other: BigDecimal): BigDecimal = if (this > other) this else other
 
 /**
  * Utility object for chicken inventory calculations
@@ -23,7 +25,7 @@ object ChickenCalculator {
         inventory: InventoryData,
         sales: ProjectedSales,
         totals: SalesTotals,
-        safetyFactor: Double = 0.0
+        safetyFactor: BigDecimal = BigDecimal.ZERO
     ): CalculationResult {
 
         // Calculate portions per $1000 for each chicken type based on historical data
@@ -34,24 +36,24 @@ object ChickenCalculator {
 
         // Calculate raw chicken to marinate for each type
         val rawToMarinateSoy = calculateRawToMarinate(
-            currentGrams = inventory.pansSoy * ChickenConstants.GRAMS_PER_PAN_SOY,
+            currentGrams = inventory.pansSoy.multiply(BigDecimal.valueOf(ChickenConstants.GRAMS_PER_PAN_SOY)),
             projectedGrams = projectedGrams.soy,
-            yieldFactor = ChickenConstants.YIELD_FACTOR_SOY,
-            gramsPerPan = ChickenConstants.GRAMS_PER_PAN_SOY
+            yieldFactor = BigDecimal.valueOf(ChickenConstants.YIELD_FACTOR_SOY),
+            gramsPerPan = BigDecimal.valueOf(ChickenConstants.GRAMS_PER_PAN_SOY)
         )
 
         val rawToMarinateTeriyaki = calculateRawToMarinate(
-            currentGrams = inventory.pansTeriyaki * ChickenConstants.GRAMS_PER_PAN_TERIYAKI,
+            currentGrams = inventory.pansTeriyaki.multiply(BigDecimal.valueOf(ChickenConstants.GRAMS_PER_PAN_TERIYAKI)),
             projectedGrams = projectedGrams.teriyaki,
-            yieldFactor = ChickenConstants.YIELD_FACTOR_TERIYAKI,
-            gramsPerPan = ChickenConstants.GRAMS_PER_PAN_TERIYAKI
+            yieldFactor = BigDecimal.valueOf(ChickenConstants.YIELD_FACTOR_TERIYAKI),
+            gramsPerPan = BigDecimal.valueOf(ChickenConstants.GRAMS_PER_PAN_TERIYAKI)
         )
 
         val rawToMarinateTurmeric = calculateRawToMarinate(
-            currentGrams = inventory.pansTurmeric * ChickenConstants.GRAMS_PER_PAN_TURMERIC,
+            currentGrams = inventory.pansTurmeric.multiply(BigDecimal.valueOf(ChickenConstants.GRAMS_PER_PAN_TURMERIC)),
             projectedGrams = projectedGrams.turmeric,
-            yieldFactor = ChickenConstants.YIELD_FACTOR_TURMERIC,
-            gramsPerPan = ChickenConstants.GRAMS_PER_PAN_TURMERIC
+            yieldFactor = BigDecimal.valueOf(ChickenConstants.YIELD_FACTOR_TURMERIC),
+            gramsPerPan = BigDecimal.valueOf(ChickenConstants.GRAMS_PER_PAN_TURMERIC)
         )
 
         return CalculationResult(
@@ -68,14 +70,15 @@ object ChickenCalculator {
      * Calculate portions per $1000 based on historical sales
      */
     private fun calculatePortionsPer1000(totals: SalesTotals): PortionsPerThousand {
-        var soy = 0.0
-        var teriyaki = 0.0
-        var turmeric = 0.0
+        var soy = BigDecimal.ZERO
+        var teriyaki = BigDecimal.ZERO
+        var turmeric = BigDecimal.ZERO
 
-        if (totals.totalSales > 0) {
-            soy = (totals.totalPortionsSoy / totals.totalSales) * 1000
-            teriyaki = (totals.totalPortionsTeriyaki / totals.totalSales) * 1000
-            turmeric = (totals.totalPortionsTurmeric / totals.totalSales) * 1000
+        if (totals.totalSales > BigDecimal.ZERO) {
+            val thousand = BigDecimal.valueOf(1000)
+            soy = totals.totalPortionsSoy.divide(totals.totalSales, 10, RoundingMode.HALF_UP).multiply(thousand)
+            teriyaki = totals.totalPortionsTeriyaki.divide(totals.totalSales, 10, RoundingMode.HALF_UP).multiply(thousand)
+            turmeric = totals.totalPortionsTurmeric.divide(totals.totalSales, 10, RoundingMode.HALF_UP).multiply(thousand)
         }
 
         return PortionsPerThousand(soy, teriyaki, turmeric)
@@ -87,19 +90,29 @@ object ChickenCalculator {
     private fun calculateProjectedGramsPerDay(
         sales: ProjectedSales,
         portionsPer1000: PortionsPerThousand,
-        safetyFactor: Double
+        safetyFactor: BigDecimal
     ): ProjectedGrams {
-        val soy = DoubleArray(ChickenConstants.FORECAST_DAYS)
-        val teriyaki = DoubleArray(ChickenConstants.FORECAST_DAYS)
-        val turmeric = DoubleArray(ChickenConstants.FORECAST_DAYS)
+        val soy = Array(ChickenConstants.FORECAST_DAYS) { BigDecimal.ZERO }
+        val teriyaki = Array(ChickenConstants.FORECAST_DAYS) { BigDecimal.ZERO }
+        val turmeric = Array(ChickenConstants.FORECAST_DAYS) { BigDecimal.ZERO }
+
+        val thousand = BigDecimal.valueOf(1000)
+        val one = BigDecimal.ONE
+        val safetyMultiplier = one.add(safetyFactor)
 
         for (i in 0 until ChickenConstants.FORECAST_DAYS) {
             val dailySales = sales.getSales(i)
-            val salesPer1000 = dailySales / 1000
+            val salesPer1000 = dailySales.divide(thousand, 10, RoundingMode.HALF_UP)
 
-            soy[i] = salesPer1000 * portionsPer1000.soy * ChickenConstants.PORTION_SIZE_SOY * (1 + safetyFactor)
-            teriyaki[i] = salesPer1000 * portionsPer1000.teriyaki * ChickenConstants.PORTION_SIZE_TERIYAKI * (1 + safetyFactor)
-            turmeric[i] = salesPer1000 * portionsPer1000.turmeric * ChickenConstants.PORTION_SIZE_TURMERIC * (1 + safetyFactor)
+            soy[i] = salesPer1000.multiply(portionsPer1000.soy)
+                .multiply(BigDecimal.valueOf(ChickenConstants.PORTION_SIZE_SOY.toLong()))
+                .multiply(safetyMultiplier)
+            teriyaki[i] = salesPer1000.multiply(portionsPer1000.teriyaki)
+                .multiply(BigDecimal.valueOf(ChickenConstants.PORTION_SIZE_TERIYAKI))
+                .multiply(safetyMultiplier)
+            turmeric[i] = salesPer1000.multiply(portionsPer1000.turmeric)
+                .multiply(BigDecimal.valueOf(ChickenConstants.PORTION_SIZE_TURMERIC))
+                .multiply(safetyMultiplier)
         }
 
         return ProjectedGrams(soy, teriyaki, turmeric)
@@ -109,51 +122,52 @@ object ChickenCalculator {
      * Calculate the raw amount to marinate for a specific chicken type
      */
     private fun calculateRawToMarinate(
-        currentGrams: Double,
-        projectedGrams: DoubleArray,
-        yieldFactor: Double,
-        gramsPerPan: Double
-    ): Double {
+        currentGrams: BigDecimal,
+        projectedGrams: Array<BigDecimal>,
+        yieldFactor: BigDecimal,
+        gramsPerPan: BigDecimal
+    ): BigDecimal {
         // Calculate total needs for the entire 4-day period (Days 0-3)
-        val totalNeeds = projectedGrams[0] + projectedGrams[1] + projectedGrams[2] + projectedGrams[3]
+        val totalNeeds = projectedGrams[0].add(projectedGrams[1]).add(projectedGrams[2]).add(projectedGrams[3])
 
         // Calculate shortfall for the entire period
         val totalShortfall = if (currentGrams < totalNeeds) {
-            totalNeeds - currentGrams
+            totalNeeds.subtract(currentGrams)
         } else {
-            0.0
+            BigDecimal.ZERO
         }
 
         // If we have a shortfall for the 4-day period, marinate enough to cover it
-        val rawToMarinate = if (totalShortfall > 0) {
-            totalShortfall / yieldFactor
+        val rawToMarinate = if (totalShortfall > BigDecimal.ZERO) {
+            totalShortfall.divide(yieldFactor, 10, RoundingMode.HALF_UP)
         } else {
-            0.0
+            BigDecimal.ZERO
         }
 
         // Convert raw grams to pans for practical kitchen use
-        return roundToPans(rawToMarinate, gramsPerPan / yieldFactor)
+        return roundToPans(rawToMarinate, gramsPerPan.divide(yieldFactor, 10, RoundingMode.HALF_UP))
     }
 
     /**
      * Round raw grams to practical pan quantities
      */
-    private fun roundToPans(rawGrams: Double, rawGramsPerPan: Double): Double {
+    private fun roundToPans(rawGrams: BigDecimal, rawGramsPerPan: BigDecimal): BigDecimal {
         // Calculate how many pans are needed
-        val rawPansNeeded = rawGrams / rawGramsPerPan
+        val rawPansNeeded = rawGrams.divide(rawGramsPerPan, 10, RoundingMode.HALF_UP)
 
-        // Get the fractional part
-        val fractionalPart = rawPansNeeded - floor(rawPansNeeded)
+        // Get the integer and fractional parts
+        val integerPart = rawPansNeeded.setScale(0, RoundingMode.DOWN)
+        val fractionalPart = rawPansNeeded.subtract(integerPart)
 
         // Round up if 30% or more of a pan, otherwise round down
-        val roundedPans = if (fractionalPart >= 0.3) {
-            ceil(rawPansNeeded)
+        val roundedPans = if (fractionalPart >= BigDecimal.valueOf(0.3)) {
+            rawPansNeeded.setScale(0, RoundingMode.CEILING)
         } else {
-            floor(rawPansNeeded)
+            rawPansNeeded.setScale(0, RoundingMode.DOWN)
         }
 
         // Convert back to grams
-        return roundedPans * rawGramsPerPan
+        return roundedPans.multiply(rawGramsPerPan)
     }
 
     /**
@@ -163,30 +177,31 @@ object ChickenCalculator {
         inventory: InventoryData,
         sales: ProjectedSales,
         totals: SalesTotals,
-        availableRawChickenKg: Double,
-        alreadyMarinatedSoy: Double = 0.0,
-        alreadyMarinatedTeriyaki: Double = 0.0,
-        alreadyMarinatedTurmeric: Double = 0.0,
-        safetyFactor: Double = 0.0
+        availableRawChickenKg: BigDecimal,
+        alreadyMarinatedSoy: BigDecimal = BigDecimal.ZERO,
+        alreadyMarinatedTeriyaki: BigDecimal = BigDecimal.ZERO,
+        alreadyMarinatedTurmeric: BigDecimal = BigDecimal.ZERO,
+        safetyFactor: BigDecimal = BigDecimal.ZERO
     ): CalculationResult {
         // First calculate the ideal amounts needed
         val idealResult = calculateMarination(inventory, sales, totals, safetyFactor)
 
         // Convert already-marinated amounts from kg to grams
-        val alreadyMarinatedSoyGrams = alreadyMarinatedSoy * 1000.0
-        val alreadyMarinatedTeriyakiGrams = alreadyMarinatedTeriyaki * 1000.0
-        val alreadyMarinatedTurmericGrams = alreadyMarinatedTurmeric * 1000.0
+        val thousand = BigDecimal.valueOf(1000)
+        val alreadyMarinatedSoyGrams = alreadyMarinatedSoy.multiply(thousand)
+        val alreadyMarinatedTeriyakiGrams = alreadyMarinatedTeriyaki.multiply(thousand)
+        val alreadyMarinatedTurmericGrams = alreadyMarinatedTurmeric.multiply(thousand)
 
         // Subtract already-marinated amounts from the ideal needed amounts
-        val soyNeeded = max(0.0, idealResult.rawToMarinateSoy - alreadyMarinatedSoyGrams)
-        val teriyakiNeeded = max(0.0, idealResult.rawToMarinateTeriyaki - alreadyMarinatedTeriyakiGrams)
-        val turmericNeeded = max(0.0, idealResult.rawToMarinateTurmeric - alreadyMarinatedTurmericGrams)
+        val soyNeeded = idealResult.rawToMarinateSoy.subtract(alreadyMarinatedSoyGrams).max(BigDecimal.ZERO)
+        val teriyakiNeeded = idealResult.rawToMarinateTeriyaki.subtract(alreadyMarinatedTeriyakiGrams).max(BigDecimal.ZERO)
+        val turmericNeeded = idealResult.rawToMarinateTurmeric.subtract(alreadyMarinatedTurmericGrams).max(BigDecimal.ZERO)
 
         // Calculate total needed raw chicken
-        val totalNeededRaw = soyNeeded + teriyakiNeeded + turmericNeeded
+        val totalNeededRaw = soyNeeded.add(teriyakiNeeded).add(turmericNeeded)
 
         // If available chicken exceeds what's needed, return adjusted amounts
-        if (availableRawChickenKg * 1000.0 >= totalNeededRaw) {
+        if (availableRawChickenKg.multiply(thousand) >= totalNeededRaw) {
             return CalculationResult(
                 rawToMarinateSoy = soyNeeded,
                 rawToMarinateTeriyaki = teriyakiNeeded,
@@ -204,37 +219,40 @@ object ChickenCalculator {
         val projectedGrams = calculateProjectedGramsPerDay(sales, portionsPer1000, safetyFactor)
 
         // Convert kg to grams for available chicken
-        var availableRawChicken = availableRawChickenKg * 1000.0
+        var availableRawChicken = availableRawChickenKg.multiply(thousand)
 
         // Calculate current inventory in grams
-        val soyInventory = inventory.pansSoy * ChickenConstants.GRAMS_PER_PAN_SOY
-        val teriyakiInventory = inventory.pansTeriyaki * ChickenConstants.GRAMS_PER_PAN_TERIYAKI
-        val turmericInventory = inventory.pansTurmeric * ChickenConstants.GRAMS_PER_PAN_TURMERIC
+        val soyInventory = inventory.pansSoy.multiply(BigDecimal.valueOf(ChickenConstants.GRAMS_PER_PAN_SOY))
+        val teriyakiInventory = inventory.pansTeriyaki.multiply(BigDecimal.valueOf(ChickenConstants.GRAMS_PER_PAN_TERIYAKI))
+        val turmericInventory = inventory.pansTurmeric.multiply(BigDecimal.valueOf(ChickenConstants.GRAMS_PER_PAN_TURMERIC))
 
         // Calculate total 4-day needs for each type
-        val soyTotalNeeds = projectedGrams.soy[0] + projectedGrams.soy[1] + projectedGrams.soy[2] + projectedGrams.soy[3]
-        val teriyakiTotalNeeds = projectedGrams.teriyaki[0] + projectedGrams.teriyaki[1] + projectedGrams.teriyaki[2] + projectedGrams.teriyaki[3]
-        val turmericTotalNeeds = projectedGrams.turmeric[0] + projectedGrams.turmeric[1] + projectedGrams.turmeric[2] + projectedGrams.turmeric[3]
+        val soyTotalNeeds = projectedGrams.soy[0].add(projectedGrams.soy[1]).add(projectedGrams.soy[2]).add(projectedGrams.soy[3])
+        val teriyakiTotalNeeds = projectedGrams.teriyaki[0].add(projectedGrams.teriyaki[1]).add(projectedGrams.teriyaki[2]).add(projectedGrams.teriyaki[3])
+        val turmericTotalNeeds = projectedGrams.turmeric[0].add(projectedGrams.turmeric[1]).add(projectedGrams.turmeric[2]).add(projectedGrams.turmeric[3])
 
         // Calculate shortfalls for the full 4-day period
-        val soyShortfall = max(0.0, soyTotalNeeds - soyInventory) / ChickenConstants.YIELD_FACTOR_SOY
-        val teriyakiShortfall = max(0.0, teriyakiTotalNeeds - teriyakiInventory) / ChickenConstants.YIELD_FACTOR_TERIYAKI
-        val turmericShortfall = max(0.0, turmericTotalNeeds - turmericInventory) / ChickenConstants.YIELD_FACTOR_TURMERIC
+        val soyShortfall = soyTotalNeeds.subtract(soyInventory).max(BigDecimal.ZERO)
+            .divide(BigDecimal.valueOf(ChickenConstants.YIELD_FACTOR_SOY), 10, RoundingMode.HALF_UP)
+        val teriyakiShortfall = teriyakiTotalNeeds.subtract(teriyakiInventory).max(BigDecimal.ZERO)
+            .divide(BigDecimal.valueOf(ChickenConstants.YIELD_FACTOR_TERIYAKI), 10, RoundingMode.HALF_UP)
+        val turmericShortfall = turmericTotalNeeds.subtract(turmericInventory).max(BigDecimal.ZERO)
+            .divide(BigDecimal.valueOf(ChickenConstants.YIELD_FACTOR_TURMERIC), 10, RoundingMode.HALF_UP)
 
-        val totalShortfall = soyShortfall + teriyakiShortfall + turmericShortfall
+        val totalShortfall = soyShortfall.add(teriyakiShortfall).add(turmericShortfall)
 
         // Distribute available chicken proportionally
-        var distributedSoy = 0.0
-        var distributedTeriyaki = 0.0
-        var distributedTurmeric = 0.0
+        var distributedSoy = BigDecimal.ZERO
+        var distributedTeriyaki = BigDecimal.ZERO
+        var distributedTurmeric = BigDecimal.ZERO
 
-        if (totalShortfall > 0 && availableRawChicken > 0) {
+        if (totalShortfall > BigDecimal.ZERO && availableRawChicken > BigDecimal.ZERO) {
             if (totalShortfall > availableRawChicken) {
                 // Can't cover all needs, distribute proportionally
-                val ratio = availableRawChicken / totalShortfall
-                distributedSoy = soyShortfall * ratio
-                distributedTeriyaki = teriyakiShortfall * ratio
-                distributedTurmeric = turmericShortfall * ratio
+                val ratio = availableRawChicken.divide(totalShortfall, 10, RoundingMode.HALF_UP)
+                distributedSoy = soyShortfall.multiply(ratio)
+                distributedTeriyaki = teriyakiShortfall.multiply(ratio)
+                distributedTurmeric = turmericShortfall.multiply(ratio)
             } else {
                 // Cover all needs
                 distributedSoy = soyShortfall
@@ -257,17 +275,17 @@ object ChickenCalculator {
      * Helper data class for portions per $1000 calculations
      */
     private data class PortionsPerThousand(
-        val soy: Double,
-        val teriyaki: Double,
-        val turmeric: Double
+        val soy: BigDecimal,
+        val teriyaki: BigDecimal,
+        val turmeric: BigDecimal
     )
 
     /**
      * Helper data class for projected grams calculations
      */
     private data class ProjectedGrams(
-        val soy: DoubleArray,
-        val teriyaki: DoubleArray,
-        val turmeric: DoubleArray
+        val soy: Array<BigDecimal>,
+        val teriyaki: Array<BigDecimal>,
+        val turmeric: Array<BigDecimal>
     )
 }

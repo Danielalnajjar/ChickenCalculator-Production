@@ -118,6 +118,29 @@ railway logs    # May show "No deployments"
 railway link  # Then select project and service
 ```
 
+### Railway MCP Server Setup (For Direct API Access)
+The Railway MCP server allows Claude Code to interact directly with Railway's API without CLI limitations.
+
+#### Setup Instructions
+```bash
+# Set Railway API token environment variable
+set RAILWAY_API_TOKEN=f0e61c90-7c47-44b1-a40e-7ea0cf5bb8ff
+
+# Add Railway MCP server to Claude Code (Windows)
+claude mcp add railway -- npx -y @jasontanswe/railway-mcp
+
+# Verify MCP server connection
+claude mcp list  # Should show "railway: ✓ Connected"
+```
+
+#### MCP Server Benefits
+- Direct API access to Railway services
+- Fetch logs without CLI stream limitations
+- Access deployment history and metrics
+- No need to maintain CLI link after GitHub integration
+
+**Note**: After adding the MCP server, you may need to reload Claude Code for the tools to become available.
+
 ## Architecture Overview
 
 ### Deployment Architecture (Single-Service Model)

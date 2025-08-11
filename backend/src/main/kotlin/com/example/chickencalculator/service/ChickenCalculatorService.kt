@@ -4,7 +4,9 @@ import com.example.chickencalculator.model.CalculationResult
 import com.example.chickencalculator.model.MarinationRequest
 import com.example.chickencalculator.repository.SalesDataRepository
 import com.example.chickencalculator.utils.ChickenCalculator
+import com.example.chickencalculator.utils.max
 import org.springframework.stereotype.Service
+import java.math.BigDecimal
 
 @Service
 class ChickenCalculatorService(
@@ -27,23 +29,24 @@ class ChickenCalculatorService(
             )
         } else {
             // Standard calculation
-            if (request.alreadyMarinatedSoy > 0 || 
-                request.alreadyMarinatedTeriyaki > 0 || 
-                request.alreadyMarinatedTurmeric > 0) {
+            if (request.alreadyMarinatedSoy > BigDecimal.ZERO || 
+                request.alreadyMarinatedTeriyaki > BigDecimal.ZERO || 
+                request.alreadyMarinatedTurmeric > BigDecimal.ZERO) {
                 // Account for already-marinated chicken (end-of-day scenario)
                 val totalNeeded = ChickenCalculator.calculateMarination(
                     request.inventory, request.projectedSales, salesTotals
                 )
                 
                 // Subtract already marinated amounts
-                val alreadyMarinatedSoyGrams = request.alreadyMarinatedSoy * 1000.0
-                val alreadyMarinatedTeriyakiGrams = request.alreadyMarinatedTeriyaki * 1000.0
-                val alreadyMarinatedTurmericGrams = request.alreadyMarinatedTurmeric * 1000.0
+                val thousand = BigDecimal.valueOf(1000)
+                val alreadyMarinatedSoyGrams = request.alreadyMarinatedSoy.multiply(thousand)
+                val alreadyMarinatedTeriyakiGrams = request.alreadyMarinatedTeriyaki.multiply(thousand)
+                val alreadyMarinatedTurmericGrams = request.alreadyMarinatedTurmeric.multiply(thousand)
                 
                 CalculationResult(
-                    rawToMarinateSoy = maxOf(0.0, totalNeeded.rawToMarinateSoy - alreadyMarinatedSoyGrams),
-                    rawToMarinateTeriyaki = maxOf(0.0, totalNeeded.rawToMarinateTeriyaki - alreadyMarinatedTeriyakiGrams),
-                    rawToMarinateTurmeric = maxOf(0.0, totalNeeded.rawToMarinateTurmeric - alreadyMarinatedTurmericGrams),
+                    rawToMarinateSoy = totalNeeded.rawToMarinateSoy.subtract(alreadyMarinatedSoyGrams).max(BigDecimal.ZERO),
+                    rawToMarinateTeriyaki = totalNeeded.rawToMarinateTeriyaki.subtract(alreadyMarinatedTeriyakiGrams).max(BigDecimal.ZERO),
+                    rawToMarinateTurmeric = totalNeeded.rawToMarinateTurmeric.subtract(alreadyMarinatedTurmericGrams).max(BigDecimal.ZERO),
                     portionsPer1000Soy = totalNeeded.portionsPer1000Soy,
                     portionsPer1000Teriyaki = totalNeeded.portionsPer1000Teriyaki,
                     portionsPer1000Turmeric = totalNeeded.portionsPer1000Turmeric
@@ -59,6 +62,6 @@ class ChickenCalculatorService(
     
     fun hasSalesData(): Boolean {
         val totals = salesDataRepository.getSalesTotals()
-        return totals.totalSales > 0
+        return totals.totalSales > BigDecimal.ZERO
     }
 }

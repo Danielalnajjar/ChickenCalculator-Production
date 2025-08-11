@@ -1,0 +1,46 @@
+# Simple Dockerfile that includes pre-built static files
+FROM maven:3.9.5-eclipse-temurin-17 AS backend-build
+
+WORKDIR /app
+COPY backend/pom.xml ./
+RUN mvn dependency:go-offline -B
+
+COPY backend/src ./src
+RUN mvn clean package -DskipTests -B
+
+# Final production image
+FROM eclipse-temurin:17-jre-alpine
+
+# Install security updates and create non-root user
+RUN apk update && apk upgrade && apk add --no-cache \
+    dumb-init \
+    curl \
+    && addgroup -g 1000 appgroup \
+    && adduser -u 1000 -G appgroup -s /bin/sh -D appuser \
+    && rm -rf /var/cache/apk/*
+
+WORKDIR /app
+
+# Copy built application
+COPY --from=backend-build --chown=appuser:appgroup /app/target/chicken-calculator-1.0.0.jar ./
+
+# Create startup script
+COPY --chown=appuser:appgroup start.sh ./
+RUN chmod +x start.sh
+
+# Create directory for H2 database
+RUN mkdir -p /app/data \
+    && chown -R appuser:appgroup /app/data
+
+# Switch to non-root user
+USER appuser
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:8080/actuator/health || exit 1
+
+EXPOSE 8080
+
+# Use dumb-init for proper signal handling
+ENTRYPOINT ["dumb-init", "--"]
+CMD ["./start.sh"]

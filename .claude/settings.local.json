@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(npm run build:*)",
+      "Bash(set RAILWAY_TOKEN=f0e61c90-7c47-44b1-a40e-7ea0cf5bb8ff)",
+      "Bash(railway up:*)",
+      "Bash(mkdir:*)",
+      "Bash(cp:*)",
+      "Bash(railway status:*)",
+      "Bash(railway logs:*)",
+      "Bash(railway environment:*)",
+      "Bash(railway variables:*)",
+      "Bash(git reset:*)",
+      "Bash(git push:*)",
+      "Bash(gh repo view:*)",
+      "Bash(railway link:*)",
+      "Bash(cat:*)",
+      "Bash(claude mcp add railway:*)",
+      "Bash(claude mcp:*)",
+      "Bash(set RAILWAY_API_TOKEN=f0e61c90-7c47-44b1-a40e-7ea0cf5bb8ff)",
+      "mcp__railway__project_list",
+      "mcp__railway__configure_api_token",
+      "mcp__railway__service_list",
+      "mcp__railway__deployment_list",
+      "mcp__railway__deployment_logs",
+      "Bash(mvn clean:*)"
+    ],
+    "deny": []
+  }
+}
