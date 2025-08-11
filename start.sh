@@ -11,6 +11,26 @@ echo "📂 Checking static files..."
 if [ -d "/app/static/admin" ]; then
     echo "   ✅ Admin portal files found:"
     ls -la /app/static/admin/ | head -5
+    
+    # Check for static subdirectory
+    if [ -d "/app/static/admin/static" ]; then
+        echo "   📁 Admin static subdirectory found:"
+        ls -la /app/static/admin/static/ | head -5
+        
+        # Check for JS files
+        if [ -d "/app/static/admin/static/js" ]; then
+            echo "   📜 JavaScript files:"
+            ls -la /app/static/admin/static/js/ | head -3
+        fi
+        
+        # Check for CSS files
+        if [ -d "/app/static/admin/static/css" ]; then
+            echo "   🎨 CSS files:"
+            ls -la /app/static/admin/static/css/ | head -3
+        fi
+    else
+        echo "   ⚠️ No static subdirectory at /app/static/admin/static"
+    fi
 else
     echo "   ❌ Admin portal files NOT FOUND at /app/static/admin"
 fi
