@@ -1,6 +1,21 @@
 spring:
   application:
     name: chicken-calculator
+  web:
+    resources:
+      # Enable static resource handling
+      add-mappings: true
+      # Define static resource locations
+      static-locations:
+        - file:/app/static/
+        - classpath:/static/
+        - classpath:/public/
+      # Cache control for static resources
+      cache:
+        period: 3600
+  mvc:
+    # Pattern for static resources
+    static-path-pattern: /**
   datasource:
     # Use H2 for local development with PostgreSQL compatibility mode
     url: ${DATABASE_URL:jdbc:h2:file:./data/chicken-calculator-db;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1}

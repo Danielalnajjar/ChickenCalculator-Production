@@ -25,10 +25,11 @@ class MainAppController {
         return ResponseEntity.notFound().build()
     }
     
-    // Handle React Router routes (but exclude /api and /admin)
-    @GetMapping("/{path:[^\\.]*}")
+    // Handle specific React Router routes only
+    // Avoid catch-all pattern that interferes with static resources
+    @GetMapping("/calculator", "/sales", "/history", "/settings")
     fun serveMainAppRoutes(): ResponseEntity<Resource> {
-        // For all main app routes, serve the index.html for React Router
+        // For React Router routes, serve the index.html
         return serveMainApp()
     }
 }

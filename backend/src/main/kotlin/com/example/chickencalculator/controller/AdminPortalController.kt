@@ -55,17 +55,11 @@ class AdminPortalController {
             .body(errorHtml)
     }
     
-    @GetMapping("/admin/{*path}")
-    fun serveAdminPortalRoutes(@PathVariable path: String): ResponseEntity<Any> {
-        logger.info("🌐 Admin route requested: $path")
-        
-        // Don't intercept static resource requests
-        if (path.startsWith("static/") || path.endsWith(".js") || path.endsWith(".css") || path.endsWith(".map")) {
-            logger.info("   Skipping static resource: $path")
-            return ResponseEntity.notFound().build()
-        }
-        
-        // For all other admin routes, serve the index.html for React Router
+    // Handle specific admin portal routes for React Router
+    @GetMapping("/admin/dashboard", "/admin/locations", "/admin/users", "/admin/reports", "/admin/settings")
+    fun serveAdminPortalRoutes(): ResponseEntity<Any> {
+        logger.info("🌐 Admin portal route requested")
+        // For React Router routes, serve the index.html
         return serveAdminPortal()
     }
 }
