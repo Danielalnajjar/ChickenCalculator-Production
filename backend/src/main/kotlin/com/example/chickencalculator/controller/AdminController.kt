@@ -6,20 +6,49 @@ import com.example.chickencalculator.entity.LocationStatus
 import com.example.chickencalculator.service.AdminService
 import com.example.chickencalculator.service.LocationService
 import com.example.chickencalculator.service.JwtService
+import jakarta.validation.Valid
+import jakarta.validation.constraints.Email
+import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.Size
 import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
-data class LoginRequest(val email: String, val password: String)
+data class LoginRequest(
+    @field:NotBlank(message = "Email is required")
+    @field:Email(message = "Invalid email format")
+    val email: String,
+    
+    @field:NotBlank(message = "Password is required")
+    @field:Size(min = 6, message = "Password must be at least 6 characters")
+    val password: String
+)
+
 data class LoginResponse(val id: String, val email: String, val name: String, val role: String, val token: String?)
 
 data class CreateLocationRequest(
+    @field:NotBlank(message = "Location name is required")
+    @field:Size(min = 2, max = 100, message = "Name must be between 2 and 100 characters")
     val name: String,
+    
+    @field:NotBlank(message = "Domain is required")
+    @field:Size(min = 3, max = 255, message = "Domain must be between 3 and 255 characters")
     val domain: String,
+    
     val address: String?,
+    
+    @field:NotBlank(message = "Manager name is required")
+    @field:Size(min = 2, max = 100, message = "Manager name must be between 2 and 100 characters")
     val managerName: String,
+    
+    @field:NotBlank(message = "Manager email is required")
+    @field:Email(message = "Invalid manager email format")
     val managerEmail: String,
+    
+    @field:NotBlank(message = "Cloud provider is required")
     val cloudProvider: String,
+    
+    @field:NotBlank(message = "Region is required")
     val region: String
 )
 
@@ -55,7 +84,7 @@ class AdminController(
     private val logger = LoggerFactory.getLogger(AdminController::class.java)
     
     @PostMapping("/auth/login")
-    fun login(@RequestBody request: LoginRequest): ResponseEntity<LoginResponse> {
+    fun login(@Valid @RequestBody request: LoginRequest): ResponseEntity<LoginResponse> {
         // Proper authentication using AdminService
         val adminUser = adminService.authenticate(request.email, request.password)
         
@@ -145,7 +174,7 @@ class AdminController(
     }
     
     @PostMapping("/locations")
-    fun createLocation(@RequestBody request: CreateLocationRequest): ResponseEntity<CreateLocationResponse> {
+    fun createLocation(@Valid @RequestBody request: CreateLocationRequest): ResponseEntity<CreateLocationResponse> {
         try {
             val location = locationService.createLocation(
                 name = request.name,

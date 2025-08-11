@@ -15,7 +15,7 @@ This is a **production deployment system** for the Chicken Calculator applicatio
 
 ### GitHub-Based Deployment Active
 - **GitHub Repository**: Connected to Railway at https://github.com/Danielalnajjar/ChickenCalculator-Production
-- **Last Commit**: `4b740e3` - Fixed webpack build dependencies (pushed 2025-08-11)
+- **Last Commit**: `adb1f9c` - Fix static asset serving for admin portal (pushed 2025-08-11)
 - **Deployment Method**: Auto-deploy from main branch via GitHub integration
 - **Railway CLI Status**: Disconnected after GitHub integration (expected - use GitHub commits or Railway dashboard)
 
@@ -25,6 +25,7 @@ This is a **production deployment system** for the Chicken Calculator applicatio
 3. **Memory Optimization**: Disabled webpack optimization to prevent build memory issues
 4. **PostCSS Configuration**: Added postcss.config.js files for proper CSS processing
 5. **Dockerfile Selection**: Using main `Dockerfile` (not Dockerfile.simple) for full multi-stage build
+6. **Admin Portal Static Serving**: Fixed static asset serving with proper path configuration in AdminPortalController
 
 ### Next Immediate Steps
 1. **Configure Environment Variables in Railway Dashboard**:
@@ -158,6 +159,7 @@ Railway Platform (PORT 8080)
 #### Backend Structure
 - **Controllers**: 
   - `AdminController` - Authentication, location management
+  - `AdminPortalController` - Serves admin portal static assets
   - `ChickenCalculatorController` - Calculator API
   - `SalesDataController` - Sales data management
   - `MarinationLogController` - Marination history

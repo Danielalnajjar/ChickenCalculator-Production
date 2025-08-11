@@ -8,15 +8,39 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import java.security.Key
 import java.util.*
+import javax.crypto.spec.SecretKeySpec
+import org.slf4j.LoggerFactory
 
 @Service
 class JwtService {
     
-    // Generate a secure key for HS256
-    private val key: Key = Keys.secretKeyFor(SignatureAlgorithm.HS256)
+    private val logger = LoggerFactory.getLogger(JwtService::class.java)
+    
+    // Use persistent key from environment or generate a secure default for development
+    private val key: Key = initializeKey()
+    
+    @Value("\${jwt.secret:}")
+    private val jwtSecret: String? = null
     
     @Value("\${jwt.expiration:86400000}") // Default 24 hours
     private val jwtExpiration: Long = 86400000
+    
+    private fun initializeKey(): Key {
+        // Try to use configured secret first
+        if (!jwtSecret.isNullOrBlank()) {
+            return SecretKeySpec(jwtSecret.toByteArray(), SignatureAlgorithm.HS256.jcaName)
+        }
+        
+        // Try environment variable as fallback
+        val envSecret = System.getenv("JWT_SECRET")
+        if (!envSecret.isNullOrBlank()) {
+            return SecretKeySpec(envSecret.toByteArray(), SignatureAlgorithm.HS256.jcaName)
+        }
+        
+        // Generate a key for development only
+        logger.warn("⚠️ JWT_SECRET not configured! Using generated key - NOT FOR PRODUCTION")
+        return Keys.secretKeyFor(SignatureAlgorithm.HS256)
+    }
     
     fun generateToken(email: String, userId: Long, role: String): String {
         val now = Date()
