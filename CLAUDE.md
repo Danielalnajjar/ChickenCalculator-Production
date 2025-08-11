@@ -11,6 +11,30 @@ This is a **production deployment system** for the Chicken Calculator applicatio
 3. **Frontend**: React calculator app for end users
 4. **Infrastructure**: Docker-based deployment to Railway
 
+## Current Deployment Status (2025-08-11 Latest Update)
+
+### GitHub-Based Deployment Active
+- **GitHub Repository**: Connected to Railway at https://github.com/Danielalnajjar/ChickenCalculator-Production
+- **Last Commit**: `4b740e3` - Fixed webpack build dependencies (pushed 2025-08-11)
+- **Deployment Method**: Auto-deploy from main branch via GitHub integration
+- **Railway CLI Status**: Disconnected after GitHub integration (expected - use GitHub commits or Railway dashboard)
+
+### Recent Critical Fixes Applied
+1. **Webpack Build Dependencies**: Moved all build tools from devDependencies to dependencies in both frontend and admin-portal
+2. **Railway 403 Forbidden Error**: Resolved by switching from CLI uploads to GitHub-based deployment
+3. **Memory Optimization**: Disabled webpack optimization to prevent build memory issues
+4. **PostCSS Configuration**: Added postcss.config.js files for proper CSS processing
+5. **Dockerfile Selection**: Using main `Dockerfile` (not Dockerfile.simple) for full multi-stage build
+
+### Next Immediate Steps
+1. **Configure Environment Variables in Railway Dashboard**:
+   - `ADMIN_DEFAULT_PASSWORD=Admin123!`
+   - `SPRING_PROFILES_ACTIVE=production`
+   - `FORCE_ADMIN_RESET=true` (optional, for first deployment)
+2. **Monitor Build Logs**: Check Railway dashboard for deployment progress
+3. **Generate Public Domain**: Once deployed, generate public URL in Railway settings
+4. **Test Deployment**: Access `/test.html` and health endpoints
+
 ## Current Status & Critical Context
 
 ### ✅ PRODUCTION-READY STATE (As of 2025-08-11)
@@ -72,12 +96,26 @@ docker build -t chicken-calculator .
 docker run -p 8080:8080 -e PORT=8080 chicken-calculator
 ```
 
-### Railway Deployment
+### Railway Deployment (GitHub Integration)
 ```bash
-# Push to GitHub (Railway auto-deploys from main branch)
+# Railway now auto-deploys from GitHub main branch
+# No need for 'railway up' - just push to GitHub:
 git add .
 git commit -m "Deploy to Railway"
 git push origin main
+
+# Monitor deployment in Railway dashboard (CLI link broken after GitHub integration)
+# Access Railway dashboard at: https://railway.app/project/chicken-calculator
+```
+
+### Railway CLI Commands (Limited after GitHub Integration)
+```bash
+# These commands may not work after GitHub integration:
+railway status  # Error: "the linked service doesn't exist"
+railway logs    # May show "No deployments"
+
+# To re-link CLI (if needed):
+railway link  # Then select project and service
 ```
 
 ## Architecture Overview
@@ -163,6 +201,20 @@ Railway Platform (PORT 8080)
 - **CORS wildcards**: Replaced with specific origins
 - **Resource leaks**: Fixed with proper stream closing
 - **localStorage security**: Switched to sessionStorage with tokens
+
+### 6. Railway CLI Upload 403 Forbidden ✅ FIXED
+**Problem**: Railway CLI `railway up` command failed with 403 Forbidden from backboard.railway.com
+**Root Cause**: Railway requires GitHub integration for reliable deployments
+**Solution**: Connected GitHub repository directly to Railway project for auto-deploy
+**Resolution Date**: 2025-08-11
+
+### 7. Webpack Build Memory Issues ✅ FIXED
+**Problem**: Frontend builds failing with heap out of memory errors
+**Solutions Applied**:
+- Set NODE_OPTIONS="--max-old-space-size=1024" in Dockerfile
+- Disabled webpack optimization (minimize: false, splitChunks: false)
+- Moved all build dependencies from devDependencies to dependencies
+**Resolution Date**: 2025-08-11
 
 ## Testing & Debugging
 
