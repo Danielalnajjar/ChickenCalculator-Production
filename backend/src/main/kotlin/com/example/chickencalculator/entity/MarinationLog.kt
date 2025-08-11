@@ -56,7 +56,8 @@ data class MarinationLog(
     @field:NotNull
     val isEndOfDay: Boolean = false,
     
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "location_id")
-    val location: Location? = null
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "location_id", nullable = false)
+    @field:NotNull(message = "Location is required")
+    val location: Location
 )

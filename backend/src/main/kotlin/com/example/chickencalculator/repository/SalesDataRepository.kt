@@ -1,13 +1,32 @@
 package com.example.chickencalculator.repository
 
+import com.example.chickencalculator.entity.Location
 import com.example.chickencalculator.entity.SalesData
 import com.example.chickencalculator.model.SalesTotals
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
+import org.springframework.data.repository.query.Param
 import org.springframework.stereotype.Repository
+import java.time.LocalDate
 
 @Repository
 interface SalesDataRepository : JpaRepository<SalesData, Long> {
+    
+    // Location-based queries for multi-tenancy
+    fun findByLocationOrderByDateDesc(location: Location): List<SalesData>
+    
+    fun findByLocationAndDateBetweenOrderByDateDesc(
+        location: Location,
+        startDate: LocalDate,
+        endDate: LocalDate
+    ): List<SalesData>
+    
+    fun findByLocationAndDate(location: Location, date: LocalDate): SalesData?
+    
+    // Paginated queries for large datasets
+    fun findByLocation(location: Location, pageable: Pageable): Page<SalesData>
     
     @Query("""
         SELECT new com.example.chickencalculator.model.SalesTotals(
@@ -17,8 +36,43 @@ interface SalesDataRepository : JpaRepository<SalesData, Long> {
             COALESCE(SUM(s.portionsTurmeric), 0.0)
         )
         FROM SalesData s
+        WHERE s.location = :location
     """)
+    fun getSalesTotalsByLocation(@Param("location") location: Location): SalesTotals
+    
+    @Query("""
+        SELECT new com.example.chickencalculator.model.SalesTotals(
+            COALESCE(SUM(s.totalSales), 0.0),
+            COALESCE(SUM(s.portionsSoy), 0.0),
+            COALESCE(SUM(s.portionsTeriyaki), 0.0),
+            COALESCE(SUM(s.portionsTurmeric), 0.0)
+        )
+        FROM SalesData s
+        WHERE s.location = :location
+        AND s.date BETWEEN :startDate AND :endDate
+    """)
+    fun getSalesTotalsByLocationAndDateRange(
+        @Param("location") location: Location,
+        @Param("startDate") startDate: LocalDate,
+        @Param("endDate") endDate: LocalDate
+    ): SalesTotals
+    
+    // Bulk operations
+    fun deleteByLocationAndDateBefore(location: Location, date: LocalDate): Long
+    
+    // Legacy methods (consider deprecating)
+    @Query("""
+        SELECT new com.example.chickencalculator.model.SalesTotals(
+            COALESCE(SUM(s.totalSales), 0.0),
+            COALESCE(SUM(s.portionsSoy), 0.0),
+            COALESCE(SUM(s.portionsTeriyaki), 0.0),
+            COALESCE(SUM(s.portionsTurmeric), 0.0)
+        )
+        FROM SalesData s
+    """)
+    @Deprecated("Use getSalesTotalsByLocation instead for multi-tenancy")
     fun getSalesTotals(): SalesTotals
     
+    @Deprecated("Use findByLocationOrderByDateDesc instead for multi-tenancy")
     fun findAllByOrderByDateDesc(): List<SalesData>
 }

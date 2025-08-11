@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { calculatorApi } from '../services/api';
 import { InventoryData, ProjectedSales, CalculationResult, MarinationRequest } from '../types';
 
-const ChickenCalculator: React.FC = () => {
+interface ChickenCalculatorProps {}
+
+const ChickenCalculator: React.FC<ChickenCalculatorProps> = React.memo(() => {
   const [inventory, setInventory] = useState<InventoryData>({
     pansSoy: 0,
     pansTeriyaki: 0,
@@ -28,16 +30,16 @@ const ChickenCalculator: React.FC = () => {
     checkSalesData();
   }, []);
 
-  const checkSalesData = async () => {
+  const checkSalesData = useCallback(async () => {
     try {
       const hasData = await calculatorApi.hasSalesData();
       setHasSalesData(hasData);
     } catch (err) {
       console.error('Error checking sales data:', err);
     }
-  };
+  }, []);
 
-  const handleCalculate = async () => {
+  const handleCalculate = useCallback(async () => {
     if (!hasSalesData) {
       setError('Please add historical sales data first in the Sales Data section.');
       return;
@@ -61,19 +63,19 @@ const ChickenCalculator: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [hasSalesData, inventory, projectedSales, useAvailableChicken, availableRawChickenKg]);
 
-  const formatToKg = (grams: number): string => {
+  const formatToKg = useCallback((grams: number): string => {
     return (grams / 1000).toFixed(1);
-  };
+  }, []);
 
-  const formatToPans = (grams: number, gramsPerPan: number): string => {
+  const formatToPans = useCallback((grams: number, gramsPerPan: number): string => {
     const yieldFactors = { soy: 0.73, teriyaki: 0.88, turmeric: 0.86 };
     const pansPerType = { soy: 3000, teriyaki: 3200, turmeric: 1500 };
     
     // This is a simplified calculation - in real implementation, we'd pass the type
     return (grams / gramsPerPan).toFixed(1);
-  };
+  }, []);
 
   return (
     <div>
@@ -266,6 +268,8 @@ const ChickenCalculator: React.FC = () => {
       )}
     </div>
   );
-};
+});
+
+ChickenCalculator.displayName = 'ChickenCalculator';
 
 export default ChickenCalculator;

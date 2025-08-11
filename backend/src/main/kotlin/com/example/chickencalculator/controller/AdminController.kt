@@ -6,6 +6,14 @@ import com.example.chickencalculator.entity.LocationStatus
 import com.example.chickencalculator.service.AdminService
 import com.example.chickencalculator.service.LocationService
 import com.example.chickencalculator.service.JwtService
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
+import io.swagger.v3.oas.annotations.media.Content
+import io.swagger.v3.oas.annotations.media.Schema
+import io.swagger.v3.oas.annotations.responses.ApiResponse
+import io.swagger.v3.oas.annotations.responses.ApiResponses
+import io.swagger.v3.oas.annotations.security.SecurityRequirement
+import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import jakarta.validation.constraints.Email
 import jakarta.validation.constraints.NotBlank
@@ -70,6 +78,7 @@ data class DashboardStats(
 
 @RestController
 @RequestMapping("/api/admin")
+@Tag(name = "Admin", description = "Admin authentication and management endpoints")
 @CrossOrigin(
     origins = ["http://localhost:3000", "http://localhost:8080", "https://yourcompany.com"],
     allowCredentials = "true",
@@ -84,6 +93,12 @@ class AdminController(
     private val logger = LoggerFactory.getLogger(AdminController::class.java)
     
     @PostMapping("/auth/login")
+    @Operation(summary = "Admin login", description = "Authenticate admin user and receive JWT token")
+    @ApiResponses(value = [
+        ApiResponse(responseCode = "200", description = "Successfully authenticated"),
+        ApiResponse(responseCode = "401", description = "Invalid credentials"),
+        ApiResponse(responseCode = "400", description = "Invalid request format")
+    ])
     fun login(@Valid @RequestBody request: LoginRequest): ResponseEntity<LoginResponse> {
         // Proper authentication using AdminService
         val adminUser = adminService.authenticate(request.email, request.password)
