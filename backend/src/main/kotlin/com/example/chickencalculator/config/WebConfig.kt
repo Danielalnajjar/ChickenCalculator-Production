@@ -24,13 +24,22 @@ class WebConfig : WebMvcConfigurer {
                 override fun getResource(resourcePath: String, location: Resource): Resource? {
                     println("📂 Admin resource request: $resourcePath")
                     val resource = location.createRelative(resourcePath)
-                    return if (resource.exists() && resource.isReadable) {
+                    
+                    // Check if the resource exists
+                    if (resource.exists() && resource.isReadable) {
                         println("   ✅ Found: ${resource.filename}")
-                        resource
-                    } else {
-                        println("   ↩️ Fallback to index.html")
-                        location.createRelative("index.html")
+                        return resource
                     }
+                    
+                    // For non-file routes (React Router), return index.html
+                    // But don't fallback for actual file requests (css, js, etc)
+                    if (!resourcePath.contains(".")) {
+                        println("   ↩️ Fallback to index.html for React route")
+                        return location.createRelative("index.html")
+                    }
+                    
+                    println("   ❌ Resource not found: $resourcePath")
+                    return null
                 }
             })
             

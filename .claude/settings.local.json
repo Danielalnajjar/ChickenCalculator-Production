@@ -28,7 +28,8 @@
       "mcp__railway__domain_create",
       "Bash(timeout:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "mcp__railway__deployment_status"
     ],
     "deny": []
   }
