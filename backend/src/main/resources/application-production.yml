@@ -2,24 +2,29 @@ spring:
   application:
     name: chicken-calculator
   
-  # Database configuration for Railway PostgreSQL
+  # Database configuration - Use H2 if PostgreSQL not available
   datasource:
-    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/railway}
-    username: ${DATABASE_USERNAME:postgres}
-    password: ${DATABASE_PASSWORD:password}
-    driver-class-name: org.postgresql.Driver
+    url: ${DATABASE_URL:jdbc:h2:file:/app/data/chicken-calculator-db;DB_CLOSE_ON_EXIT=FALSE;AUTO_RECONNECT=TRUE}
+    username: ${DATABASE_USERNAME:sa}
+    password: ${DATABASE_PASSWORD:}
+    driver-class-name: ${DATABASE_DRIVER:org.h2.Driver}
     
   # JPA Configuration
   jpa:
     hibernate:
       ddl-auto: update
     show-sql: false
-    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    database-platform: ${DATABASE_PLATFORM:org.hibernate.dialect.H2Dialect}
+    properties:
+      hibernate:
+        dialect: ${DATABASE_DIALECT:org.hibernate.dialect.H2Dialect}
     
-  # Disable H2 console in production
+  # H2 Console (disable in production unless explicitly enabled)
   h2:
     console:
-      enabled: false
+      enabled: ${H2_CONSOLE_ENABLED:false}
+      settings:
+        web-allow-others: false
 
 # Server configuration
 server:
