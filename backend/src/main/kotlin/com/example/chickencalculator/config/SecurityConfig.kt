@@ -38,6 +38,8 @@ class SecurityConfig(
                     "/api/health/**",
                     "/actuator/health",
                     "/api/calculator/**",  // Public calculator endpoints
+                    "/api/sales-data/**",  // Public sales data endpoints for main app
+                    "/api/marination-log/**",  // Public marination log for main app
                     "/",
                     "/static/**",
                     "/admin/**",  // Admin portal static files
@@ -51,8 +53,6 @@ class SecurityConfig(
                 // Admin endpoints - require authentication
                 auth.requestMatchers("/api/admin/**").authenticated()
                 auth.requestMatchers("/api/locations/**").authenticated()
-                auth.requestMatchers("/api/sales/**").authenticated()
-                auth.requestMatchers("/api/marination/**").authenticated()
                 
                 // All other requests require authentication
                 auth.anyRequest().authenticated()
