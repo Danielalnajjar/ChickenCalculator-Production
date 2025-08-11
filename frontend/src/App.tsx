@@ -3,12 +3,14 @@ import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import ChickenCalculator from './components/ChickenCalculator';
 import SalesDataManager from './components/SalesDataManager';
 import MarinationHistory from './components/MarinationHistory';
+import ErrorBoundary from './components/ErrorBoundary';
 import './App.css';
 
 function App() {
   return (
-    <Router>
-      <div className="App">
+    <ErrorBoundary>
+      <Router>
+        <div className="App">
         <nav className="navbar">
           <div className="nav-container">
             <Link to="/" className="nav-logo">
@@ -43,6 +45,7 @@ function App() {
         </main>
       </div>
     </Router>
+    </ErrorBoundary>
   );
 }
 
