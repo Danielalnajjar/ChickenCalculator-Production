@@ -19,23 +19,28 @@ class WebConfig : WebMvcConfigurer {
                 "file:/app/static/admin/",
                 "classpath:/static/admin/"
             )
+            .setCachePeriod(3600)
             .resourceChain(true)
             .addResolver(object : PathResourceResolver() {
                 override fun getResource(resourcePath: String, location: Resource): Resource? {
                     println("📂 Admin resource request: $resourcePath")
-                    val resource = location.createRelative(resourcePath)
                     
-                    // Check if the resource exists
+                    // Try to find the exact resource
+                    val resource = location.createRelative(resourcePath)
                     if (resource.exists() && resource.isReadable) {
                         println("   ✅ Found: ${resource.filename}")
                         return resource
                     }
                     
-                    // For non-file routes (React Router), return index.html
-                    // But don't fallback for actual file requests (css, js, etc)
-                    if (!resourcePath.contains(".")) {
-                        println("   ↩️ Fallback to index.html for React route")
-                        return location.createRelative("index.html")
+                    // For routes without file extensions (React Router paths), return index.html
+                    // But skip this for actual file requests (css, js, images, etc)
+                    val hasExtension = resourcePath.contains(".")
+                    if (!hasExtension) {
+                        println("   ↩️ Fallback to index.html for React route: $resourcePath")
+                        val indexResource = location.createRelative("index.html")
+                        if (indexResource.exists() && indexResource.isReadable) {
+                            return indexResource
+                        }
                     }
                     
                     println("   ❌ Resource not found: $resourcePath")

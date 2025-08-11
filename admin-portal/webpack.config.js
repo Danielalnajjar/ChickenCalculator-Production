@@ -3,6 +3,10 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const TerserPlugin = require('terser-webpack-plugin');
 const CssMinimizerPlugin = require('css-minimizer-webpack-plugin');
+const webpack = require('webpack');
+
+// Define PUBLIC_URL with fallback
+const publicUrl = process.env.PUBLIC_URL || '/admin';
 
 module.exports = {
   mode: 'production',
@@ -10,7 +14,7 @@ module.exports = {
   output: {
     path: path.resolve(__dirname, 'build'),
     filename: 'static/js/[name].[contenthash:8].js',
-    publicPath: process.env.PUBLIC_URL || '/admin/',
+    publicPath: publicUrl + '/',
     clean: true
   },
   module: {
@@ -43,6 +47,18 @@ module.exports = {
   plugins: [
     new HtmlWebpackPlugin({
       template: './public/index.html',
+      templateParameters: (compilation, assets, assetTags, options) => {
+        return {
+          compilation,
+          webpackConfig: compilation.options,
+          htmlWebpackPlugin: {
+            tags: assetTags,
+            files: assets,
+            options
+          },
+          PUBLIC_URL: publicUrl
+        };
+      },
       minify: {
         removeComments: true,
         collapseWhitespace: true,
@@ -58,6 +74,13 @@ module.exports = {
     }),
     new MiniCssExtractPlugin({
       filename: 'static/css/[name].[contenthash:8].css'
+    }),
+    // Define environment variables for the app
+    new webpack.DefinePlugin({
+      'process.env': {
+        PUBLIC_URL: JSON.stringify(publicUrl),
+        NODE_ENV: JSON.stringify('production')
+      }
     })
   ],
   optimization: {

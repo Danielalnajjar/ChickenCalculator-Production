@@ -31,6 +31,7 @@
   "scripts": {
     "start": "webpack serve --mode development",
     "build": "webpack --mode production",
+    "build:unix": "PUBLIC_URL=/admin webpack --mode production",
     "test": "echo \"No tests configured\""
   },
   "eslintConfig": {
