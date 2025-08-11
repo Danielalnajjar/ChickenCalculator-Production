@@ -8,6 +8,16 @@ spring:
     username: ${DATABASE_USERNAME:sa}
     password: ${DATABASE_PASSWORD:}
     driver-class-name: ${DATABASE_DRIVER:org.h2.Driver}
+    # HikariCP connection pool settings for production
+    hikari:
+      maximum-pool-size: ${DB_POOL_SIZE:20}
+      minimum-idle: ${DB_MIN_IDLE:5}
+      connection-timeout: ${DB_CONNECTION_TIMEOUT:30000}
+      idle-timeout: ${DB_IDLE_TIMEOUT:600000}
+      max-lifetime: ${DB_MAX_LIFETIME:1800000}
+      pool-name: ChickenCalculatorPool-Prod
+      connection-test-query: SELECT 1
+      leak-detection-threshold: ${DB_LEAK_THRESHOLD:60000}
     
   # JPA Configuration
   jpa:

@@ -7,6 +7,15 @@ spring:
     driverClassName: ${DATABASE_DRIVER:org.h2.Driver}
     username: ${DATABASE_USERNAME:sa}
     password: ${DATABASE_PASSWORD:}
+    # HikariCP connection pool settings
+    hikari:
+      maximum-pool-size: ${DB_POOL_SIZE:10}
+      minimum-idle: ${DB_MIN_IDLE:2}
+      connection-timeout: ${DB_CONNECTION_TIMEOUT:30000}
+      idle-timeout: ${DB_IDLE_TIMEOUT:600000}
+      max-lifetime: ${DB_MAX_LIFETIME:1800000}
+      pool-name: ChickenCalculatorPool
+      connection-test-query: SELECT 1
   h2:
     console:
       enabled: ${H2_CONSOLE_ENABLED:true}
