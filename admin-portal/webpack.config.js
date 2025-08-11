@@ -10,7 +10,7 @@ module.exports = {
   output: {
     path: path.resolve(__dirname, 'build'),
     filename: 'static/js/[name].[contenthash:8].js',
-    publicPath: '/admin/',
+    publicPath: process.env.PUBLIC_URL || '/admin/',
     clean: true
   },
   module: {

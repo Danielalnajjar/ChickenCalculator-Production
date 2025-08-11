@@ -29,13 +29,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check for stored authentication
-    const storedUser = localStorage.getItem('chicken_admin_user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
+    // Check for stored authentication token (not user data)
+    const storedToken = sessionStorage.getItem('chicken_admin_token');
+    if (storedToken) {
+      // Validate token with backend
+      validateToken(storedToken);
+    } else {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }, []);
+
+  const validateToken = async (token: string) => {
+    try {
+      const response = await fetch('/api/admin/auth/validate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const userData = await response.json();
+        setUser(userData);
+      } else {
+        sessionStorage.removeItem('chicken_admin_token');
+      }
+    } catch (error) {
+      console.error('Token validation error:', error);
+      sessionStorage.removeItem('chicken_admin_token');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
@@ -45,12 +71,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ email, password }),
+        credentials: 'include' // Include cookies for session management
       });
 
       if (response.ok) {
-        const userData = await response.json();
+        const data = await response.json();
+        // Store only the token, not user data
+        if (data.token) {
+          sessionStorage.setItem('chicken_admin_token', data.token);
+        }
+        // Extract user info from response
+        const userData: User = {
+          id: data.id,
+          email: data.email,
+          name: data.name,
+          role: data.role as 'admin' | 'manager'
+        };
         setUser(userData);
-        localStorage.setItem('chicken_admin_user', JSON.stringify(userData));
         return true;
       }
       return false;
@@ -60,9 +97,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('chicken_admin_user');
+  const logout = async () => {
+    try {
+      // Notify backend about logout
+      await fetch('/api/admin/auth/logout', {
+        method: 'POST',
+        credentials: 'include'
+      });
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      setUser(null);
+      sessionStorage.removeItem('chicken_admin_token');
+    }
   };
 
   const value: AuthContextType = {

@@ -2,28 +2,58 @@ spring:
   application:
     name: chicken-calculator
   datasource:
-    url: jdbc:h2:file:./data/chicken-calculator-db;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1
-    driverClassName: org.h2.Driver
-    username: sa
-    password: 
+    # Use H2 for local development with PostgreSQL compatibility mode
+    url: ${DATABASE_URL:jdbc:h2:file:./data/chicken-calculator-db;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1}
+    driverClassName: ${DATABASE_DRIVER:org.h2.Driver}
+    username: ${DATABASE_USERNAME:sa}
+    password: ${DATABASE_PASSWORD:}
   h2:
     console:
-      enabled: false
+      enabled: ${H2_CONSOLE_ENABLED:true}
+      settings:
+        web-allow-others: false
   jpa:
-    database-platform: org.hibernate.dialect.H2Dialect
+    database-platform: ${DATABASE_PLATFORM:org.hibernate.dialect.H2Dialect}
     hibernate:
-      ddl-auto: update
-    show-sql: true
+      ddl-auto: ${DDL_AUTO:validate}
+    show-sql: ${SHOW_SQL:false}
+    properties:
+      hibernate:
+        format_sql: true
+        use_sql_comments: false
   web:
     cors:
-      allowed-origins: "*"
+      allowed-origins:
+        - "http://localhost:3000"
+        - "http://localhost:8080"
+        - "${FRONTEND_URL:http://localhost:3000}"
       allowed-methods: GET,POST,PUT,DELETE,OPTIONS
-      allowed-headers: "*"
-      allow-credentials: false
+      allowed-headers:
+        - "Content-Type"
+        - "Authorization"
+        - "X-Requested-With"
+      allow-credentials: true
 
 server:
-  port: 8080
+  port: ${PORT:8080}
+  error:
+    include-message: never
+    include-stacktrace: never
+
+# Actuator for health checks
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when-authorized
 
 logging:
   level:
-    com.example.chickencalculator: DEBUG
+    com.example.chickencalculator: ${LOG_LEVEL:INFO}
+    org.springframework.web: WARN
+    org.hibernate.SQL: ${SQL_LOG_LEVEL:WARN}
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"

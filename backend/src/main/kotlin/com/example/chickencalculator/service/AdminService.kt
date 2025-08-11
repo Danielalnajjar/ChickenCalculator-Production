@@ -3,6 +3,7 @@ package com.example.chickencalculator.service
 import com.example.chickencalculator.entity.AdminUser
 import com.example.chickencalculator.entity.AdminRole
 import com.example.chickencalculator.repository.AdminUserRepository
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
@@ -11,34 +12,30 @@ import java.security.SecureRandom
 
 @Service
 class AdminService(private val adminUserRepository: AdminUserRepository) {
-    
-    private val passwordEncoder = BCryptPasswordEncoder(10) // Reduced rounds for debugging
+    private val logger = LoggerFactory.getLogger(AdminService::class.java)
+    private val passwordEncoder = BCryptPasswordEncoder(10)
     
     @Transactional
     fun authenticate(email: String, password: String): AdminUser? {
-        println("🔐 Authentication attempt for email: $email")
+        logger.debug("Authentication attempt for email: {}", email)
         val user = adminUserRepository.findByEmail(email)
         
         if (user == null) {
-            println("❌ No user found with email: $email")
-            // List all admin emails for debugging
-            val allAdmins = adminUserRepository.findAll()
-            println("📧 Available admin emails: ${allAdmins.map { it.email }}")
+            logger.warn("No user found with email: {}", email)
             return null
         }
         
-        println("✅ User found: ${user.email}, verifying password...")
+        logger.debug("User found: {}, verifying password", user.email)
         val passwordMatches = verifyPassword(password, user.passwordHash)
-        println("🔑 Password verification result: $passwordMatches")
         
         return if (passwordMatches) {
             // Update last login time
             val updatedUser = user.copy(lastLoginAt = LocalDateTime.now())
             adminUserRepository.save(updatedUser)
-            println("✅ Authentication successful for: ${user.email}")
+            logger.info("Authentication successful for: {}", user.email)
             updatedUser
         } else {
-            println("❌ Password verification failed for: ${user.email}")
+            logger.warn("Password verification failed for: {}", user.email)
             null
         }
     }
@@ -91,23 +88,22 @@ class AdminService(private val adminUserRepository: AdminUserRepository) {
     // Initialize default admin user if none exists
     @Transactional
     fun initializeDefaultAdmin() {
-        println("🔄 Checking for existing admin users...")
+        logger.info("Checking for existing admin users")
         val forceReset = System.getenv("FORCE_ADMIN_RESET") == "true"
         val adminCount = adminUserRepository.count()
-        println("📊 Found $adminCount admin users in database")
+        logger.info("Found {} admin users in database", adminCount)
         
         if (forceReset && adminCount > 0L) {
-            println("⚠️ FORCE_ADMIN_RESET is true, deleting existing admin users...")
+            logger.warn("FORCE_ADMIN_RESET is true, deleting existing admin users")
             adminUserRepository.deleteAll()
-            println("🗑️ Deleted all existing admin users")
+            logger.info("Deleted all existing admin users")
         }
         
         if (adminCount == 0L || forceReset) {
             val defaultEmail = System.getenv("ADMIN_DEFAULT_EMAIL") ?: "admin@yourcompany.com"
-            // Use a simpler default password for initial deployment
             val defaultPassword = System.getenv("ADMIN_DEFAULT_PASSWORD") ?: "Admin123!"
             
-            println("🔨 Creating default admin user with email: $defaultEmail")
+            logger.info("Creating default admin user with email: {}", defaultEmail)
             
             try {
                 val adminUser = createAdminUser(
@@ -117,34 +113,22 @@ class AdminService(private val adminUserRepository: AdminUserRepository) {
                     role = AdminRole.ADMIN
                 )
                 
-                println("✅ Admin user created successfully with ID: ${adminUser.id}")
+                logger.info("Admin user created successfully with ID: {}", adminUser.id)
+                logger.warn("Default admin created with email: {}. CHANGE PASSWORD IMMEDIATELY!", defaultEmail)
                 
-                // Log creation success but not the password
-                println("=".repeat(60))
-                println("✅ DEFAULT ADMIN CREATED:")
-                println("📧 Email: $defaultEmail")
-                println("⚠️  Default password set from environment or defaults")
-                println("⚠️  CHANGE THIS PASSWORD IMMEDIATELY AFTER FIRST LOGIN!")
-                println("=".repeat(60))
-                
-                // Test authentication immediately
-                println("🧪 Testing authentication with created credentials...")
+                // Test authentication
                 val testAuth = authenticate(defaultEmail, defaultPassword)
                 if (testAuth != null) {
-                    println("✅ Authentication test successful!")
+                    logger.info("Authentication test successful")
                 } else {
-                    println("❌ Authentication test failed! Check password encoder.")
+                    logger.error("Authentication test failed! Check password encoder")
                 }
                 
             } catch (e: Exception) {
-                println("❌ Error creating admin user: ${e.message}")
-                e.printStackTrace()
+                logger.error("Error creating admin user", e)
             }
         } else {
-            println("ℹ️ Admin users already exist, skipping creation")
-            // Show existing admin emails for debugging
-            val allAdmins = adminUserRepository.findAll()
-            println("📧 Existing admin emails: ${allAdmins.map { it.email }}")
+            logger.info("Admin users already exist, skipping creation")
         }
     }
     

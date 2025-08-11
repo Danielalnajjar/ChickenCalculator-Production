@@ -1,30 +1,53 @@
 package com.example.chickencalculator.model
 
+import jakarta.validation.constraints.*
+import java.math.BigDecimal
+import java.math.RoundingMode
+
 /**
  * Current inventory data (morning count of prepared chicken in pans)
  */
 data class InventoryData(
-    val pansSoy: Double,
-    val pansTeriyaki: Double,
-    val pansTurmeric: Double
+    @field:NotNull
+    @field:DecimalMin(value = "0.0", inclusive = true)
+    val pansSoy: BigDecimal,
+    
+    @field:NotNull
+    @field:DecimalMin(value = "0.0", inclusive = true)
+    val pansTeriyaki: BigDecimal,
+    
+    @field:NotNull
+    @field:DecimalMin(value = "0.0", inclusive = true)
+    val pansTurmeric: BigDecimal
 )
 
 /**
  * Projected sales data for next 4 days (in dollar amounts)
  */
 data class ProjectedSales(
-    val day0: Double,
-    val day1: Double,
-    val day2: Double,
-    val day3: Double
+    @field:NotNull
+    @field:DecimalMin(value = "0.0", inclusive = true)
+    val day0: BigDecimal,
+    
+    @field:NotNull
+    @field:DecimalMin(value = "0.0", inclusive = true)
+    val day1: BigDecimal,
+    
+    @field:NotNull
+    @field:DecimalMin(value = "0.0", inclusive = true)
+    val day2: BigDecimal,
+    
+    @field:NotNull
+    @field:DecimalMin(value = "0.0", inclusive = true)
+    val day3: BigDecimal
 ) {
-    fun getSales(day: Int): Double {
+    fun getSales(day: Int): BigDecimal {
         return when (day) {
             0 -> day0
             1 -> day1
             2 -> day2
             3 -> day3
-            else -> 0.0
+            else -> BigDecimal.ZERO
         }
     }
 }
@@ -33,32 +56,46 @@ data class ProjectedSales(
  * Result of marination calculation
  */
 data class CalculationResult(
-    val rawToMarinateSoy: Double,
-    val rawToMarinateTeriyaki: Double,
-    val rawToMarinateTurmeric: Double,
-    val portionsPer1000Soy: Double,
-    val portionsPer1000Teriyaki: Double,
-    val portionsPer1000Turmeric: Double
+    val rawToMarinateSoy: BigDecimal,
+    val rawToMarinateTeriyaki: BigDecimal,
+    val rawToMarinateTurmeric: BigDecimal,
+    val portionsPer1000Soy: BigDecimal,
+    val portionsPer1000Teriyaki: BigDecimal,
+    val portionsPer1000Turmeric: BigDecimal
 )
 
 /**
  * Historical sales totals for calculation
  */
 data class SalesTotals(
-    val totalSales: Double,
-    val totalPortionsSoy: Double,
-    val totalPortionsTeriyaki: Double,
-    val totalPortionsTurmeric: Double
+    val totalSales: BigDecimal,
+    val totalPortionsSoy: BigDecimal,
+    val totalPortionsTeriyaki: BigDecimal,
+    val totalPortionsTurmeric: BigDecimal
 )
 
 /**
  * Request model for marination calculation
  */
 data class MarinationRequest(
+    @field:NotNull
     val inventory: InventoryData,
+    
+    @field:NotNull
     val projectedSales: ProjectedSales,
-    val availableRawChickenKg: Double? = null,
-    val alreadyMarinatedSoy: Double = 0.0,
-    val alreadyMarinatedTeriyaki: Double = 0.0,
-    val alreadyMarinatedTurmeric: Double = 0.0
+    
+    @field:DecimalMin(value = "0.0", inclusive = true)
+    val availableRawChickenKg: BigDecimal? = null,
+    
+    @field:NotNull
+    @field:DecimalMin(value = "0.0", inclusive = true)
+    val alreadyMarinatedSoy: BigDecimal = BigDecimal.ZERO,
+    
+    @field:NotNull
+    @field:DecimalMin(value = "0.0", inclusive = true)
+    val alreadyMarinatedTeriyaki: BigDecimal = BigDecimal.ZERO,
+    
+    @field:NotNull
+    @field:DecimalMin(value = "0.0", inclusive = true)
+    val alreadyMarinatedTurmeric: BigDecimal = BigDecimal.ZERO
 )

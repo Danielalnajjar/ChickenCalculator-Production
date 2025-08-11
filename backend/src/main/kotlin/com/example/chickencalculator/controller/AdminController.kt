@@ -5,6 +5,7 @@ import com.example.chickencalculator.entity.Location
 import com.example.chickencalculator.entity.LocationStatus
 import com.example.chickencalculator.service.AdminService
 import com.example.chickencalculator.service.LocationService
+import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
@@ -49,6 +50,7 @@ class AdminController(
     private val adminService: AdminService,
     private val locationService: LocationService
 ) {
+    private val logger = LoggerFactory.getLogger(AdminController::class.java)
     
     @PostMapping("/auth/login")
     fun login(@RequestBody request: LoginRequest): ResponseEntity<LoginResponse> {
@@ -72,7 +74,7 @@ class AdminController(
     // OPTIONS handler for CORS preflight
     @RequestMapping("/auth/login", method = [RequestMethod.OPTIONS])
     fun loginOptions(): ResponseEntity<Void> {
-        println("📋 OPTIONS request for /auth/login")
+        logger.debug("OPTIONS request for /auth/login")
         return ResponseEntity.ok()
             .header("Access-Control-Allow-Origin", "*")
             .header("Access-Control-Allow-Methods", "POST, OPTIONS")
