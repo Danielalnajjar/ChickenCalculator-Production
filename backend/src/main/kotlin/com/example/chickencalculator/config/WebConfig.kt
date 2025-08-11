@@ -15,7 +15,10 @@ class WebConfig : WebMvcConfigurer {
         
         // Serve admin portal with React Router support
         registry.addResourceHandler("/admin/**")
-            .addResourceLocations("file:/app/static/admin/")
+            .addResourceLocations(
+                "file:/app/static/admin/",
+                "classpath:/static/admin/"
+            )
             .resourceChain(true)
             .addResolver(object : PathResourceResolver() {
                 override fun getResource(resourcePath: String, location: Resource): Resource? {
@@ -33,7 +36,11 @@ class WebConfig : WebMvcConfigurer {
             
         // Serve main app with React Router support (excluding /api and /admin)
         registry.addResourceHandler("/**")
-            .addResourceLocations("file:/app/static/app/")
+            .addResourceLocations(
+                "file:/app/static/app/",
+                "classpath:/static/app/",
+                "classpath:/static/"
+            )
             .resourceChain(true)
             .addResolver(object : PathResourceResolver() {
                 override fun getResource(resourcePath: String, location: Resource): Resource? {
