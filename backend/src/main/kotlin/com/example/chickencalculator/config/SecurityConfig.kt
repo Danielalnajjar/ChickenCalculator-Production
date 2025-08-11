@@ -75,7 +75,8 @@ class SecurityConfig(
         configuration.allowedOriginPatterns = listOf(
             "http://localhost:*",
             "https://*.railway.app",
-            "https://*.up.railway.app"
+            "https://*.up.railway.app",
+            "https://chickencalculator-production-production-2953.up.railway.app"
         )
         configuration.allowedMethods = listOf("GET", "POST", "PUT", "DELETE", "OPTIONS")
         configuration.allowedHeaders = listOf(

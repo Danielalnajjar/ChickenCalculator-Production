@@ -48,11 +48,18 @@ const CreateLocation: React.FC = () => {
     setStatusMessage('Creating location...');
 
     try {
+      const token = sessionStorage.getItem('token');
+      if (!token) {
+        setStatusMessage('❌ Authentication error: Please login again');
+        setIsLoading(false);
+        return;
+      }
+
       const response = await fetch('/api/admin/locations', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${sessionStorage.getItem('token')}`,
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(formData),
       });
@@ -73,11 +80,35 @@ const CreateLocation: React.FC = () => {
           setStatusMessage(null);
         }, 3000);
       } else {
-        const error = await response.text();
-        setStatusMessage(`❌ Failed to create location: ${error}`);
+        // Try to parse as JSON first, fall back to text
+        let errorMessage = `Status ${response.status}: `;
+        const contentType = response.headers.get('content-type');
+        
+        if (contentType && contentType.includes('application/json')) {
+          try {
+            const errorJson = await response.json();
+            errorMessage += errorJson.message || errorJson.error || JSON.stringify(errorJson);
+          } catch {
+            errorMessage += await response.text();
+          }
+        } else {
+          const errorText = await response.text();
+          // If it's HTML, just show the status
+          if (errorText.includes('<!DOCTYPE') || errorText.includes('<html')) {
+            errorMessage += response.status === 401 ? 'Unauthorized - Please login again' :
+                          response.status === 403 ? 'Forbidden - Access denied' :
+                          response.status === 500 ? 'Server error' :
+                          'Request failed';
+          } else {
+            errorMessage += errorText;
+          }
+        }
+        
+        setStatusMessage(`❌ Failed to create location: ${errorMessage}`);
       }
     } catch (error) {
-      setStatusMessage('❌ Network error. Please check your connection.');
+      console.error('Error creating location:', error);
+      setStatusMessage(`❌ Network error: ${error instanceof Error ? error.message : 'Please check your connection'}`);
     } finally {
       setIsLoading(false);
     }

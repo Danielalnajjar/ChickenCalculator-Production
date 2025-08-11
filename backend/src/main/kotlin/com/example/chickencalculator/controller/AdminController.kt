@@ -180,6 +180,9 @@ class AdminController(
     
     @PostMapping("/locations")
     fun createLocation(@Valid @RequestBody request: CreateLocationRequest): ResponseEntity<CreateLocationResponse> {
+        logger.info("Received location creation request for: ${request.name}")
+        logger.debug("Request details - Name: ${request.name}, Manager: ${request.managerName}, Email: ${request.managerEmail}")
+        
         try {
             val location = locationService.createLocation(
                 name = request.name,
@@ -188,7 +191,7 @@ class AdminController(
                 managerEmail = request.managerEmail
             )
             
-            logger.info("Location created: ${location.name} with slug: ${location.slug}")
+            logger.info("✅ Location created successfully: ${location.name} with slug: ${location.slug}")
             
             return ResponseEntity.ok(CreateLocationResponse(
                 id = location.id,
