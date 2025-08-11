@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.server.ResponseStatusException
+import java.math.BigDecimal
 
 @RestController
 @RequestMapping("/api/sales-data")
@@ -41,7 +42,7 @@ class SalesDataController(
         return if (defaultLocation != null) {
             salesDataRepository.getSalesTotalsByLocation(defaultLocation.id)
         } else {
-            SalesTotals()
+            SalesTotals(BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO)
         }
     }
     

@@ -32,10 +32,10 @@ interface SalesDataRepository : JpaRepository<SalesData, Long> {
     
     @Query("""
         SELECT new com.example.chickencalculator.model.SalesTotals(
-            COALESCE(SUM(s.totalSales), 0.0),
-            COALESCE(SUM(s.portionsSoy), 0.0),
-            COALESCE(SUM(s.portionsTeriyaki), 0.0),
-            COALESCE(SUM(s.portionsTurmeric), 0.0)
+            CASE WHEN SUM(s.totalSales) IS NULL THEN 0.0 ELSE SUM(s.totalSales) END,
+            CASE WHEN SUM(s.portionsSoy) IS NULL THEN 0.0 ELSE SUM(s.portionsSoy) END,
+            CASE WHEN SUM(s.portionsTeriyaki) IS NULL THEN 0.0 ELSE SUM(s.portionsTeriyaki) END,
+            CASE WHEN SUM(s.portionsTurmeric) IS NULL THEN 0.0 ELSE SUM(s.portionsTurmeric) END
         )
         FROM SalesData s
         WHERE s.location = :location
@@ -44,10 +44,10 @@ interface SalesDataRepository : JpaRepository<SalesData, Long> {
     
     @Query("""
         SELECT new com.example.chickencalculator.model.SalesTotals(
-            COALESCE(SUM(s.totalSales), 0.0),
-            COALESCE(SUM(s.portionsSoy), 0.0),
-            COALESCE(SUM(s.portionsTeriyaki), 0.0),
-            COALESCE(SUM(s.portionsTurmeric), 0.0)
+            CASE WHEN SUM(s.totalSales) IS NULL THEN 0.0 ELSE SUM(s.totalSales) END,
+            CASE WHEN SUM(s.portionsSoy) IS NULL THEN 0.0 ELSE SUM(s.portionsSoy) END,
+            CASE WHEN SUM(s.portionsTeriyaki) IS NULL THEN 0.0 ELSE SUM(s.portionsTeriyaki) END,
+            CASE WHEN SUM(s.portionsTurmeric) IS NULL THEN 0.0 ELSE SUM(s.portionsTurmeric) END
         )
         FROM SalesData s
         WHERE s.location.id = :locationId
@@ -56,10 +56,10 @@ interface SalesDataRepository : JpaRepository<SalesData, Long> {
     
     @Query("""
         SELECT new com.example.chickencalculator.model.SalesTotals(
-            COALESCE(SUM(s.totalSales), 0.0),
-            COALESCE(SUM(s.portionsSoy), 0.0),
-            COALESCE(SUM(s.portionsTeriyaki), 0.0),
-            COALESCE(SUM(s.portionsTurmeric), 0.0)
+            CASE WHEN SUM(s.totalSales) IS NULL THEN 0.0 ELSE SUM(s.totalSales) END,
+            CASE WHEN SUM(s.portionsSoy) IS NULL THEN 0.0 ELSE SUM(s.portionsSoy) END,
+            CASE WHEN SUM(s.portionsTeriyaki) IS NULL THEN 0.0 ELSE SUM(s.portionsTeriyaki) END,
+            CASE WHEN SUM(s.portionsTurmeric) IS NULL THEN 0.0 ELSE SUM(s.portionsTurmeric) END
         )
         FROM SalesData s
         WHERE s.location = :location
@@ -79,10 +79,10 @@ interface SalesDataRepository : JpaRepository<SalesData, Long> {
     // Legacy methods (consider deprecating)
     @Query("""
         SELECT new com.example.chickencalculator.model.SalesTotals(
-            COALESCE(SUM(s.totalSales), 0.0),
-            COALESCE(SUM(s.portionsSoy), 0.0),
-            COALESCE(SUM(s.portionsTeriyaki), 0.0),
-            COALESCE(SUM(s.portionsTurmeric), 0.0)
+            CASE WHEN SUM(s.totalSales) IS NULL THEN 0.0 ELSE SUM(s.totalSales) END,
+            CASE WHEN SUM(s.portionsSoy) IS NULL THEN 0.0 ELSE SUM(s.portionsSoy) END,
+            CASE WHEN SUM(s.portionsTeriyaki) IS NULL THEN 0.0 ELSE SUM(s.portionsTeriyaki) END,
+            CASE WHEN SUM(s.portionsTurmeric) IS NULL THEN 0.0 ELSE SUM(s.portionsTurmeric) END
         )
         FROM SalesData s
     """)
