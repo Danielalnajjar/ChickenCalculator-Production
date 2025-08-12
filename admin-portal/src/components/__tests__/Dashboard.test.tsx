@@ -81,12 +81,12 @@ describe('Dashboard Component', () => {
       mockApiService.getLocations.mockResolvedValue({
         ok: true,
         data: mockLocations,
-        error: null
+        error: undefined
       });
       mockApiService.getDashboardStats.mockResolvedValue({
         ok: true,
         data: mockStats,
-        error: null
+        error: undefined
       });
     });
 
@@ -178,7 +178,7 @@ describe('Dashboard Component', () => {
       mockApiService.getLocations.mockResolvedValue({
         ok: true,
         data: [],
-        error: null
+        error: undefined
       });
       mockApiService.getDashboardStats.mockResolvedValue({
         ok: true,
@@ -190,7 +190,7 @@ describe('Dashboard Component', () => {
           totalTransactions: 0,
           totalRevenue: 0
         },
-        error: null
+        error: undefined
       });
     });
 
@@ -266,12 +266,12 @@ describe('Dashboard Component', () => {
       mockApiService.getLocations.mockResolvedValue({
         ok: true,
         data: mockLocations,
-        error: null
+        error: undefined
       });
       mockApiService.getDashboardStats.mockResolvedValue({
         ok: true,
         data: mockStats,
-        error: null
+        error: undefined
       });
     });
 
@@ -313,12 +313,12 @@ describe('Dashboard Component', () => {
       mockApiService.getLocations.mockResolvedValue({
         ok: true,
         data: mockLocations,
-        error: null
+        error: undefined
       });
       mockApiService.getDashboardStats.mockResolvedValue({
         ok: true,
         data: mockStats,
-        error: null
+        error: undefined
       });
     });
 

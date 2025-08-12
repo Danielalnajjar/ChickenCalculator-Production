@@ -1,34 +1,72 @@
-import React, { ReactElement } from 'react';
+import React, { ReactElement, createContext, useContext } from 'react';
 import { render, RenderOptions } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
-import { AuthProvider } from '../../contexts/AuthContext';
 
-// Mock auth context values
-export const mockAuthContextValue = {
+// Define the AuthContextType interface to match the actual context
+interface User {
+  id: string;
+  email: string;
+  role: 'admin' | 'manager';
+  name: string;
+  passwordChangeRequired?: boolean;
+}
+
+interface AuthContextType {
+  user: User | null;
+  login: (email: string, password: string) => Promise<boolean>;
+  logout: () => void;
+  isLoading: boolean;
+}
+
+// Create a test AuthContext
+const TestAuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// Export a test hook that matches useAuth
+export const useTestAuth = () => {
+  const context = useContext(TestAuthContext);
+  if (context === undefined) {
+    throw new Error('useTestAuth must be used within a TestAuthProvider');
+  }
+  return context;
+};
+
+// Test AuthProvider that accepts a value prop
+export const TestAuthProvider: React.FC<{
+  children: React.ReactNode;
+  value: AuthContextType;
+}> = ({ children, value }) => {
+  return (
+    <TestAuthContext.Provider value={value}>
+      {children}
+    </TestAuthContext.Provider>
+  );
+};
+
+// Mock auth context values that match the actual AuthContextType
+export const mockAuthContextValue: AuthContextType = {
   user: null,
-  token: null,
-  login: jest.fn(),
+  login: jest.fn().mockResolvedValue(true),
   logout: jest.fn(),
-  isAuthenticated: false,
   isLoading: false,
 };
 
 // Mock authenticated auth context values
-export const mockAuthenticatedContextValue = {
-  ...mockAuthContextValue,
+export const mockAuthenticatedContextValue: AuthContextType = {
   user: {
-    id: 1,
+    id: '1',
     email: 'admin@test.com',
     name: 'Test Admin',
-    role: 'ADMIN' as const,
+    role: 'admin',
+    passwordChangeRequired: false,
   },
-  token: 'mock-jwt-token',
-  isAuthenticated: true,
+  login: jest.fn().mockResolvedValue(true),
+  logout: jest.fn(),
+  isLoading: false,
 };
 
 // Custom render function that includes providers
 interface CustomRenderOptions extends Omit<RenderOptions, 'wrapper'> {
-  authContextValue?: typeof mockAuthContextValue;
+  authContextValue?: AuthContextType;
   initialEntries?: string[];
 }
 
@@ -43,9 +81,9 @@ export function renderWithProviders(
   function Wrapper({ children }: { children: React.ReactNode }) {
     return (
       <BrowserRouter>
-        <AuthProvider value={authContextValue}>
+        <TestAuthProvider value={authContextValue}>
           {children}
-        </AuthProvider>
+        </TestAuthProvider>
       </BrowserRouter>
     );
   }
@@ -71,7 +109,7 @@ export const mockApiResponses = {
           createdAt: '2024-01-01T00:00:00Z'
         }
       ],
-      error: null
+      error: undefined
     },
     error: {
       ok: false,
@@ -81,7 +119,7 @@ export const mockApiResponses = {
     empty: {
       ok: true,
       data: [],
-      error: null
+      error: undefined
     }
   },
   stats: {
@@ -95,7 +133,7 @@ export const mockApiResponses = {
         totalTransactions: 100,
         totalRevenue: 1000
       },
-      error: null
+      error: undefined
     },
     error: {
       ok: false,
@@ -115,7 +153,7 @@ export const mockApiResponses = {
           role: 'ADMIN'
         }
       },
-      error: null
+      error: undefined
     },
     error: {
       ok: false,

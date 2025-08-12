@@ -142,7 +142,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
       {/* Main content */}
       <div className="lg:ml-64">
-        <main className="p-4 lg:p-8 pt-16 lg:pt-8" id="main-content" tabIndex="-1">
+        <main className="p-4 lg:p-8 pt-16 lg:pt-8" id="main-content" tabIndex={-1}>
           {children}
         </main>
       </div>

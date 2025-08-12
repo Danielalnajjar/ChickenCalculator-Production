@@ -65,7 +65,7 @@ function App() {
           </div>
         </nav>
 
-        <main className="main-content" id="main-content" tabIndex="-1">
+        <main className="main-content" id="main-content" tabIndex={-1}>
           <Routes>
             <Route path="/" element={<ChickenCalculator />} />
             <Route path="/sales-data" element={<SalesDataManager />} />
