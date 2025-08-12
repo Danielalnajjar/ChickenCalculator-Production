@@ -21,16 +21,17 @@ class JwtAuthenticationFilter(
         response: HttpServletResponse,
         filterChain: FilterChain
     ) {
-        val authHeader = request.getHeader("Authorization")
         val requestPath = request.requestURI
         
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        // Try to get JWT token from cookie first, then Authorization header
+        val jwt = getTokenFromRequest(request)
+        
+        if (jwt == null) {
             logger.debug("No JWT token found for request: $requestPath")
             filterChain.doFilter(request, response)
             return
         }
 
-        val jwt = authHeader.substring(7)
         logger.debug("JWT token found for request: $requestPath")
         
         try {
@@ -64,5 +65,27 @@ class JwtAuthenticationFilter(
         }
         
         filterChain.doFilter(request, response)
+    }
+    
+    /**
+     * Extract JWT token from cookie or Authorization header
+     */
+    private fun getTokenFromRequest(request: HttpServletRequest): String? {
+        // First, try to get token from cookie
+        request.cookies?.let { cookies ->
+            for (cookie in cookies) {
+                if (cookie.name == "jwt_token") {
+                    return cookie.value
+                }
+            }
+        }
+        
+        // Fallback to Authorization header for backward compatibility
+        val authHeader = request.getHeader("Authorization")
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            return authHeader.substring(7)
+        }
+        
+        return null
     }
 }

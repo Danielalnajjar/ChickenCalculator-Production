@@ -3,7 +3,7 @@
  * Handles token management, authorization headers, and error handling
  */
 
-// Constants
+// Constants - TOKEN_KEY kept for compatibility but no longer used for storage
 export const TOKEN_KEY = 'chicken_admin_token';
 const API_BASE = '/api/admin';
 
@@ -45,10 +45,13 @@ class ApiService {
   private csrfToken: string | null = null;
 
   /**
-   * Get the authentication token from sessionStorage
+   * Get the authentication token - now using httpOnly cookies
+   * This method is kept for compatibility but always returns null
+   * since tokens are now handled via httpOnly cookies
    */
   private getToken(): string | null {
-    return sessionStorage.getItem(TOKEN_KEY);
+    // Tokens are now in httpOnly cookies, not accessible via JavaScript
+    return null;
   }
 
   /**
@@ -110,19 +113,16 @@ class ApiService {
   }
 
   /**
-   * Create headers with authentication token and CSRF token
+   * Create headers with CSRF token
+   * Authentication is now handled via httpOnly cookies automatically
    */
   private async getHeaders(includeAuth: boolean = true, includeCsrf: boolean = false): Promise<HeadersInit> {
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
     };
 
-    if (includeAuth) {
-      const token = this.getToken();
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-    }
+    // Authentication is now handled via httpOnly cookies
+    // No need to manually add Authorization header
 
     if (includeCsrf) {
       const csrfToken = await this.getCsrfToken();
@@ -154,8 +154,7 @@ class ApiService {
 
     // Handle authentication errors
     if (status === 401) {
-      // Token expired or invalid - remove it
-      sessionStorage.removeItem(TOKEN_KEY);
+      // Token expired or invalid (httpOnly cookie will be cleared by server)
       error = 'Authentication expired. Please login again.';
       // Redirect to login
       window.location.href = '/admin/login';
@@ -256,12 +255,12 @@ class ApiService {
   }
   
   /**
-   * Login (no auth required)
+   * Login (no auth required) - now sets httpOnly cookie
    */
   async login(email: string, password: string) {
-    const result = this.post('/auth/login', { email, password }, false);
+    const result = await this.post('/auth/login', { email, password }, false);
     // After successful login, initialize CSRF token for subsequent requests
-    if ((await result).ok) {
+    if (result.ok) {
       await this.initializeCsrfToken();
     }
     return result;
@@ -275,7 +274,7 @@ class ApiService {
   }
 
   /**
-   * Logout
+   * Logout - clears httpOnly cookie on server
    */
   async logout() {
     return this.post('/auth/logout');

@@ -31,17 +31,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check for stored authentication token (not user data)
-    const storedToken = sessionStorage.getItem(TOKEN_KEY);
-    if (storedToken) {
-      // Validate token with backend
-      validateToken(storedToken);
-    } else {
-      setIsLoading(false);
-    }
+    // Check authentication status via cookie (no direct access to httpOnly cookie)
+    // Attempt to validate token with backend to check if user is logged in
+    validateToken();
   }, []);
 
-  const validateToken = async (token: string) => {
+  const validateToken = async () => {
     try {
       const response = await apiService.validateToken();
       
@@ -56,11 +51,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
         setUser(userData);
       } else {
-        sessionStorage.removeItem(TOKEN_KEY);
+        // Authentication failed - user is not logged in
+        setUser(null);
       }
     } catch (error) {
       console.error('Token validation error:', error);
-      sessionStorage.removeItem(TOKEN_KEY);
+      setUser(null);
     } finally {
       setIsLoading(false);
     }
@@ -72,10 +68,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (response.ok && response.data) {
         const data = response.data as any;
-        // Store only the token, not user data
-        if (data.token) {
-          sessionStorage.setItem(TOKEN_KEY, data.token);
-        }
+        // httpOnly cookie is set automatically by the server
         // Extract user info from response
         const userData: User = {
           id: data.id || '',
@@ -96,13 +89,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     try {
-      // Notify backend about logout
+      // Notify backend about logout (clears httpOnly cookie)
       await apiService.logout();
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
       setUser(null);
-      sessionStorage.removeItem(TOKEN_KEY);
+      // httpOnly cookie is cleared by the server
     }
   };
 
