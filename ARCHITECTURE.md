@@ -156,6 +156,12 @@ marination_log (
 - **Status Codes**: Proper HTTP status codes
 - **Error Handling**: Standardized error responses
 
+### Current API Structure
+- **Main Calculation**: POST /api/v1/calculator/calculate
+  - Uses `MarinationRequest` with nested `InventoryData` and `ProjectedSales`
+  - Returns `CalculationResult` with marination suggestions
+  - Service method: `calculateMarination()` (NOT calculateChickenRequirements)
+
 ### API Versioning
 - **URL Versioning**: /api/v1/* prefix
 - **Backward Compatibility**: Legacy /api/* still supported

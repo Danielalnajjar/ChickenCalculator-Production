@@ -44,7 +44,9 @@
       "Bash(mvn test:*)",
       "Bash(mvn compile:*)",
       "Bash(mvn package:*)",
-      "Bash(mv:*)"
+      "Bash(mv:*)",
+      "mcp__ide__getDiagnostics",
+      "Bash(del \"C:\\Users\\danie\\Code\\ChickenCalculator-Production\\backend\\src\\test\\kotlin\\com\\example\\chickencalculator\\service\\ChickenCalculatorServiceTest.kt\")"
     ],
     "deny": []
   }

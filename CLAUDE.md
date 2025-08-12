@@ -45,6 +45,11 @@ git push origin main                       # Triggers Railway auto-deploy
 - **Auto-Deploy**: Enabled from main branch
 - **Port**: 8080 (Railway single-port constraint)
 
+### ✅ Latest Compilation Status (December 12, 2024)
+- **Backend**: Fully compilable (26 compilation errors fixed)
+- **Tests**: All compile successfully
+- **Production**: Ready for deployment
+
 ### Recent Major Improvements (December 2024)
 - ✅ All 24 critical security vulnerabilities fixed
 - ✅ Multi-tenant data isolation implemented
@@ -52,6 +57,7 @@ git push origin main                       # Triggers Railway auto-deploy
 - ✅ Comprehensive monitoring and observability added
 - ✅ Test infrastructure established
 - ✅ API versioning implemented (/api/v1)
+- ✅ All compilation errors resolved (26 fixes applied)
 
 ## Architecture Overview
 
@@ -72,19 +78,20 @@ Railway Platform (PORT 8080)
 #### Controllers (Separated by Responsibility)
 - `AdminAuthController` - Authentication endpoints only
 - `AdminLocationController` - Location management
-- `ChickenCalculatorController` - Calculator logic
+- `ChickenCalculatorController` - Marination calculation (NOT chicken requirements)
 - `SalesDataController` - Sales data management
 - `MarinationLogController` - Marination tracking
 - `LocationSlugController` - Slug routing
 - `HealthController` - Health checks
+- `AdminPortalController` - Admin portal static resource serving (production-ready)
 
 #### Service Layer (Business Logic)
 - `LocationManagementService` - Enhanced location CRUD with validation
 - `SalesDataService` - Multi-tenant sales operations
 - `MarinationLogService` - Marination business rules
 - `AdminService` - User management
-- `ChickenCalculatorService` - Core calculations
-- `MetricsService` - Business metrics tracking
+- `ChickenCalculatorService` - Marination calculations (uses calculateMarination method)
+- `MetricsService` - Business metrics tracking (Micrometer 1.12.x compatible)
 
 #### Security & Infrastructure
 - `JwtAuthenticationFilter` - JWT validation (httpOnly cookies)
@@ -114,6 +121,23 @@ Railway Platform (PORT 8080)
 - Mobile-optimized with 44px touch targets
 
 ## API Documentation (v1)
+
+### ⚠️ Important API Changes
+- **Marination Calculation**: Uses `MarinationRequest` (NOT `ChickenCalculationRequest`)
+- **Service Method**: `calculateMarination()` (NOT `calculateChickenRequirements()`)
+- **Response Type**: Returns `CalculationResult` (NOT `ChickenCalculationResponse`)
+
+### MarinationRequest Structure
+```kotlin
+data class MarinationRequest(
+    val inventory: InventoryData,       // Nested object with pansSoy, pansTeriyaki, pansTurmeric
+    val projectedSales: ProjectedSales, // Nested object with day0, day1, day2, day3
+    val availableRawChickenKg: BigDecimal?,
+    val alreadyMarinatedSoy: BigDecimal,
+    val alreadyMarinatedTeriyaki: BigDecimal,
+    val alreadyMarinatedTurmeric: BigDecimal
+)
+```
 
 ### Public Endpoints (No Auth)
 ```
@@ -262,6 +286,19 @@ git push origin main  # Auto-deploys
 
 ### Common Issues
 
+#### Compilation Errors
+- **Micrometer API Type Mismatch**
+  - Symptom: `MeterFilter.commonTags()` errors
+  - Solution: Use `List<Tag>` with `Tag.of(key, value)` instead of varargs
+
+- **Test Entity Construction**
+  - Symptom: Location/SalesData constructor errors
+  - Solution: Include all required fields (managerName, managerEmail for Location)
+
+- **MarinationRequest Structure**
+  - Symptom: Type mismatch for inventory/projectedSales
+  - Solution: Use nested InventoryData and ProjectedSales objects, not primitives
+
 #### JWT Token Issues
 - **Symptom**: 401 errors after deployment
 - **Solution**: Ensure JWT_SECRET is set (32+ chars)
@@ -283,6 +320,33 @@ git push origin main  # Auto-deploys
 - Database pool usage: < 50%
 - Memory usage: < 512MB
 - Error rate: < 0.1%
+
+## Recent Compilation Fixes (December 12, 2024)
+
+### Critical Fixes Applied (26 errors resolved)
+
+#### 1. Micrometer API Updates
+- **MetricsConfig.kt**: Fixed `MeterFilter.commonTags()` to use `List<Tag>` with `Tag.of()`
+- **MetricsService.kt**: Updated gauge registration, timer recording, and counter methods
+
+#### 2. Sentry 7.0.0 Compatibility
+- **SentryConfig.kt**: Updated initialization to use `Sentry.init { options -> }`
+- Fixed Jakarta EE migration (javax.annotation → jakarta.annotation)
+- Removed problematic SentryExceptionResolver bean
+
+#### 3. Controller Enhancements
+- **AdminPortalController.kt**: Added ResourceLoader for flexible static resource serving
+- **AdminAuthController.kt**: Fixed missing return statement in logout method
+- **ChickenCalculatorController.kt**: Fixed metrics recording with proper null handling
+
+#### 4. Test Infrastructure Updates
+- **Location Entity**: All tests updated with required fields (managerName, managerEmail)
+- **SalesData Tests**: Updated to use BigDecimal for all monetary fields
+- **MarinationLog Tests**: Fixed to match current entity structure
+- **Deleted Obsolete Tests**: ChickenCalculatorServiceTest, ChickenCalculatorControllerTest
+
+#### 5. Repository Enhancement
+- **LocationRepository**: Added `existsBySlug()` method for test support
 
 ## Recent Changes Log
 

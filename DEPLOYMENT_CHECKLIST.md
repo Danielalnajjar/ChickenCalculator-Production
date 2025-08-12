@@ -21,6 +21,26 @@ DB_MIN_IDLE=2                                # Minimum idle connections
 DB_LEAK_THRESHOLD=60000                      # Connection leak detection (ms)
 ```
 
+## Pre-Deployment Verification
+
+### Compilation Status Check
+```bash
+# Verify backend compilation
+cd backend
+mvn clean compile         # Must succeed with no errors
+mvn test-compile          # Must succeed with no errors
+
+# Verify frontend builds
+cd ../admin-portal && npm run build
+cd ../frontend && npm run build
+```
+
+### Known Compilation Issues
+If you encounter compilation errors, see [COMPILATION_FIXES.md](COMPILATION_FIXES.md) for solutions to common issues:
+- Micrometer API type mismatches
+- Sentry 7.0.0 compatibility
+- Test entity construction errors
+
 ## Deployment Steps
 
 ### 1. Generate Secure Secrets
@@ -83,6 +103,8 @@ git push origin main
 - [ ] `/api/v1/*` endpoints working
 - [ ] Legacy `/api/*` endpoints still functional
 - [ ] Frontend using new versioned endpoints
+- [ ] Marination calculation using MarinationRequest (NOT ChickenCalculationRequest)
+- [ ] POST `/api/v1/calculator/calculate` returns CalculationResult
 
 ## Monitoring Endpoints
 
