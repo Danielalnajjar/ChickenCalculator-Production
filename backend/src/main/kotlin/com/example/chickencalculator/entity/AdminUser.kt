@@ -25,7 +25,10 @@ data class AdminUser(
     @Column(nullable = false)
     val createdAt: LocalDateTime = LocalDateTime.now(),
     
-    val lastLoginAt: LocalDateTime? = null
+    val lastLoginAt: LocalDateTime? = null,
+    
+    @Column(nullable = false)
+    val passwordChangeRequired: Boolean = false
 )
 
 enum class AdminRole {

@@ -6,6 +6,7 @@ import Login from './components/Login';
 import Dashboard from './components/Dashboard';
 import CreateLocation from './components/CreateLocation';
 import ManageLocations from './components/ManageLocations';
+import ChangePassword from './components/ChangePassword';
 import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/Layout';
 import './App.css';
@@ -18,6 +19,14 @@ function App() {
         <div className="min-h-screen bg-gray-50">
           <Routes>
             <Route path="/login" element={<Login />} />
+            <Route path="/change-password" element={
+              <ProtectedRoute>
+                <ChangePassword 
+                  isRequired={true} 
+                  onSuccess={() => window.location.href = '/admin/dashboard'} 
+                />
+              </ProtectedRoute>
+            } />
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route
               path="/dashboard"

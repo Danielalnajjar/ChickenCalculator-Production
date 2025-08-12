@@ -6,6 +6,7 @@ interface User {
   email: string;
   role: 'admin' | 'manager';
   name: string;
+  passwordChangeRequired?: boolean;
 }
 
 interface AuthContextType {
@@ -45,7 +46,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const response = await apiService.validateToken();
       
       if (response.ok && response.data) {
-        setUser(response.data as User);
+        const data = response.data as any;
+        const userData: User = {
+          id: data.id || '',
+          email: data.email || '',
+          name: data.name || '',
+          role: (data.role as 'admin' | 'manager') || 'admin',
+          passwordChangeRequired: data.passwordChangeRequired || false
+        };
+        setUser(userData);
       } else {
         sessionStorage.removeItem(TOKEN_KEY);
       }
@@ -72,7 +81,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           id: data.id || '',
           email: data.email || email,
           name: data.name || '',
-          role: (data.role as 'admin' | 'manager') || 'admin'
+          role: (data.role as 'admin' | 'manager') || 'admin',
+          passwordChangeRequired: data.passwordChangeRequired || false
         };
         setUser(userData);
         return true;

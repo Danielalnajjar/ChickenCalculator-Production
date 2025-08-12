@@ -29,7 +29,21 @@ export interface LocationResponse {
   slug: string;
 }
 
+export interface CsrfTokenResponse {
+  token: string;
+  headerName: string;
+  parameterName: string;
+}
+
+export interface PasswordChangeRequest {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
 class ApiService {
+  private csrfToken: string | null = null;
+
   /**
    * Get the authentication token from sessionStorage
    */
@@ -38,9 +52,67 @@ class ApiService {
   }
 
   /**
-   * Create headers with authentication token
+   * Get CSRF token from cookie
    */
-  private getHeaders(includeAuth: boolean = true): HeadersInit {
+  private getCsrfTokenFromCookie(): string | null {
+    const name = 'XSRF-TOKEN=';
+    const decodedCookie = decodeURIComponent(document.cookie);
+    const cookieArray = decodedCookie.split(';');
+    
+    for (let cookie of cookieArray) {
+      cookie = cookie.trim();
+      if (cookie.indexOf(name) === 0) {
+        return cookie.substring(name.length, cookie.length);
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Fetch CSRF token from server
+   */
+  private async fetchCsrfToken(): Promise<string | null> {
+    try {
+      const response = await fetch(`${API_BASE}/auth/csrf-token`, {
+        method: 'GET',
+        credentials: 'include', // Important for CSRF cookies
+      });
+      
+      if (response.ok) {
+        const data: CsrfTokenResponse = await response.json();
+        this.csrfToken = data.token;
+        return data.token;
+      }
+    } catch (error) {
+      console.error('Failed to fetch CSRF token:', error);
+    }
+    return null;
+  }
+
+  /**
+   * Get CSRF token (from cookie or server)
+   */
+  private async getCsrfToken(): Promise<string | null> {
+    // First try to get from cookie
+    let token = this.getCsrfTokenFromCookie();
+    
+    // If not in cookie, try cached token
+    if (!token && this.csrfToken) {
+      token = this.csrfToken;
+    }
+    
+    // If still no token, fetch from server
+    if (!token) {
+      token = await this.fetchCsrfToken();
+    }
+    
+    return token;
+  }
+
+  /**
+   * Create headers with authentication token and CSRF token
+   */
+  private async getHeaders(includeAuth: boolean = true, includeCsrf: boolean = false): Promise<HeadersInit> {
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
     };
@@ -49,6 +121,13 @@ class ApiService {
       const token = this.getToken();
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
+      }
+    }
+
+    if (includeCsrf) {
+      const csrfToken = await this.getCsrfToken();
+      if (csrfToken) {
+        headers['X-XSRF-TOKEN'] = csrfToken;
       }
     }
 
@@ -108,9 +187,11 @@ class ApiService {
    */
   async get<T>(endpoint: string, includeAuth: boolean = true): Promise<ApiResponse<T>> {
     try {
+      const headers = await this.getHeaders(includeAuth, false);
       const response = await fetch(`${API_BASE}${endpoint}`, {
         method: 'GET',
-        headers: this.getHeaders(includeAuth),
+        headers,
+        credentials: 'include', // Include cookies for CSRF
       });
       return this.handleResponse<T>(response);
     } catch (error) {
@@ -126,9 +207,14 @@ class ApiService {
    */
   async post<T>(endpoint: string, data?: any, includeAuth: boolean = true): Promise<ApiResponse<T>> {
     try {
+      // Include CSRF for all POST requests except login and CSRF token retrieval
+      const needsCsrf = !endpoint.includes('/auth/login') && !endpoint.includes('/auth/csrf-token');
+      const headers = await this.getHeaders(includeAuth, needsCsrf);
+      
       const response = await fetch(`${API_BASE}${endpoint}`, {
         method: 'POST',
-        headers: this.getHeaders(includeAuth),
+        headers,
+        credentials: 'include', // Include cookies for CSRF
         body: data ? JSON.stringify(data) : undefined,
       });
       return this.handleResponse<T>(response);
@@ -145,9 +231,11 @@ class ApiService {
    */
   async delete<T>(endpoint: string, includeAuth: boolean = true): Promise<ApiResponse<T>> {
     try {
+      const headers = await this.getHeaders(includeAuth, true); // DELETE requests need CSRF
       const response = await fetch(`${API_BASE}${endpoint}`, {
         method: 'DELETE',
-        headers: this.getHeaders(includeAuth),
+        headers,
+        credentials: 'include', // Include cookies for CSRF
       });
       return this.handleResponse<T>(response);
     } catch (error) {
@@ -159,12 +247,24 @@ class ApiService {
   }
 
   // Specific API methods
+
+  /**
+   * Initialize CSRF token (call after successful login)
+   */
+  async initializeCsrfToken(): Promise<void> {
+    await this.getCsrfToken();
+  }
   
   /**
    * Login (no auth required)
    */
   async login(email: string, password: string) {
-    return this.post('/auth/login', { email, password }, false);
+    const result = this.post('/auth/login', { email, password }, false);
+    // After successful login, initialize CSRF token for subsequent requests
+    if ((await result).ok) {
+      await this.initializeCsrfToken();
+    }
+    return result;
   }
 
   /**
@@ -207,6 +307,13 @@ class ApiService {
    */
   async deleteLocation(id: string) {
     return this.delete(`/locations/${id}`);
+  }
+
+  /**
+   * Change password
+   */
+  async changePassword(data: PasswordChangeRequest) {
+    return this.post('/auth/change-password', data);
   }
 }
 

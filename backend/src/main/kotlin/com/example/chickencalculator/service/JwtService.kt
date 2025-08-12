@@ -26,20 +26,21 @@ class JwtService {
     private val jwtExpiration: Long = 86400000
     
     private fun initializeKey(): Key {
-        // Try to use configured secret first
-        if (!jwtSecret.isNullOrBlank()) {
-            return SecretKeySpec(jwtSecret.toByteArray(), SignatureAlgorithm.HS256.jcaName)
-        }
-        
-        // Try environment variable as fallback
+        // Get JWT secret from environment variable (primary method)
         val envSecret = System.getenv("JWT_SECRET")
-        if (!envSecret.isNullOrBlank()) {
-            return SecretKeySpec(envSecret.toByteArray(), SignatureAlgorithm.HS256.jcaName)
+        
+        if (envSecret.isNullOrBlank()) {
+            logger.error("❌ CRITICAL SECURITY ERROR: JWT_SECRET environment variable is not set!")
+            throw IllegalStateException("JWT_SECRET environment variable must be configured for security")
         }
         
-        // Generate a key for development only
-        logger.warn("⚠️ JWT_SECRET not configured! Using generated key - NOT FOR PRODUCTION")
-        return Keys.secretKeyFor(SignatureAlgorithm.HS256)
+        if (envSecret.length < 32) {
+            logger.error("❌ CRITICAL SECURITY ERROR: JWT_SECRET must be at least 32 characters long!")
+            throw IllegalStateException("JWT_SECRET must be at least 32 characters for security")
+        }
+        
+        logger.info("✅ JWT_SECRET loaded successfully (${envSecret.length} characters)")
+        return SecretKeySpec(envSecret.toByteArray(), SignatureAlgorithm.HS256.jcaName)
     }
     
     fun generateToken(email: String, userId: Long, role: String): String {

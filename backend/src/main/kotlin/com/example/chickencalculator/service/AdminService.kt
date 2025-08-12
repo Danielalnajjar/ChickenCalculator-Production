@@ -41,14 +41,15 @@ class AdminService(private val adminUserRepository: AdminUserRepository) {
     }
     
     @Transactional
-    fun createAdminUser(email: String, password: String, name: String, role: AdminRole): AdminUser {
+    fun createAdminUser(email: String, password: String, name: String, role: AdminRole, passwordChangeRequired: Boolean = false): AdminUser {
         validatePassword(password) // Validate before hashing
         
         val adminUser = AdminUser(
             email = email,
             passwordHash = hashPassword(password), // Use proper BCrypt hashing
             name = name,
-            role = role
+            role = role,
+            passwordChangeRequired = passwordChangeRequired
         )
         return adminUserRepository.save(adminUser)
     }
@@ -110,7 +111,8 @@ class AdminService(private val adminUserRepository: AdminUserRepository) {
                     email = defaultEmail,
                     password = defaultPassword,
                     name = "System Administrator",
-                    role = AdminRole.ADMIN
+                    role = AdminRole.ADMIN,
+                    passwordChangeRequired = true // Force password change for default admin
                 )
                 
                 logger.info("Admin user created successfully with ID: {}", adminUser.id)
@@ -151,5 +153,34 @@ class AdminService(private val adminUserRepository: AdminUserRepository) {
     
     fun getAdminByEmail(email: String): AdminUser? {
         return adminUserRepository.findByEmail(email)
+    }
+    
+    @Transactional
+    fun changePassword(userId: Long, currentPassword: String, newPassword: String): Boolean {
+        val user = adminUserRepository.findById(userId).orElse(null) ?: return false
+        
+        // Verify current password
+        if (!verifyPassword(currentPassword, user.passwordHash)) {
+            logger.warn("Password change attempt with invalid current password for user: {}", user.email)
+            return false
+        }
+        
+        // Validate new password
+        try {
+            validatePassword(newPassword)
+        } catch (e: IllegalArgumentException) {
+            logger.warn("Password change attempt with invalid new password for user: {}: {}", user.email, e.message)
+            throw e
+        }
+        
+        // Update password and clear password change requirement
+        val updatedUser = user.copy(
+            passwordHash = hashPassword(newPassword),
+            passwordChangeRequired = false
+        )
+        
+        adminUserRepository.save(updatedUser)
+        logger.info("Password changed successfully for user: {}", user.email)
+        return true
     }
 }

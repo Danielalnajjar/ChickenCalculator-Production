@@ -125,7 +125,7 @@ git push origin main
 ### Railway MCP Server Setup
 ```bash
 # Set Railway API token (Windows)
-set RAILWAY_API_TOKEN=fee0f3ae-26c2-4111-8436-64d27c174c0c
+set RAILWAY_API_TOKEN=<YOUR_RAILWAY_API_TOKEN>
 
 # Add Railway MCP server to Claude Code
 claude mcp add railway -- npx -y @jasontanswe/railway-mcp

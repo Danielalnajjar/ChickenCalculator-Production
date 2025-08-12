@@ -1,5 +1,6 @@
 package com.example.chickencalculator.controller
 
+import com.example.chickencalculator.dto.PasswordChangeRequest
 import com.example.chickencalculator.entity.AdminUser
 import com.example.chickencalculator.entity.Location
 import com.example.chickencalculator.entity.LocationStatus
@@ -14,12 +15,14 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import io.swagger.v3.oas.annotations.tags.Tag
+import jakarta.servlet.http.HttpServletRequest
 import jakarta.validation.Valid
 import jakarta.validation.constraints.Email
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Size
 import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
+import org.springframework.security.web.csrf.CsrfToken
 import org.springframework.web.bind.annotation.*
 
 data class LoginRequest(
@@ -32,7 +35,14 @@ data class LoginRequest(
     val password: String
 )
 
-data class LoginResponse(val id: String, val email: String, val name: String, val role: String, val token: String?)
+data class LoginResponse(
+    val id: String, 
+    val email: String, 
+    val name: String, 
+    val role: String, 
+    val token: String?,
+    val passwordChangeRequired: Boolean = false
+)
 
 data class CreateLocationRequest(
     @field:NotBlank(message = "Location name is required")
@@ -64,6 +74,12 @@ data class DashboardStats(
     val errorLocations: Int,
     val totalTransactions: Long = 0,
     val totalRevenue: Double = 0.0
+)
+
+data class CsrfTokenResponse(
+    val token: String,
+    val headerName: String = "X-XSRF-TOKEN",
+    val parameterName: String = "_csrf"
 )
 
 @RestController
@@ -106,7 +122,8 @@ class AdminController(
                 email = adminUser.email,
                 name = adminUser.name,
                 role = adminUser.role.name.lowercase(),
-                token = token
+                token = token,
+                passwordChangeRequired = adminUser.passwordChangeRequired
             ))
         } else {
             ResponseEntity.status(401).build()
@@ -142,10 +159,79 @@ class AdminController(
                 email = adminUser.email,
                 name = adminUser.name,
                 role = adminUser.role.name.lowercase(),
-                token = null // Don't regenerate token on validation
+                token = null, // Don't regenerate token on validation
+                passwordChangeRequired = adminUser.passwordChangeRequired
             ))
         } else {
             ResponseEntity.status(401).build()
+        }
+    }
+    
+    @PostMapping("/auth/change-password")
+    @Operation(summary = "Change admin password", description = "Change the password for an authenticated admin user")
+    @SecurityRequirement(name = "bearerAuth")
+    @ApiResponses(value = [
+        ApiResponse(responseCode = "200", description = "Password changed successfully"),
+        ApiResponse(responseCode = "400", description = "Invalid request or password validation failed"),
+        ApiResponse(responseCode = "401", description = "Unauthorized - invalid token or current password")
+    ])
+    fun changePassword(
+        @RequestHeader("Authorization") authHeader: String?,
+        @Valid @RequestBody request: PasswordChangeRequest
+    ): ResponseEntity<Map<String, String>> {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return ResponseEntity.status(401).body(mapOf("error" to "Authentication required"))
+        }
+        
+        val token = authHeader.substring(7)
+        
+        if (!jwtService.validateToken(token)) {
+            return ResponseEntity.status(401).body(mapOf("error" to "Invalid token"))
+        }
+        
+        // Validate password confirmation
+        if (request.newPassword != request.confirmPassword) {
+            return ResponseEntity.badRequest().body(mapOf("error" to "New password and confirmation do not match"))
+        }
+        
+        val userId = jwtService.getUserIdFromToken(token)
+        if (userId == null) {
+            return ResponseEntity.status(401).body(mapOf("error" to "Invalid token"))
+        }
+        
+        return try {
+            val success = adminService.changePassword(userId, request.currentPassword, request.newPassword)
+            
+            if (success) {
+                ResponseEntity.ok(mapOf("message" to "Password changed successfully"))
+            } else {
+                ResponseEntity.status(401).body(mapOf("error" to "Invalid current password"))
+            }
+        } catch (e: IllegalArgumentException) {
+            ResponseEntity.badRequest().body(mapOf("error" to e.message.orEmpty()))
+        } catch (e: Exception) {
+            logger.error("Error changing password for user ID: $userId", e)
+            ResponseEntity.status(500).body(mapOf("error" to "Internal server error"))
+        }
+    }
+    
+    @GetMapping("/auth/csrf-token")
+    @Operation(summary = "Get CSRF token", description = "Retrieve CSRF token for secure state-changing requests")
+    @ApiResponses(value = [
+        ApiResponse(responseCode = "200", description = "CSRF token retrieved successfully"),
+        ApiResponse(responseCode = "500", description = "Failed to generate CSRF token")
+    ])
+    fun getCsrfToken(request: HttpServletRequest): ResponseEntity<CsrfTokenResponse> {
+        val csrfToken = request.getAttribute(CsrfToken::class.java.name) as? CsrfToken
+        return if (csrfToken != null) {
+            ResponseEntity.ok(CsrfTokenResponse(
+                token = csrfToken.token,
+                headerName = csrfToken.headerName,
+                parameterName = csrfToken.parameterName
+            ))
+        } else {
+            logger.error("Failed to retrieve CSRF token from request")
+            ResponseEntity.status(500).build()
         }
     }
     

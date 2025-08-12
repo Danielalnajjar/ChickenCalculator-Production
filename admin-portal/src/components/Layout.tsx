@@ -1,12 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import ChangePassword from './ChangePassword';
 import {
   BuildingStorefrontIcon,
   PlusIcon,
   Cog6ToothIcon,
   ArrowRightOnRectangleIcon,
-  ChartBarIcon
+  ChartBarIcon,
+  KeyIcon
 } from '@heroicons/react/24/outline';
 
 interface LayoutProps {
@@ -17,6 +19,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const [showChangePassword, setShowChangePassword] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -66,11 +69,18 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
           {/* User info and logout */}
           <div className="border-t border-gray-200 p-4">
+            <div className="mb-2">
+              <p className="text-sm font-medium text-gray-900">{user?.name}</p>
+              <p className="text-xs text-gray-500">{user?.email}</p>
+            </div>
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-900">{user?.name}</p>
-                <p className="text-xs text-gray-500">{user?.email}</p>
-              </div>
+              <button
+                onClick={() => setShowChangePassword(true)}
+                className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                title="Change Password"
+              >
+                <KeyIcon className="h-5 w-5" />
+              </button>
               <button
                 onClick={handleLogout}
                 className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
@@ -89,6 +99,18 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           {children}
         </main>
       </div>
+
+      {/* Change Password Modal */}
+      {showChangePassword && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <ChangePassword
+              onSuccess={() => setShowChangePassword(false)}
+              onCancel={() => setShowChangePassword(false)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

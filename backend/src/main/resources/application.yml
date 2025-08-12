@@ -45,6 +45,14 @@ spring:
       hibernate:
         format_sql: true
         use_sql_comments: false
+  
+  # Flyway configuration
+  flyway:
+    enabled: ${FLYWAY_ENABLED:true}
+    baseline-on-migrate: ${FLYWAY_BASELINE_ON_MIGRATE:true}
+    baseline-version: ${FLYWAY_BASELINE_VERSION:0}
+    locations: ${FLYWAY_LOCATIONS:classpath:db/migration}
+    validate-on-migrate: ${FLYWAY_VALIDATE_ON_MIGRATE:true}
 
 server:
   port: ${PORT:8080}

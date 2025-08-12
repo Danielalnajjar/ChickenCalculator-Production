@@ -29,7 +29,15 @@ class DefaultDataInitializer(
             return
         }
         
+        // Check if any location with slug "main" exists (likely from Flyway migration)
+        val existingMainLocation = locationRepository.findBySlug("main")
+        if (existingMainLocation != null) {
+            logger.info("Main location already exists from migration: ${existingMainLocation.name}")
+            return
+        }
+        
         // Create default location for the main calculator
+        // Note: This may not be needed if Flyway V1 migration creates the default location
         val defaultLocation = Location(
             name = "Main Calculator",
             slug = "main",
@@ -45,6 +53,9 @@ class DefaultDataInitializer(
             logger.info("✅ Default location created: ${saved.name} (ID: ${saved.id})")
         } catch (e: Exception) {
             logger.error("Failed to create default location: ${e.message}")
+            if (e.message?.contains("unique constraint", ignoreCase = true) == true) {
+                logger.info("Default location creation skipped - already exists via migration")
+            }
         }
     }
 }

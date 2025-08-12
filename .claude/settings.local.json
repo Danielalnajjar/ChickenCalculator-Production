@@ -39,7 +39,10 @@
       "Bash(dir:*)",
       "Bash(npm audit:*)",
       "mcp__railway__domain_list",
-      "WebFetch(domain:chickencalculator-production-production-2953.up.railway.app)"
+      "WebFetch(domain:chickencalculator-production-production-2953.up.railway.app)",
+      "Bash(git log:*)",
+      "Bash(mvn test:*)",
+      "Bash(mvn compile:*)"
     ],
     "deny": []
   }

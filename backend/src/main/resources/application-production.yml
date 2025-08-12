@@ -22,17 +22,28 @@ spring:
   # JPA Configuration
   jpa:
     hibernate:
-      ddl-auto: update
+      # SECURITY: Use validate to prevent automatic schema changes in production
+      ddl-auto: validate
     show-sql: false
     database-platform: ${DATABASE_PLATFORM:org.hibernate.dialect.H2Dialect}
     properties:
       hibernate:
         dialect: ${DATABASE_DIALECT:org.hibernate.dialect.H2Dialect}
     
-  # H2 Console (disable in production unless explicitly enabled)
+  # Flyway configuration for production
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 0
+    locations: classpath:db/migration
+    validate-on-migrate: true
+    # Disable clean and repair in production for safety
+    clean-disabled: true
+
+  # H2 Console - SECURITY: Explicitly disabled in production to prevent database access
   h2:
     console:
-      enabled: ${H2_CONSOLE_ENABLED:false}
+      enabled: false
       settings:
         web-allow-others: false
 
@@ -50,6 +61,11 @@ cors:
   allowed-methods: GET,POST,PUT,DELETE,OPTIONS
   allowed-headers: "*"
   allow-credentials: true
+
+# JWT Configuration - SECURITY: JWT_SECRET must be set as environment variable
+jwt:
+  secret: ${JWT_SECRET}
+  expiration: ${JWT_EXPIRATION:86400000}
 
 # Actuator for health checks
 management:
