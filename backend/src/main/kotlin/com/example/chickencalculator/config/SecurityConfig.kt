@@ -47,7 +47,9 @@ class SecurityConfig(
                     "/*.css",
                     "/*.html",
                     "/favicon.ico",
-                    "/manifest.json"
+                    "/manifest.json",
+                    "/{slug}",  // Location-specific routes
+                    "/{slug}/**"  // Location sub-routes
                 ).permitAll()
                 
                 // Admin endpoints - require authentication
