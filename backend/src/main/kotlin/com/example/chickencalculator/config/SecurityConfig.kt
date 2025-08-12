@@ -79,7 +79,6 @@ class SecurityConfig(
                     "${ApiVersionConfig.API_VERSION}/admin/auth/login",
                     "${ApiVersionConfig.API_VERSION}/admin/auth/register",
                     "${ApiVersionConfig.API_VERSION}/admin/auth/csrf-token",
-                    "${ApiVersionConfig.API_VERSION}/admin/auth/change-password",  // Allow manual auth handling
                     "${ApiVersionConfig.API_VERSION}/admin/auth/validate",  // Allow manual auth handling
                     "${ApiVersionConfig.API_VERSION}/calculator/**",
                     "${ApiVersionConfig.API_VERSION}/sales-data/**",
@@ -89,7 +88,6 @@ class SecurityConfig(
                     "/api/admin/auth/login",
                     "/api/admin/auth/register",
                     "/api/admin/auth/csrf-token",
-                    "/api/admin/auth/change-password",  // Allow manual auth handling
                     "/api/admin/auth/validate",  // Allow manual auth handling
                     "/api/calculator/**",
                     "/api/sales-data/**",

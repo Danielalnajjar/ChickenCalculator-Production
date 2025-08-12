@@ -187,31 +187,34 @@ class AdminAuthController(
         ApiResponse(responseCode = "401", description = "Unauthorized - invalid token or current password")
     ])
     fun changePassword(
-        @RequestHeader("Authorization") authHeader: String?,
         @Valid @RequestBody passwordRequest: PasswordChangeRequest,
         httpRequest: HttpServletRequest
     ): ResponseEntity<Map<String, String>> {
         val startTime = System.currentTimeMillis()
         
         return try {
-            val token = getTokenFromRequest(httpRequest, authHeader)
+            // Get authenticated user from Spring Security context
+            val authentication = org.springframework.security.core.context.SecurityContextHolder.getContext().authentication
             
-            logger.info("Password change attempt - Token present: {}", token != null)
+            logger.info("Password change attempt - Authentication present: {}", authentication != null)
+            logger.info("Authentication principal: {}", authentication?.principal)
             
-            if (token == null) {
-                logger.error("No JWT token found for password change request")
-                metricsService.recordAuthFailure("no_token")
+            if (authentication == null || !authentication.isAuthenticated) {
+                logger.error("No authentication found in SecurityContext for password change request")
+                metricsService.recordAuthFailure("no_authentication")
                 return ResponseEntity.status(401).body(mapOf("error" to "Authentication required"))
             }
             
-            val tokenValid = jwtService.validateToken(token)
-            logger.info("Token validation result: {}", tokenValid)
+            // Get user email from authentication principal
+            val userEmail = authentication.principal as? String
             
-            if (!tokenValid) {
-                logger.error("JWT token validation failed for password change")
-                metricsService.recordAuthFailure("invalid_token")
-                return ResponseEntity.status(401).body(mapOf("error" to "Invalid token"))
+            if (userEmail == null) {
+                logger.error("No user email found in authentication principal")
+                metricsService.recordAuthFailure("invalid_authentication")
+                return ResponseEntity.status(401).body(mapOf("error" to "Invalid authentication"))
             }
+            
+            logger.info("Password change attempt for user: {}", userEmail)
             
             // Validate password confirmation
             if (passwordRequest.newPassword != passwordRequest.confirmPassword) {
@@ -219,21 +222,21 @@ class AdminAuthController(
                 return ResponseEntity.badRequest().body(mapOf("error" to "New password and confirmation do not match"))
             }
             
-            val userId = jwtService.getUserIdFromToken(token)
-            logger.info("User ID from token: {}", userId)
+            // Get user from database by email
+            val adminUser = adminService.getAdminByEmail(userEmail)
             
-            if (userId == null) {
-                logger.error("No user ID found in JWT token claims")
-                metricsService.recordAuthFailure("invalid_token_claims")
-                return ResponseEntity.status(401).body(mapOf("error" to "Invalid token"))
+            if (adminUser == null) {
+                logger.error("Admin user not found in database: {}", userEmail)
+                metricsService.recordAuthFailure("user_not_found", userEmail)
+                return ResponseEntity.status(401).body(mapOf("error" to "User not found"))
             }
             
-            // AdminService.changePassword now throws appropriate exceptions
-            logger.info("Attempting to change password for user ID: {}", userId)
-            adminService.changePassword(userId, passwordRequest.currentPassword, passwordRequest.newPassword)
+            // Change password using the user's ID
+            logger.info("Attempting to change password for user ID: {}", adminUser.id)
+            adminService.changePassword(adminUser.id!!, passwordRequest.currentPassword, passwordRequest.newPassword)
             val processingTime = System.currentTimeMillis() - startTime
             
-            logger.info("Password changed successfully for user ID: {}", userId)
+            logger.info("Password changed successfully for user: {}", userEmail)
             metricsService.recordAdminOperation("change_password", true, processingTime)
             ResponseEntity.ok(mapOf("message" to "Password changed successfully"))
         } catch (e: Exception) {
