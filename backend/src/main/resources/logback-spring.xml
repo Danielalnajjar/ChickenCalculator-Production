@@ -50,12 +50,14 @@
         </appender>
     </springProfile>
     
-    <!-- File appender for persistent logging (optional) -->
-    <springProfile name="production">
+    <!-- File appender for persistent logging - DISABLED for Railway (uses console only) -->
+    <!-- Railway containers don't have persistent file storage, so we rely on centralized logging -->
+    <!-- Uncomment this section if deploying to a platform with persistent storage
+    <springProfile name="production-with-files">
         <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-            <file>/app/logs/chicken-calculator.log</file>
+            <file>/tmp/logs/chicken-calculator.log</file>
             <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-                <fileNamePattern>/app/logs/chicken-calculator.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+                <fileNamePattern>/tmp/logs/chicken-calculator.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
                 <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
                     <maxFileSize>100MB</maxFileSize>
                 </timeBasedFileNamingAndTriggeringPolicy>
@@ -87,6 +89,7 @@
             </encoder>
         </appender>
     </springProfile>
+    -->
     
     <!-- Logger configurations -->
     
@@ -139,9 +142,7 @@
     <root level="${ROOT_LOG_LEVEL}">
         <appender-ref ref="CONSOLE"/>
         <appender-ref ref="SENTRY"/>
-        <springProfile name="production">
-            <appender-ref ref="FILE"/>
-        </springProfile>
+        <!-- FILE appender removed for Railway deployment - logs are available via Railway dashboard -->
     </root>
     
 </configuration>
