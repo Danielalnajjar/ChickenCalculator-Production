@@ -77,18 +77,18 @@ class MetricsService @Autowired constructor(
     private val locationCounters = ConcurrentHashMap<String, Counter>()
     private val locationTimers = ConcurrentHashMap<String, Timer>()
     
-    // Gauges for current state
-    private val activeLocationsGauge = Gauge.builder("chicken.calculator.locations.active")
-        .description("Number of active locations")
-        .register(meterRegistry) { getActiveLocationsCount().toDouble() }
-        
-    private val activeSalesRecordsGauge = Gauge.builder("chicken.calculator.sales.active_records")
-        .description("Number of active sales records")
-        .register(meterRegistry) { getActiveSalesRecordsCount().toDouble() }
-        
-    private val activeMarinationRecordsGauge = Gauge.builder("chicken.calculator.marination.active_records")
-        .description("Number of active marination records")
-        .register(meterRegistry) { getActiveMarinationRecordsCount().toDouble() }
+    init {
+        // Initialize gauges - no need to store references
+        meterRegistry.gauge("chicken.calculator.locations.active", emptyList(), this) { 
+            it.getActiveLocationsCount().toDouble()
+        }
+        meterRegistry.gauge("chicken.calculator.sales.active_records", emptyList(), this) { 
+            it.getActiveSalesRecordsCount().toDouble()
+        }
+        meterRegistry.gauge("chicken.calculator.marination.active_records", emptyList(), this) { 
+            it.getActiveMarinationRecordsCount().toDouble()
+        }
+    }
     
     // Internal counters for gauges
     private val activeLocationsCount = AtomicInteger(0)
@@ -140,7 +140,11 @@ class MetricsService @Autowired constructor(
     }
     
     fun recordSalesDataOperation(locationSlug: String? = null, operation: String = "unknown", dataSize: Int = 0) {
-        salesDataCounter.increment(Tags.of("operation", operation))
+        salesDataCounter.increment()
+        Counter.builder("chicken.calculator.sales_data.by_operation.total")
+            .tag("operation", operation)
+            .register(meterRegistry)
+            .increment()
         
         if (locationSlug != null) {
             getLocationCounter(locationSlug, "sales_data").increment()
@@ -158,7 +162,12 @@ class MetricsService @Autowired constructor(
     }
     
     fun recordLocationAccess(locationSlug: String, accessType: String = "view") {
-        locationAccessCounter.increment(Tags.of("access_type", accessType, "location", locationSlug))
+        locationAccessCounter.increment()
+        Counter.builder("chicken.calculator.location_access.by_type.total")
+            .tag("access_type", accessType)
+            .tag("location", locationSlug)
+            .register(meterRegistry)
+            .increment()
         getLocationCounter(locationSlug, "access").increment()
     }
     
@@ -179,31 +188,42 @@ class MetricsService @Autowired constructor(
      */
     
     fun recordDatabaseOperation(operation: String, durationMs: Long) {
-        databaseTimer.record(Duration.ofMillis(durationMs), Tags.of("operation", operation))
+        databaseTimer.record(Duration.ofMillis(durationMs))
+        Timer.builder("chicken.calculator.database.by_operation.duration")
+            .tag("operation", operation)
+            .register(meterRegistry)
+            .record(Duration.ofMillis(durationMs))
     }
     
     fun recordLocationLookup(locationSlug: String, durationMs: Long, found: Boolean) {
-        locationLookupTimer.record(Duration.ofMillis(durationMs), 
-            Tags.of("location", locationSlug, "found", found.toString()))
+        locationLookupTimer.record(Duration.ofMillis(durationMs))
+        Timer.builder("chicken.calculator.location.lookup.by_location.duration")
+            .tag("location", locationSlug)
+            .tag("found", found.toString())
+            .register(meterRegistry)
+            .record(Duration.ofMillis(durationMs))
     }
     
     fun <T> timeOperation(operation: String, block: () -> T): T {
-        return Timer.Sample.start(meterRegistry).let { sample ->
-            try {
-                block().also {
-                    sample.stop(Timer.builder("chicken.calculator.operation.duration")
-                        .tag("operation", operation)
-                        .tag("status", "success")
-                        .register(meterRegistry))
-                }
-            } catch (e: Exception) {
-                sample.stop(Timer.builder("chicken.calculator.operation.duration")
+        val startTime = System.nanoTime()
+        return try {
+            block().also {
+                val duration = Duration.ofNanos(System.nanoTime() - startTime)
+                Timer.builder("chicken.calculator.operation.duration")
                     .tag("operation", operation)
-                    .tag("status", "error")
-                    .register(meterRegistry))
-                recordError(operation, e.javaClass.simpleName)
-                throw e
+                    .tag("status", "success")
+                    .register(meterRegistry)
+                    .record(duration)
             }
+        } catch (e: Exception) {
+            val duration = Duration.ofNanos(System.nanoTime() - startTime)
+            Timer.builder("chicken.calculator.operation.duration")
+                .tag("operation", operation)
+                .tag("status", "error")
+                .register(meterRegistry)
+                .record(duration)
+            recordError(operation, e.javaClass.simpleName)
+            throw e
         }
     }
     
@@ -212,7 +232,12 @@ class MetricsService @Autowired constructor(
      */
     
     fun recordError(operation: String, errorType: String = "unknown", locationSlug: String? = null) {
-        errorCounter.increment(Tags.of("operation", operation, "error_type", errorType))
+        errorCounter.increment()
+        Counter.builder("chicken.calculator.errors.by_type.total")
+            .tag("operation", operation)
+            .tag("error_type", errorType)
+            .register(meterRegistry)
+            .increment()
         
         if (locationSlug != null) {
             meterRegistry.counter("chicken.calculator.errors.by_location.total",
@@ -221,7 +246,11 @@ class MetricsService @Autowired constructor(
     }
     
     fun recordAuthFailure(reason: String = "unknown", username: String? = null) {
-        authFailureCounter.increment(Tags.of("reason", reason))
+        authFailureCounter.increment()
+        Counter.builder("chicken.calculator.auth.failures.by_reason.total")
+            .tag("reason", reason)
+            .register(meterRegistry)
+            .increment()
         
         if (username != null) {
             meterRegistry.counter("chicken.calculator.auth.failures.by_user.total",
@@ -292,21 +321,20 @@ class MetricsService @Autowired constructor(
      */
     
     fun incrementCustomCounter(name: String, tags: Map<String, String> = emptyMap()) {
-        val tagsArray = tags.map { Tag.of(it.key, it.value) }.toTypedArray()
-        meterRegistry.counter("chicken.calculator.custom.$name", *tagsArray).increment()
+        val builder = Counter.builder("chicken.calculator.custom.$name")
+        tags.forEach { (key, value) -> builder.tag(key, value) }
+        builder.register(meterRegistry).increment()
     }
     
     fun recordCustomTimer(name: String, durationMs: Long, tags: Map<String, String> = emptyMap()) {
-        val tagsArray = tags.map { Tag.of(it.key, it.value) }.toTypedArray()
-        meterRegistry.timer("chicken.calculator.custom.$name", *tagsArray)
-            .record(Duration.ofMillis(durationMs))
+        val builder = Timer.builder("chicken.calculator.custom.$name")
+        tags.forEach { (key, value) -> builder.tag(key, value) }
+        builder.register(meterRegistry).record(Duration.ofMillis(durationMs))
     }
     
     fun recordCustomGauge(name: String, value: Double, tags: Map<String, String> = emptyMap()) {
-        val tagsArray = tags.map { Tag.of(it.key, it.value) }.toTypedArray()
-        Gauge.builder("chicken.calculator.custom.$name")
-            .tags(*tagsArray)
-            .register(meterRegistry) { value }
+        val tagsArray = tags.map { Tag.of(it.key, it.value) }
+        meterRegistry.gauge("chicken.calculator.custom.$name", tagsArray, value)
     }
     
     /**
