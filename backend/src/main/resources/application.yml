@@ -14,8 +14,8 @@ spring:
       cache:
         period: 3600
   mvc:
-    # Pattern for static resources
-    static-path-pattern: /**
+    # Pattern for static resources - specific patterns to avoid API conflicts
+    static-path-pattern: /static/**,/resources/**,/admin/static/**,/assets/**
   datasource:
     # Use H2 for local development with PostgreSQL compatibility mode
     url: ${DATABASE_URL:jdbc:h2:file:./data/chicken-calculator-db;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1}
@@ -24,13 +24,14 @@ spring:
     password: ${DATABASE_PASSWORD:}
     # HikariCP connection pool settings - Railway optimized
     hikari:
-      maximum-pool-size: ${DB_POOL_SIZE:8}
-      minimum-idle: ${DB_MIN_IDLE:2}
+      maximum-pool-size: ${DB_POOL_SIZE:15}
+      minimum-idle: ${DB_MIN_IDLE:5}
       connection-timeout: ${DB_CONNECTION_TIMEOUT:30000}
-      idle-timeout: ${DB_IDLE_TIMEOUT:600000}
+      idle-timeout: ${DB_IDLE_TIMEOUT:300000}
       max-lifetime: ${DB_MAX_LIFETIME:1800000}
       pool-name: ChickenCalculatorPool
       connection-test-query: SELECT 1
+      leak-detection-threshold: ${DB_LEAK_DETECTION:60000}
   h2:
     console:
       enabled: ${H2_CONSOLE_ENABLED:true}

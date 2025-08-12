@@ -119,14 +119,18 @@ class HealthController(
             val processingTime = System.currentTimeMillis() - startTime
             
             if (result == 1) {
+                // Get database metadata safely using connection with proper resource management
+                val dbInfo = dataSource.connection.use { conn ->
+                    mapOf(
+                        "type" to conn.metaData.databaseProductName,
+                        "version" to conn.metaData.databaseProductVersion
+                    )
+                }
+                
                 metricsService.recordHealthCheck("database", true, processingTime)
                 ServiceHealth(
                     status = "UP",
-                    details = mapOf(
-                        "type" to dataSource.connection.metaData.databaseProductName,
-                        "version" to dataSource.connection.metaData.databaseProductVersion,
-                        "response_time_ms" to processingTime
-                    )
+                    details = dbInfo + mapOf("response_time_ms" to processingTime)
                 )
             } else {
                 metricsService.recordHealthCheck("database", false, processingTime)

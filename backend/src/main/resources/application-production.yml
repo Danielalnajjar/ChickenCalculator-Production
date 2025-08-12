@@ -10,10 +10,10 @@ spring:
     driver-class-name: ${DATABASE_DRIVER:org.h2.Driver}
     # HikariCP connection pool settings for Railway production
     hikari:
-      maximum-pool-size: ${DB_POOL_SIZE:5}
-      minimum-idle: ${DB_MIN_IDLE:2}
+      maximum-pool-size: ${DB_POOL_SIZE:15}
+      minimum-idle: ${DB_MIN_IDLE:5}
       connection-timeout: ${DB_CONNECTION_TIMEOUT:30000}
-      idle-timeout: ${DB_IDLE_TIMEOUT:600000}
+      idle-timeout: ${DB_IDLE_TIMEOUT:300000}
       max-lifetime: ${DB_MAX_LIFETIME:1800000}
       pool-name: ChickenCalculatorPool-Prod
       connection-test-query: SELECT 1

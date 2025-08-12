@@ -4,6 +4,7 @@ import com.example.chickencalculator.config.ApiVersionConfig
 import com.example.chickencalculator.model.CalculationResult
 import com.example.chickencalculator.model.MarinationRequest
 import com.example.chickencalculator.service.ChickenCalculatorService
+import com.example.chickencalculator.service.LocationManagementService
 import com.example.chickencalculator.service.MetricsService
 import io.micrometer.core.annotation.Timed
 import org.springframework.web.bind.annotation.*
@@ -18,7 +19,8 @@ import jakarta.servlet.http.HttpServletRequest
 )
 class ChickenCalculatorController(
     private val calculatorService: ChickenCalculatorService,
-    private val metricsService: MetricsService
+    private val metricsService: MetricsService,
+    private val locationManagementService: LocationManagementService
 ) {
     
     @PostMapping("/calculate")
@@ -69,6 +71,35 @@ class ChickenCalculatorController(
             result
         } catch (e: Exception) {
             metricsService.recordError("sales_data_check", e.javaClass.simpleName, locationSlug)
+            throw e
+        }
+    }
+    
+    @GetMapping("/locations")
+    @Timed(value = "chicken.calculator.locations.time", description = "Time taken to get public locations")
+    fun getPublicLocations(): List<Map<String, Any?>> {
+        val startTime = System.currentTimeMillis()
+        
+        return try {
+            val locations = locationManagementService.getActiveLocations()
+            val processingTime = System.currentTimeMillis() - startTime
+            
+            // Return only public information
+            val publicLocations = locations.map { location ->
+                mapOf(
+                    "id" to location.id,
+                    "name" to location.name,
+                    "slug" to location.slug,
+                    "address" to location.address
+                )
+            }
+            
+            // Record metrics
+            metricsService.recordDatabaseOperation("public_locations_fetch", processingTime)
+            
+            publicLocations
+        } catch (e: Exception) {
+            metricsService.recordError("public_locations", e.javaClass.simpleName)
             throw e
         }
     }
