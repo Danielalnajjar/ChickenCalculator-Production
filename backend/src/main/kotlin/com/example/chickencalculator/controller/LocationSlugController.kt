@@ -98,6 +98,12 @@ class LocationSlugController(
         val startTime = System.currentTimeMillis()
         logger.info("🔍 Checking location sub-route: $slug/$path")
         
+        // Skip admin routes - let AdminPortalController handle them
+        if (slug.lowercase() == "admin") {
+            logger.debug("Skipping admin route: $slug/$path")
+            return ResponseEntity.notFound().build()
+        }
+        
         try {
             // Check if this is a valid location slug
             val lookupStartTime = System.currentTimeMillis()

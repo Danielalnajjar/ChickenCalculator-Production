@@ -119,7 +119,7 @@ class AdminPortalController @Autowired constructor(
     }
     
     // Handle specific admin portal routes for React Router
-    @GetMapping("/admin/dashboard", "/admin/locations", "/admin/users", "/admin/reports", "/admin/settings")
+    @GetMapping("/admin/login", "/admin/dashboard", "/admin/locations", "/admin/users", "/admin/reports", "/admin/settings")
     fun serveAdminPortalRoutes(): ResponseEntity<Resource> {
         logger.info("🌐 Admin portal route requested")
         // For React Router routes, serve the index.html
