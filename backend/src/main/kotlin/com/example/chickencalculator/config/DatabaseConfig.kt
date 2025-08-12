@@ -21,7 +21,6 @@ class DatabaseConfig(private val environment: Environment) {
 
     @Bean
     @Primary
-    @ConfigurationProperties("spring.datasource.hikari")
     fun dataSource(): HikariDataSource {
         val databaseUrl = environment.getProperty("DATABASE_URL")
         

@@ -156,7 +156,10 @@
       "mcp__railway__deployment_status",
       "Bash(rm:*)",
       "Bash(git add:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "mcp__railway__service_info",
+      "mcp__railway__variable_set",
+      "mcp__railway__deployment_trigger"
     ],
     "deny": []
   }
