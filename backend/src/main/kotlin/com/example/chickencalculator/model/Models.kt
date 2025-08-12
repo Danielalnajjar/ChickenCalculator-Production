@@ -72,7 +72,24 @@ data class SalesTotals(
     val totalPortionsSoy: BigDecimal,
     val totalPortionsTeriyaki: BigDecimal,
     val totalPortionsTurmeric: BigDecimal
-)
+) {
+    /**
+     * Secondary constructor for JPA queries that return Double values.
+     * This is needed because JPA/Hibernate native queries with SUM() return Double,
+     * but we want to work with BigDecimal for precision in financial calculations.
+     */
+    constructor(
+        totalSales: Double,
+        totalPortionsSoy: Double,
+        totalPortionsTeriyaki: Double,
+        totalPortionsTurmeric: Double
+    ) : this(
+        BigDecimal.valueOf(totalSales),
+        BigDecimal.valueOf(totalPortionsSoy),
+        BigDecimal.valueOf(totalPortionsTeriyaki),
+        BigDecimal.valueOf(totalPortionsTurmeric)
+    )
+}
 
 /**
  * Request model for marination calculation
