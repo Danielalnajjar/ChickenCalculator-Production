@@ -113,7 +113,10 @@ class AdminService(private val adminUserRepository: AdminUserRepository) {
     @Transactional(rollbackFor = [Exception::class])
     fun initializeDefaultAdmin() {
         logger.info("Checking for existing admin users")
-        val forceReset = System.getenv("FORCE_ADMIN_RESET") == "true"
+        val forceResetEnv = System.getenv("FORCE_ADMIN_RESET")
+        logger.info("FORCE_ADMIN_RESET environment variable value: '{}'", forceResetEnv)
+        val forceReset = forceResetEnv == "true"
+        logger.info("FORCE_ADMIN_RESET parsed as: {}", forceReset)
         val adminCount = adminUserRepository.count()
         logger.info("Found {} admin users in database", adminCount)
         
