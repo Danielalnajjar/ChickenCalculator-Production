@@ -32,8 +32,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     // Check authentication status via cookie (no direct access to httpOnly cookie)
-    // Attempt to validate token with backend to check if user is logged in
-    validateToken();
+    // Don't validate token if we're on the login page to prevent redirect loops
+    const currentPath = window.location.pathname;
+    if (currentPath !== '/admin/login' && currentPath !== '/admin/login/') {
+      // Attempt to validate token with backend to check if user is logged in
+      validateToken();
+    } else {
+      // On login page, just set loading to false
+      setIsLoading(false);
+    }
   }, []);
 
   const validateToken = async () => {
