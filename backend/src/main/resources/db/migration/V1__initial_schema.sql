@@ -1,6 +1,9 @@
 -- Initial schema for ChickenCalculator application
 -- This migration creates all tables based on the existing JPA entities
 
+-- Create the main sequence for all entity IDs (PostgreSQL compatibility)
+CREATE SEQUENCE IF NOT EXISTS entity_id_seq START WITH 1 INCREMENT BY 1;
+
 -- Create admin_users table
 CREATE TABLE admin_users (
     id BIGINT PRIMARY KEY,
@@ -68,5 +71,5 @@ CREATE INDEX idx_marination_location ON marination_log(location_id);
 -- This ensures proper BCrypt hashing and environment-specific configurations
 
 -- Insert default main location
-INSERT INTO locations (name, slug, manager_name, manager_email, status, is_default, created_at, updated_at)
-VALUES ('Main Calculator', 'main', 'System Admin', 'admin@yourcompany.com', 'ACTIVE', TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+INSERT INTO locations (id, name, slug, manager_name, manager_email, status, is_default, created_at, updated_at)
+VALUES (nextval('entity_id_seq'), 'Main Calculator', 'main', 'System Admin', 'admin@yourcompany.com', 'ACTIVE', TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
