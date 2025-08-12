@@ -34,18 +34,39 @@ class DatabaseConfig(private val environment: Environment) {
             } else {
                 "jdbc:$databaseUrl"
             }
-            hikariConfig.jdbcUrl = jdbcUrl
-            hikariConfig.driverClassName = "org.postgresql.Driver"
             
-            // Extract username and password from URL if not using JDBC format
-            if (!databaseUrl.startsWith("jdbc:") && databaseUrl.contains("@")) {
-                val authPart = databaseUrl.substringAfter("://").substringBefore("@")
+            // For JDBC URLs with embedded credentials, we need to extract them and remove from URL
+            if (jdbcUrl.contains("@")) {
+                // Extract credentials from URL
+                val urlAfterProtocol = jdbcUrl.substringAfter("://")
+                val authPart = urlAfterProtocol.substringBefore("@")
+                val hostAndPath = urlAfterProtocol.substringAfter("@")
+                
                 if (authPart.contains(":")) {
                     val (username, password) = authPart.split(":", limit = 2)
                     hikariConfig.username = username
                     hikariConfig.password = password
+                    // Reconstruct URL without credentials
+                    hikariConfig.jdbcUrl = "jdbc:postgresql://$hostAndPath"
+                } else {
+                    hikariConfig.jdbcUrl = jdbcUrl
                 }
+            } else {
+                hikariConfig.jdbcUrl = jdbcUrl
             }
+            
+            // Railway provides credentials as separate env vars - use them if available
+            val pgUser = environment.getProperty("PGUSER")
+            val pgPassword = environment.getProperty("PGPASSWORD")
+            
+            if (!pgUser.isNullOrBlank()) {
+                hikariConfig.username = pgUser
+            }
+            if (!pgPassword.isNullOrBlank()) {
+                hikariConfig.password = pgPassword
+            }
+            
+            hikariConfig.driverClassName = "org.postgresql.Driver"
         } else {
             // Use H2 for local development
             hikariConfig.jdbcUrl = environment.getProperty("spring.datasource.url", 
