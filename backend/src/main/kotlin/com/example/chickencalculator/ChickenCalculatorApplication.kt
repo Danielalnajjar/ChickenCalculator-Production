@@ -3,12 +3,11 @@ package com.example.chickencalculator
 import com.example.chickencalculator.service.AdminService
 import org.springframework.boot.CommandLineRunner
 import org.springframework.boot.autoconfigure.SpringBootApplication
-import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration
 import org.springframework.boot.runApplication
 import org.springframework.context.annotation.Bean
 import org.springframework.scheduling.annotation.EnableAsync
 
-@SpringBootApplication(exclude = [FlywayAutoConfiguration::class])
+@SpringBootApplication
 @EnableAsync
 class ChickenCalculatorApplication {
     
