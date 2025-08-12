@@ -15,7 +15,7 @@ import java.math.BigDecimal
 @CrossOrigin(
     origins = ["http://localhost:3000", "http://localhost:8080", "https://yourcompany.com"],
     allowCredentials = "true",
-    allowedHeaders = ["Content-Type", "Authorization", "X-Requested-With"]
+    allowedHeaders = ["Content-Type", "Authorization", "X-Requested-With", "X-Location-Id"]
 )
 class SalesDataController(
     private val salesDataRepository: SalesDataRepository,
@@ -25,58 +25,95 @@ class SalesDataController(
     private val logger = LoggerFactory.getLogger(SalesDataController::class.java)
     
     @GetMapping
-    fun getAllSalesData(): List<SalesData> {
-        // Return sales data for default location only (public access)
-        val defaultLocation = locationRepository.findByIsDefaultTrue()
-        return if (defaultLocation != null) {
-            salesDataRepository.findByLocationIdOrderByDateDesc(defaultLocation.id)
-        } else {
-            emptyList()
-        }
+    fun getAllSalesData(
+        @RequestHeader("X-Location-Id", required = false) locationIdHeader: String?
+    ): List<SalesData> {
+        val locationId = getLocationId(locationIdHeader)
+        return salesDataRepository.findByLocationIdOrderByDateDesc(locationId)
     }
     
     @GetMapping("/totals")
-    fun getSalesTotals(): SalesTotals {
-        // Return totals for default location only
-        val defaultLocation = locationRepository.findByIsDefaultTrue()
-        return if (defaultLocation != null) {
-            salesDataRepository.getSalesTotalsByLocation(defaultLocation.id)
-        } else {
-            SalesTotals(BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO)
-        }
+    fun getSalesTotals(
+        @RequestHeader("X-Location-Id", required = false) locationIdHeader: String?
+    ): SalesTotals {
+        val locationId = getLocationId(locationIdHeader)
+        return salesDataRepository.getSalesTotalsByLocation(locationId)
     }
     
     @PostMapping
-    fun addSalesData(@RequestBody salesData: SalesData): SalesData {
-        // Auto-assign default location if not provided
-        val defaultLocation = locationRepository.findByIsDefaultTrue()
-            ?: throw ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Default location not found")
+    fun addSalesData(
+        @RequestBody salesData: SalesData,
+        @RequestHeader("X-Location-Id", required = false) locationIdHeader: String?
+    ): SalesData {
+        val locationId = getLocationId(locationIdHeader)
+        val location = locationRepository.findById(locationId).orElseThrow {
+            ResponseStatusException(HttpStatus.NOT_FOUND, "Location not found")
+        }
         
-        // Create new sales data with default location
-        val salesDataWithLocation = salesData.copy(location = defaultLocation)
+        // Create new sales data with specified location
+        val salesDataWithLocation = salesData.copy(location = location)
         
-        logger.info("Adding sales data for default location: ${defaultLocation.name}")
+        logger.info("Adding sales data for location: ${location.name} (ID: $locationId)")
         return salesDataRepository.save(salesDataWithLocation)
     }
     
     @DeleteMapping("/{id}")
-    fun deleteSalesData(@PathVariable id: Long) {
-        // Only allow deletion of sales data from default location
-        val defaultLocation = locationRepository.findByIsDefaultTrue()
-        if (defaultLocation != null) {
-            val salesData = salesDataRepository.findById(id).orElse(null)
-            if (salesData?.location?.id == defaultLocation.id) {
-                salesDataRepository.deleteById(id)
-            }
+    fun deleteSalesData(
+        @PathVariable id: Long,
+        @RequestHeader("X-Location-Id", required = false) locationIdHeader: String?
+    ) {
+        val locationId = getLocationId(locationIdHeader)
+        val salesData = salesDataRepository.findById(id).orElseThrow {
+            ResponseStatusException(HttpStatus.NOT_FOUND, "Sales data not found")
         }
+        
+        // Security check: ensure the sales data belongs to the requested location
+        if (salesData.location?.id != locationId) {
+            logger.warn("Attempted to delete sales data from different location. Data location: ${salesData.location?.id}, Requested location: $locationId")
+            throw ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot delete sales data from different location")
+        }
+        
+        salesDataRepository.deleteById(id)
+        logger.info("Deleted sales data ID: $id for location: $locationId")
     }
     
     @DeleteMapping
-    fun deleteAllSalesData() {
-        // Only delete sales data for default location
-        val defaultLocation = locationRepository.findByIsDefaultTrue()
-        if (defaultLocation != null) {
-            salesDataRepository.deleteByLocationId(defaultLocation.id)
+    fun deleteAllSalesData(
+        @RequestHeader("X-Location-Id", required = false) locationIdHeader: String?
+    ) {
+        val locationId = getLocationId(locationIdHeader)
+        
+        // Validate that the location exists
+        locationRepository.findById(locationId).orElseThrow {
+            ResponseStatusException(HttpStatus.NOT_FOUND, "Location not found")
+        }
+        
+        salesDataRepository.deleteByLocationId(locationId)
+        logger.info("Deleted all sales data for location: $locationId")
+    }
+    
+    /**
+     * Extract location ID from request header or fallback to default location
+     * This ensures backward compatibility while enabling multi-tenant support
+     */
+    private fun getLocationId(locationIdHeader: String?): Long {
+        return if (locationIdHeader != null) {
+            try {
+                val locationId = locationIdHeader.toLong()
+                // Validate that the location exists
+                locationRepository.findById(locationId).orElseThrow {
+                    ResponseStatusException(HttpStatus.NOT_FOUND, "Location with ID $locationId not found")
+                }
+                locationId
+            } catch (e: NumberFormatException) {
+                logger.error("Invalid location ID format: $locationIdHeader")
+                throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid location ID format")
+            }
+        } else {
+            // Fallback to default location for backward compatibility
+            val defaultLocation = locationRepository.findByIsDefaultTrue()
+                ?: throw ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "No default location found")
+            defaultLocation.id
         }
     }
 }

@@ -12,6 +12,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository
+import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler
 import org.springframework.web.cors.CorsConfiguration
 import org.springframework.web.cors.CorsConfigurationSource
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource
@@ -27,7 +29,29 @@ class SecurityConfig(
     @Primary
     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
         http
-            .csrf { it.disable() }
+            .csrf { csrf ->
+                csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                    .csrfTokenRequestHandler(CsrfTokenRequestAttributeHandler())
+                    .ignoringRequestMatchers(
+                        "/api/admin/auth/login", // Allow login without CSRF
+                        "/api/admin/auth/csrf-token", // Allow CSRF token retrieval
+                        "/api/health/**",
+                        "/actuator/health",
+                        "/api/calculator/**",
+                        "/api/sales-data/**",
+                        "/api/marination-log/**",
+                        "/",
+                        "/static/**",
+                        "/admin/**",
+                        "/*.js",
+                        "/*.css",
+                        "/*.html",
+                        "/favicon.ico",
+                        "/manifest.json",
+                        "/{slug}",
+                        "/{slug}/**"
+                    )
+            }
             .cors { it.configurationSource(corsConfigurationSource()) }
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .authorizeHttpRequests { auth ->
@@ -35,6 +59,7 @@ class SecurityConfig(
                 auth.requestMatchers(
                     "/api/admin/auth/login",
                     "/api/admin/auth/register",
+                    "/api/admin/auth/csrf-token", // Allow CSRF token retrieval
                     "/api/health/**",
                     "/actuator/health",
                     "/api/calculator/**",  // Public calculator endpoints
@@ -86,9 +111,11 @@ class SecurityConfig(
             "Content-Type",
             "Accept",
             "Origin",
-            "X-Requested-With"
+            "X-Requested-With",
+            "X-XSRF-TOKEN",
+            "X-Location-Id"
         )
-        configuration.exposedHeaders = listOf("Authorization")
+        configuration.exposedHeaders = listOf("Authorization", "X-Location-Id", "X-Location-Name", "X-Location-Slug")
         configuration.allowCredentials = true
         configuration.maxAge = 3600L
 
