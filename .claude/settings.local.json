@@ -141,7 +141,20 @@
       "mcp__railway__volume_list",
       "mcp__railway__project_environments",
       "mcp__railway__configure_api_token",
-      "mcp__railway__project_list"
+      "mcp__railway__project_list",
+      "mcp__railway__list_service_variables",
+      "mcp__railway__variable_bulk_set",
+      "mcp__railway__service_list",
+      "mcp__railway__database_list_types",
+      "mcp__railway__template_deploy",
+      "mcp__railway__template_get_workflow_status",
+      "mcp__railway__variable_delete",
+      "mcp__railway__service_restart",
+      "mcp__railway__deployment_list",
+      "mcp__railway__deployment_logs",
+      "WebFetch(domain:chickencalculator-production-production-2953.up.railway.app)",
+      "mcp__railway__deployment_status",
+      "Bash(rm:*)"
     ],
     "deny": []
   }
