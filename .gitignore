@@ -11,6 +11,9 @@ target/
 *.jar
 *.war
 
+# Static resources (should be built during deployment)
+backend/src/main/resources/static/
+
 # IDE files
 .vscode/
 .idea/
@@ -22,6 +25,7 @@ target/
 .DS_Store
 Thumbs.db
 *.log
+nul
 
 # Environment variables
 .env

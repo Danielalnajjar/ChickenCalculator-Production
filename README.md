@@ -191,14 +191,12 @@ DATABASE_URL=postgresql://...            # Production only
 ## 📚 Documentation
 
 ### For Developers
-- [CLAUDE.md](CLAUDE.md) - Comprehensive development guide
+- [CLAUDE.md](CLAUDE.md) - Comprehensive development guide with deployment checklist
 - [ARCHITECTURE.md](ARCHITECTURE.md) - System design documentation
-- [DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md) - Production deployment guide
 
 ### Implementation Guides
 - [FLYWAY_IMPLEMENTATION.md](FLYWAY_IMPLEMENTATION.md) - Database migration setup
 - [METRICS_IMPLEMENTATION.md](METRICS_IMPLEMENTATION.md) - Monitoring configuration
-- [COMPILATION_FIXES.md](COMPILATION_FIXES.md) - Detailed compilation error solutions
 
 ## 🎯 Production Readiness
 

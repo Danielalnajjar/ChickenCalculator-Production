@@ -20,15 +20,33 @@ class AdminService(private val adminUserRepository: AdminUserRepository) {
     
     @Transactional(rollbackFor = [Exception::class])
     fun authenticate(email: String, password: String): AdminUser {
-        logger.debug("Authentication attempt for email: {}", email)
-        val user = adminUserRepository.findByEmail(email)
-            ?: throw InvalidCredentialsException(email)
+        logger.info("Authentication attempt for email: {}", email)
         
-        logger.debug("User found: {}, verifying password", user.email)
+        // Log all admin users for debugging
+        val allAdmins = adminUserRepository.findAll()
+        logger.info("Total admin users in database: {}", allAdmins.size)
+        allAdmins.forEach { admin ->
+            logger.info("Admin user: email={}, id={}, passwordChangeRequired={}", 
+                admin.email, admin.id, admin.passwordChangeRequired)
+        }
+        
+        val user = adminUserRepository.findByEmail(email)
+        if (user == null) {
+            logger.error("User not found in database: {}", email)
+            logger.info("Available emails: {}", allAdmins.map { it.email })
+            throw InvalidCredentialsException(email)
+        }
+        
+        logger.info("User found: email={}, id={}, passwordHash starts with: {}", 
+            user.email, user.id, user.passwordHash.take(10))
+        
         val passwordMatches = verifyPassword(password, user.passwordHash)
+        logger.info("Password verification result: {}", passwordMatches)
         
         if (!passwordMatches) {
-            logger.warn("Password verification failed for: {}", user.email)
+            logger.error("Password verification failed for: {}", user.email)
+            logger.info("Provided password length: {}, Hash length: {}", 
+                password.length, user.passwordHash.length)
             throw InvalidCredentialsException(email)
         }
         

@@ -1,8 +1,13 @@
 package com.example.chickencalculator.service
 
 import com.example.chickencalculator.entity.Location
+import com.example.chickencalculator.entity.LocationStatus
 import com.example.chickencalculator.exception.LocationNotFoundException
 import com.example.chickencalculator.repository.LocationRepository
+import com.example.chickencalculator.repository.SalesDataRepository
+import com.example.chickencalculator.repository.MarinationLogRepository
+import org.springframework.web.server.ResponseStatusException
+import org.springframework.http.HttpStatus
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
@@ -18,13 +23,19 @@ import java.time.LocalDateTime
 import java.util.*
 
 @ExtendWith(MockitoExtension::class)
-class LocationServiceTest {
+class LocationManagementServiceTest {
 
     @Mock
     private lateinit var locationRepository: LocationRepository
+    
+    @Mock
+    private lateinit var salesDataRepository: SalesDataRepository
+    
+    @Mock
+    private lateinit var marinationLogRepository: MarinationLogRepository
 
     @InjectMocks
-    private lateinit var locationService: LocationService
+    private lateinit var locationManagementService: LocationManagementService
 
     private lateinit var testLocation: Location
 
@@ -37,7 +48,10 @@ class LocationServiceTest {
             managerName = "Test Manager",
             managerEmail = "manager@test.com",
             address = "123 Test Street",
-            createdAt = LocalDateTime.now()
+            status = LocationStatus.ACTIVE,
+            createdAt = LocalDateTime.now(),
+            updatedAt = LocalDateTime.now(),
+            isDefault = false
         )
     }
     
@@ -57,7 +71,10 @@ class LocationServiceTest {
             managerName = managerName,
             managerEmail = managerEmail,
             address = address,
-            createdAt = LocalDateTime.now()
+            status = LocationStatus.ACTIVE,
+            createdAt = LocalDateTime.now(),
+            updatedAt = LocalDateTime.now(),
+            isDefault = false
         )
     }
 
@@ -73,7 +90,7 @@ class LocationServiceTest {
             whenever(locationRepository.findBySlug(slug)).thenReturn(testLocation)
 
             // When
-            val result = locationService.getLocationBySlug(slug)
+            val result = locationManagementService.getLocationBySlug(slug)
 
             // Then
             assertNotNull(result)
@@ -90,7 +107,7 @@ class LocationServiceTest {
             whenever(locationRepository.findBySlug(slug)).thenReturn(null)
 
             // When
-            val result = locationService.getLocationBySlug(slug)
+            val result = locationManagementService.getLocationBySlug(slug)
 
             // Then
             assertNull(result)
@@ -105,7 +122,7 @@ class LocationServiceTest {
             whenever(locationRepository.findBySlug(slug)).thenReturn(null)
 
             // When
-            val result = locationService.getLocationBySlug(slug)
+            val result = locationManagementService.getLocationBySlug(slug)
 
             // Then
             assertNull(result)
@@ -120,7 +137,7 @@ class LocationServiceTest {
             whenever(locationRepository.findBySlug(slug)).thenReturn(null)
 
             // When
-            val result = locationService.getLocationBySlug(slug)
+            val result = locationManagementService.getLocationBySlug(slug)
 
             // Then
             assertNull(result) // Assuming slugs are case-sensitive
@@ -133,23 +150,24 @@ class LocationServiceTest {
     inner class GetAllLocationsTests {
 
         @Test
-        @DisplayName("Should return all locations")
+        @DisplayName("Should return all locations sorted by name")
         fun testGetAllLocations() {
             // Given
             val locations = listOf(
-                testLocation,
+                testLocation, // "Test Restaurant"
                 createTestLocation(2L, "Another Restaurant", "another-restaurant")
             )
             whenever(locationRepository.findAll()).thenReturn(locations)
 
             // When
-            val result = locationService.getAllLocations()
+            val result = locationManagementService.getAllLocations()
 
             // Then
             assertNotNull(result)
             assertEquals(2, result.size)
-            assertEquals(locations[0].name, result[0].name)
-            assertEquals(locations[1].name, result[1].name)
+            // Results are sorted by name, so "Another Restaurant" comes first
+            assertEquals("Another Restaurant", result[0].name)
+            assertEquals("Test Restaurant", result[1].name)
             verify(locationRepository).findAll()
         }
 
@@ -160,7 +178,7 @@ class LocationServiceTest {
             whenever(locationRepository.findAll()).thenReturn(emptyList())
 
             // When
-            val result = locationService.getAllLocations()
+            val result = locationManagementService.getAllLocations()
 
             // Then
             assertNotNull(result)
@@ -181,7 +199,7 @@ class LocationServiceTest {
             whenever(locationRepository.findById(locationId)).thenReturn(Optional.of(testLocation))
 
             // When
-            val result = locationService.getLocationById(locationId)
+            val result = locationManagementService.getLocationById(locationId)
 
             // Then
             assertNotNull(result)
@@ -198,9 +216,10 @@ class LocationServiceTest {
             whenever(locationRepository.findById(locationId)).thenReturn(Optional.empty())
 
             // When & Then
-            assertThrows<LocationNotFoundException> {
-                locationService.getLocationByIdOrThrow(locationId)
+            val exception = assertThrows<ResponseStatusException> {
+                locationManagementService.getLocationByIdOrThrow(locationId)
             }
+            assertEquals(HttpStatus.NOT_FOUND, exception.statusCode)
             verify(locationRepository).findById(locationId)
         }
 
@@ -212,9 +231,10 @@ class LocationServiceTest {
             whenever(locationRepository.findById(locationId)).thenReturn(Optional.empty())
 
             // When & Then
-            assertThrows<LocationNotFoundException> {
-                locationService.getLocationByIdOrThrow(locationId)
+            val exception = assertThrows<ResponseStatusException> {
+                locationManagementService.getLocationByIdOrThrow(locationId)
             }
+            assertEquals(HttpStatus.NOT_FOUND, exception.statusCode)
             verify(locationRepository).findById(locationId)
         }
     }
@@ -235,11 +255,12 @@ class LocationServiceTest {
                 slug = expectedSlug
             )
             
-            whenever(locationRepository.existsBySlug(expectedSlug)).thenReturn(false)
+            whenever(locationRepository.findByNameIgnoreCase(locationName)).thenReturn(null)
+            whenever(locationRepository.findBySlug(expectedSlug)).thenReturn(null)
             whenever(locationRepository.save(any<Location>())).thenReturn(savedLocation)
 
             // When
-            val result = locationService.createLocation(
+            val result = locationManagementService.createLocation(
                 name = locationName,
                 address = "Test Address",
                 managerName = "Test Manager",
@@ -250,7 +271,7 @@ class LocationServiceTest {
             assertNotNull(result)
             assertEquals(locationName, result.name)
             assertEquals(expectedSlug, result.slug)
-            verify(locationRepository).existsBySlug(expectedSlug)
+            verify(locationRepository).findBySlug(expectedSlug)
             verify(locationRepository).save(any<Location>())
         }
 
@@ -262,8 +283,9 @@ class LocationServiceTest {
             val baseSlug = "test-restaurant"
             val uniqueSlug = "test-restaurant-1"
             
-            whenever(locationRepository.existsBySlug(baseSlug)).thenReturn(true)
-            whenever(locationRepository.existsBySlug(uniqueSlug)).thenReturn(false)
+            whenever(locationRepository.findByNameIgnoreCase(locationName)).thenReturn(null)
+            whenever(locationRepository.findBySlug(baseSlug)).thenReturn(testLocation) // Slug is taken
+            whenever(locationRepository.findBySlug(uniqueSlug)).thenReturn(null)
             
             val savedLocation = createTestLocation(
                 id = 3L,
@@ -273,7 +295,7 @@ class LocationServiceTest {
             whenever(locationRepository.save(any<Location>())).thenReturn(savedLocation)
 
             // When
-            val result = locationService.createLocation(
+            val result = locationManagementService.createLocation(
                 name = locationName,
                 address = "Test Address",
                 managerName = "Test Manager",
@@ -284,8 +306,8 @@ class LocationServiceTest {
             assertNotNull(result)
             assertEquals(locationName, result.name)
             assertEquals(uniqueSlug, result.slug)
-            verify(locationRepository).existsBySlug(baseSlug)
-            verify(locationRepository).existsBySlug(uniqueSlug)
+            verify(locationRepository).findBySlug(baseSlug)
+            verify(locationRepository).findBySlug(uniqueSlug)
         }
 
         @Test
@@ -295,7 +317,8 @@ class LocationServiceTest {
             val locationName = "Mike's Chicken & Grill!"
             val expectedSlug = "mikes-chicken-grill"
             
-            whenever(locationRepository.existsBySlug(expectedSlug)).thenReturn(false)
+            whenever(locationRepository.findByNameIgnoreCase(locationName)).thenReturn(null)
+            whenever(locationRepository.findBySlug(expectedSlug)).thenReturn(null)
             
             val savedLocation = createTestLocation(
                 id = 4L,
@@ -305,7 +328,7 @@ class LocationServiceTest {
             whenever(locationRepository.save(any<Location>())).thenReturn(savedLocation)
 
             // When
-            val result = locationService.createLocation(
+            val result = locationManagementService.createLocation(
                 name = locationName,
                 address = "Test Address",
                 managerName = "Test Manager",
@@ -325,14 +348,15 @@ class LocationServiceTest {
             val locationName = ""
 
             // When & Then
-            assertThrows<IllegalArgumentException> {
-                locationService.createLocation(
+            val exception = assertThrows<ResponseStatusException> {
+                locationManagementService.createLocation(
                     name = locationName,
                     address = "Test Address",
                     managerName = "Test Manager",
                     managerEmail = "test@example.com"
                 )
             }
+            assertEquals(HttpStatus.BAD_REQUEST, exception.statusCode)
         }
 
         @Test
@@ -342,14 +366,15 @@ class LocationServiceTest {
             val locationName = "   "
 
             // When & Then
-            assertThrows<IllegalArgumentException> {
-                locationService.createLocation(
+            val exception = assertThrows<ResponseStatusException> {
+                locationManagementService.createLocation(
                     name = locationName,
                     address = "Test Address",
                     managerName = "Test Manager",
                     managerEmail = "test@example.com"
                 )
             }
+            assertEquals(HttpStatus.BAD_REQUEST, exception.statusCode)
         }
     }
 
@@ -362,13 +387,18 @@ class LocationServiceTest {
         fun testDeleteLocation() {
             // Given
             val locationId = 1L
-            whenever(locationRepository.existsById(locationId)).thenReturn(true)
+            val location = testLocation.copy(id = locationId, isDefault = false)
+            whenever(locationRepository.findById(locationId)).thenReturn(Optional.of(location))
+            whenever(salesDataRepository.findByLocationIdOrderByDateDesc(locationId)).thenReturn(emptyList())
+            whenever(marinationLogRepository.findByLocationOrderByTimestampDesc(location)).thenReturn(emptyList())
 
             // When
-            locationService.deleteLocation(locationId)
+            val result = locationManagementService.deleteLocation(locationId)
 
             // Then
-            verify(locationRepository).existsById(locationId)
+            assertTrue(result.success)
+            assertFalse(result.softDelete)
+            verify(locationRepository).findById(locationId)
             verify(locationRepository).deleteById(locationId)
         }
 
@@ -377,13 +407,14 @@ class LocationServiceTest {
         fun testDeleteNonExistentLocation() {
             // Given
             val locationId = 999L
-            whenever(locationRepository.existsById(locationId)).thenReturn(false)
+            whenever(locationRepository.findById(locationId)).thenReturn(Optional.empty())
 
             // When & Then
-            assertThrows<LocationNotFoundException> {
-                locationService.deleteLocation(locationId)
+            val exception = assertThrows<ResponseStatusException> {
+                locationManagementService.deleteLocation(locationId)
             }
-            verify(locationRepository).existsById(locationId)
+            assertEquals(HttpStatus.NOT_FOUND, exception.statusCode)
+            verify(locationRepository).findById(locationId)
             verify(locationRepository, never()).deleteById(any())
         }
     }
@@ -401,13 +432,14 @@ class LocationServiceTest {
             val locationName = "Simple Name"
             val expectedSlug = "simple-name"
             
-            whenever(locationRepository.existsBySlug(expectedSlug)).thenReturn(false)
+            whenever(locationRepository.findByNameIgnoreCase(locationName)).thenReturn(null)
+            whenever(locationRepository.findBySlug(expectedSlug)).thenReturn(null)
             whenever(locationRepository.save(any<Location>())).thenAnswer { 
                 val location = it.arguments[0] as Location
                 location.copy(id = 1L)
             }
 
-            val result = locationService.createLocation(
+            val result = locationManagementService.createLocation(
                 name = locationName,
                 address = "Test Address",
                 managerName = "Test Manager",
@@ -423,13 +455,14 @@ class LocationServiceTest {
             val locationName = "Multiple    Spaces"
             val expectedSlug = "multiple-spaces"
             
-            whenever(locationRepository.existsBySlug(expectedSlug)).thenReturn(false)
+            whenever(locationRepository.findByNameIgnoreCase(locationName)).thenReturn(null)
+            whenever(locationRepository.findBySlug(expectedSlug)).thenReturn(null)
             whenever(locationRepository.save(any<Location>())).thenAnswer { 
                 val location = it.arguments[0] as Location
                 location.copy(id = 1L)
             }
 
-            val result = locationService.createLocation(
+            val result = locationManagementService.createLocation(
                 name = locationName,
                 address = "Test Address",
                 managerName = "Test Manager",

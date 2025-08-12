@@ -1,6 +1,6 @@
 package com.example.chickencalculator.controller
 
-import com.example.chickencalculator.service.LocationService
+import com.example.chickencalculator.service.LocationManagementService
 import com.example.chickencalculator.service.MetricsService
 import io.micrometer.core.annotation.Timed
 import org.slf4j.LoggerFactory
@@ -15,7 +15,7 @@ import java.io.File
 
 @Controller
 class LocationSlugController(
-    private val locationService: LocationService,
+    private val locationManagementService: LocationManagementService,
     private val metricsService: MetricsService
 ) {
     private val logger = LoggerFactory.getLogger(LocationSlugController::class.java)
@@ -45,7 +45,7 @@ class LocationSlugController(
             
             // Check if this is a valid location slug
             val lookupStartTime = System.currentTimeMillis()
-            val location = locationService.getLocationBySlug(slug)
+            val location = locationManagementService.getLocationBySlug(slug)
             val lookupTime = System.currentTimeMillis() - lookupStartTime
             
             if (location != null) {
@@ -107,7 +107,7 @@ class LocationSlugController(
         try {
             // Check if this is a valid location slug
             val lookupStartTime = System.currentTimeMillis()
-            val location = locationService.getLocationBySlug(slug)
+            val location = locationManagementService.getLocationBySlug(slug)
             val lookupTime = System.currentTimeMillis() - lookupStartTime
             
             if (location != null) {

@@ -282,6 +282,76 @@ git add . && git commit -m "changes"
 git push origin main  # Auto-deploys
 ```
 
+## Deployment Checklist
+
+### Pre-Deployment Verification
+```bash
+# Verify backend compilation
+cd backend
+mvn clean compile         # Must succeed with no errors
+mvn test-compile          # Must succeed with no errors
+
+# Verify frontend builds
+cd ../admin-portal && npm run build
+cd ../frontend && npm run build
+```
+
+### Generate Secure Secrets
+```bash
+# Generate JWT Secret (minimum 32 characters)
+openssl rand -base64 48
+
+# Generate Admin Password (must meet complexity requirements)
+# - At least 8 characters
+# - Contains uppercase, lowercase, and numbers
+```
+
+### Post-Deployment Verification
+
+#### Health Checks
+- `/api/health` returns UP status
+- `/actuator/health` shows component health
+- Database connection verified
+
+#### Security Verification
+- Admin login requires password change on first use
+- CSRF tokens working (check browser DevTools)
+- JWT stored in httpOnly cookies (not sessionStorage)
+- H2 console inaccessible (`/h2-console` returns 403)
+
+#### Monitoring
+- `/actuator/prometheus` accessible
+- Metrics being collected
+- Sentry receiving error reports (trigger test error)
+- Correlation IDs in response headers
+
+#### Multi-Tenant Functionality
+- Create test location via admin portal
+- Access location via slug URL
+- Verify data isolation between locations
+- Test sales data and marination logs per location
+
+#### Accessibility & Mobile
+- Mobile navigation hamburger menu works
+- Forms have proper ARIA labels
+- Color contrast meets WCAG standards
+- Touch targets are 44px minimum
+
+#### API Versioning
+- `/api/v1/*` endpoints working
+- Legacy `/api/*` endpoints still functional
+- Frontend using new versioned endpoints
+- Marination calculation using MarinationRequest (NOT ChickenCalculationRequest)
+- POST `/api/v1/calculator/calculate` returns CalculationResult
+
+### First Admin Login
+
+1. Navigate to `/admin`
+2. Login with `admin@yourcompany.com` and configured password
+3. **You will be forced to change password**
+4. Set new secure password
+5. Access admin dashboard
+
 ## Troubleshooting Guide
 
 ### Common Issues
