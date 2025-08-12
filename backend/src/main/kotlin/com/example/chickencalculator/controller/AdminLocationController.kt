@@ -4,6 +4,7 @@ import com.example.chickencalculator.config.ApiVersionConfig
 import com.example.chickencalculator.entity.Location
 import com.example.chickencalculator.entity.LocationStatus
 import com.example.chickencalculator.service.LocationManagementService
+import com.example.chickencalculator.service.LocationAuthService
 import com.example.chickencalculator.service.MetricsService
 import io.micrometer.core.annotation.Timed
 import io.swagger.v3.oas.annotations.Operation
@@ -52,6 +53,12 @@ data class DashboardStats(
     val totalRevenue: Double = 0.0
 )
 
+data class UpdateLocationPasswordRequest(
+    @field:NotBlank(message = "Password is required")
+    @field:Size(min = 8, message = "Password must be at least 8 characters")
+    val password: String
+)
+
 @RestController
 @RequestMapping("${ApiVersionConfig.API_VERSION}/admin")
 @Tag(name = "Admin Location Management", description = "Admin location management endpoints")
@@ -64,6 +71,7 @@ data class DashboardStats(
 )
 class AdminLocationController(
     private val locationManagementService: LocationManagementService,
+    private val locationAuthService: LocationAuthService,
     private val metricsService: MetricsService
 ) {
     private val logger = LoggerFactory.getLogger(AdminLocationController::class.java)
@@ -229,6 +237,78 @@ class AdminLocationController(
             val processingTime = System.currentTimeMillis() - startTime
             metricsService.recordAdminOperation("get_location", false, processingTime)
             metricsService.recordError("admin_get_location", e.javaClass.simpleName)
+            throw e
+        }
+    }
+    
+    @PutMapping("/locations/{id}/password")
+    @Timed(value = "chicken.calculator.admin.update_password.time", description = "Time taken to update location password")
+    @Operation(summary = "Update location password", description = "Set or update the password for a location")
+    @ApiResponses(value = [
+        ApiResponse(responseCode = "200", description = "Password updated successfully"),
+        ApiResponse(responseCode = "401", description = "Unauthorized"),
+        ApiResponse(responseCode = "404", description = "Location not found")
+    ])
+    fun updateLocationPassword(
+        @Parameter(description = "ID of the location")
+        @PathVariable id: Long,
+        @Valid @RequestBody request: UpdateLocationPasswordRequest
+    ): ResponseEntity<Map<String, String>> {
+        val startTime = System.currentTimeMillis()
+        
+        return try {
+            val location = locationAuthService.changeLocationPassword(id, request.password)
+            val processingTime = System.currentTimeMillis() - startTime
+            
+            logger.info("Password updated for location: ${location.slug}")
+            metricsService.recordAdminOperation("update_location_password", true, processingTime)
+            
+            ResponseEntity.ok(mapOf(
+                "message" to "Password updated successfully",
+                "locationId" to location.id.toString(),
+                "locationSlug" to location.slug
+            ))
+        } catch (e: Exception) {
+            val processingTime = System.currentTimeMillis() - startTime
+            metricsService.recordAdminOperation("update_location_password", false, processingTime)
+            metricsService.recordError("admin_update_password", e.javaClass.simpleName)
+            throw e
+        }
+    }
+    
+    @PostMapping("/locations/{id}/generate-password")
+    @Timed(value = "chicken.calculator.admin.generate_password.time", description = "Time taken to generate location password")
+    @Operation(summary = "Generate random password", description = "Generate a secure random password for a location")
+    @ApiResponses(value = [
+        ApiResponse(responseCode = "200", description = "Password generated successfully"),
+        ApiResponse(responseCode = "401", description = "Unauthorized"),
+        ApiResponse(responseCode = "404", description = "Location not found")
+    ])
+    fun generateLocationPassword(
+        @Parameter(description = "ID of the location")
+        @PathVariable id: Long
+    ): ResponseEntity<Map<String, String>> {
+        val startTime = System.currentTimeMillis()
+        
+        return try {
+            val newPassword = locationAuthService.generateSecurePassword()
+            val location = locationAuthService.changeLocationPassword(id, newPassword)
+            val processingTime = System.currentTimeMillis() - startTime
+            
+            logger.info("Generated new password for location: ${location.slug}")
+            metricsService.recordAdminOperation("generate_location_password", true, processingTime)
+            
+            ResponseEntity.ok(mapOf(
+                "message" to "Password generated successfully",
+                "password" to newPassword,
+                "locationId" to location.id.toString(),
+                "locationSlug" to location.slug,
+                "warning" to "Please save this password securely. It will not be shown again."
+            ))
+        } catch (e: Exception) {
+            val processingTime = System.currentTimeMillis() - startTime
+            metricsService.recordAdminOperation("generate_location_password", false, processingTime)
+            metricsService.recordError("admin_generate_password", e.javaClass.simpleName)
             throw e
         }
     }

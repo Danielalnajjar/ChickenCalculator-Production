@@ -160,25 +160,26 @@ class MarinationLogService(
     }
     
     /**
-     * Extract location ID from request header or fallback to default location
-     * This ensures backward compatibility while enabling multi-tenant support
+     * Extract location ID from request header - no fallback to default
+     * Location context must be explicitly provided for multi-tenant isolation
      */
     @Transactional(readOnly = true)
     fun resolveLocationId(locationIdHeader: String?): Long {
-        return if (locationIdHeader != null) {
-            try {
-                val locationId = locationIdHeader.toLong()
-                validateLocationExists(locationId)
-                locationId
-            } catch (e: NumberFormatException) {
-                logger.error("Invalid location ID format: $locationIdHeader")
-                throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid location ID format")
-            }
-        } else {
-            // Fallback to default location for backward compatibility
-            val defaultLocation = locationRepository.findByIsDefaultTrue()
-                ?: throw ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "No default location found")
-            defaultLocation.id
+        if (locationIdHeader == null) {
+            logger.error("No location context provided in request")
+            throw ResponseStatusException(
+                HttpStatus.BAD_REQUEST, 
+                "Location context is required. Please access through a location-specific URL."
+            )
+        }
+        
+        return try {
+            val locationId = locationIdHeader.toLong()
+            validateLocationExists(locationId)
+            locationId
+        } catch (e: NumberFormatException) {
+            logger.error("Invalid location ID format: $locationIdHeader")
+            throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid location ID format")
         }
     }
     

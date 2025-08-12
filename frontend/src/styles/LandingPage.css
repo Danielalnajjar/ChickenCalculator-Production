@@ -1,0 +1,174 @@
+.landing-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.landing-content {
+  width: 100%;
+  max-width: 800px;
+}
+
+.landing-header {
+  text-align: center;
+  color: white;
+  margin-bottom: 3rem;
+}
+
+.landing-header h1 {
+  font-size: 3rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.subtitle {
+  font-size: 1.25rem;
+  opacity: 0.95;
+  margin: 0;
+}
+
+.locations-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 3rem;
+}
+
+.location-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-decoration: none;
+  color: #333;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  display: block;
+}
+
+.location-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+}
+
+.location-card-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.location-card h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.location-arrow {
+  font-size: 1.5rem;
+  color: #667eea;
+  transition: transform 0.3s ease;
+}
+
+.location-card:hover .location-arrow {
+  transform: translateX(4px);
+}
+
+.no-locations {
+  background: white;
+  border-radius: 12px;
+  padding: 3rem;
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.no-locations p {
+  margin: 0.5rem 0;
+  color: #666;
+  font-size: 1.1rem;
+}
+
+.landing-footer {
+  text-align: center;
+  color: white;
+}
+
+.admin-link {
+  display: inline-block;
+  color: white;
+  text-decoration: none;
+  padding: 0.75rem 2rem;
+  border: 2px solid white;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  margin-bottom: 2rem;
+}
+
+.admin-link:hover {
+  background: white;
+  color: #667eea;
+}
+
+.copyright {
+  font-size: 0.875rem;
+  opacity: 0.8;
+  margin: 0;
+}
+
+.loading-message,
+.error-message {
+  background: white;
+  border-radius: 12px;
+  padding: 3rem;
+  text-align: center;
+  color: #333;
+}
+
+.error-message h2 {
+  color: #c33;
+  margin-bottom: 1rem;
+}
+
+/* Add location badge styles to App.css */
+.location-badge {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 400;
+}
+
+.nav-logout {
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+  text-align: left;
+}
+
+.nav-logout:hover {
+  color: #667eea;
+}
+
+@media (max-width: 768px) {
+  .landing-header h1 {
+    font-size: 2rem;
+  }
+  
+  .subtitle {
+    font-size: 1rem;
+  }
+  
+  .locations-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -9,7 +9,25 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true, // Important for cookies
 });
+
+// Add response interceptor to handle authentication errors
+api.interceptors.response.use(
+  response => response,
+  error => {
+    // If we get a 401, redirect to location login
+    if (error.response?.status === 401) {
+      const path = window.location.pathname;
+      const match = path.match(/^\/([^\/]+)/);
+      if (match && match[1] && match[1] !== 'admin') {
+        // Redirect to location login
+        window.location.href = `/${match[1]}`;
+      }
+    }
+    return Promise.reject(error);
+  }
+);
 
 export const calculatorApi = {
   calculate: async (request: MarinationRequest): Promise<CalculationResult> => {

@@ -39,6 +39,7 @@ class SecurityConfig(
                         "${ApiVersionConfig.API_VERSION}/admin/auth/logout",
                         "${ApiVersionConfig.API_VERSION}/admin/auth/csrf-token",
                         "${ApiVersionConfig.API_VERSION}/admin/auth/change-password",
+                        "${ApiVersionConfig.API_VERSION}/location/**/auth/**",
                         "${ApiVersionConfig.API_VERSION}/calculator/**",
                         "${ApiVersionConfig.API_VERSION}/sales-data/**",
                         "${ApiVersionConfig.API_VERSION}/marination-log/**",
@@ -80,6 +81,7 @@ class SecurityConfig(
                     "${ApiVersionConfig.API_VERSION}/admin/auth/register",
                     "${ApiVersionConfig.API_VERSION}/admin/auth/csrf-token",
                     "${ApiVersionConfig.API_VERSION}/admin/auth/validate",  // Allow manual auth handling
+                    "${ApiVersionConfig.API_VERSION}/location/**/auth/**",  // Location authentication endpoints
                     "${ApiVersionConfig.API_VERSION}/calculator/**",
                     "${ApiVersionConfig.API_VERSION}/sales-data/**",
                     "${ApiVersionConfig.API_VERSION}/marination-log/**",
