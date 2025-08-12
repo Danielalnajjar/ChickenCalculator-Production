@@ -45,7 +45,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const response = await apiService.validateToken();
       
       if (response.ok && response.data) {
-        setUser(response.data);
+        setUser(response.data as User);
       } else {
         sessionStorage.removeItem(TOKEN_KEY);
       }
@@ -62,17 +62,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const response = await apiService.login(email, password);
 
       if (response.ok && response.data) {
-        const data = response.data;
+        const data = response.data as any;
         // Store only the token, not user data
         if (data.token) {
           sessionStorage.setItem(TOKEN_KEY, data.token);
         }
         // Extract user info from response
         const userData: User = {
-          id: data.id,
-          email: data.email,
-          name: data.name,
-          role: data.role as 'admin' | 'manager'
+          id: data.id || '',
+          email: data.email || email,
+          name: data.name || '',
+          role: (data.role as 'admin' | 'manager') || 'admin'
         };
         setUser(userData);
         return true;

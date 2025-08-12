@@ -31,7 +31,7 @@ const ManageLocations: React.FC = () => {
     try {
       const response = await apiService.getLocations();
       if (response.ok && response.data) {
-        setLocations(response.data);
+        setLocations(response.data as Location[]);
       } else if (response.error) {
         console.error('Error fetching locations:', response.error);
       }

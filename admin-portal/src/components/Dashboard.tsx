@@ -51,11 +51,11 @@ const Dashboard: React.FC = () => {
         ]);
 
         if (locationsResponse.ok && locationsResponse.data) {
-          setLocations(locationsResponse.data);
+          setLocations(locationsResponse.data as Location[]);
         }
         
         if (statsResponse.ok && statsResponse.data) {
-          setStats(statsResponse.data);
+          setStats(statsResponse.data as DashboardStats);
         }
         
         // Log any errors
