@@ -27,14 +27,18 @@ class DatabaseConfig(private val environment: Environment) {
         
         val hikariConfig = HikariConfig()
         
-        if (!databaseUrl.isNullOrBlank() && databaseUrl.startsWith("postgresql://")) {
-            // Convert Railway PostgreSQL URL to JDBC format
-            val jdbcUrl = "jdbc:$databaseUrl"
+        if (!databaseUrl.isNullOrBlank() && (databaseUrl.startsWith("postgresql://") || databaseUrl.startsWith("jdbc:postgresql://"))) {
+            // Handle both Railway format (postgresql://) and JDBC format (jdbc:postgresql://)
+            val jdbcUrl = if (databaseUrl.startsWith("jdbc:")) {
+                databaseUrl
+            } else {
+                "jdbc:$databaseUrl"
+            }
             hikariConfig.jdbcUrl = jdbcUrl
             hikariConfig.driverClassName = "org.postgresql.Driver"
             
-            // Extract username and password from URL
-            if (databaseUrl.contains("@")) {
+            // Extract username and password from URL if not using JDBC format
+            if (!databaseUrl.startsWith("jdbc:") && databaseUrl.contains("@")) {
                 val authPart = databaseUrl.substringAfter("://").substringBefore("@")
                 if (authPart.contains(":")) {
                     val (username, password) = authPart.split(":", limit = 2)
