@@ -1,8 +1,10 @@
 package com.example.chickencalculator.config
 
+import com.example.chickencalculator.interceptor.RequestLoggingInterceptor
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.Ordered
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
@@ -10,7 +12,9 @@ import org.springframework.web.servlet.resource.PathResourceResolver
 import java.io.File
 
 @Configuration
-class WebConfig : WebMvcConfigurer {
+class WebConfig(
+    private val requestLoggingInterceptor: RequestLoggingInterceptor
+) : WebMvcConfigurer {
     private val logger = LoggerFactory.getLogger(WebConfig::class.java)
     
     override fun addResourceHandlers(registry: ResourceHandlerRegistry) {
@@ -96,5 +100,16 @@ class WebConfig : WebMvcConfigurer {
     override fun addViewControllers(registry: ViewControllerRegistry) {
         // Set order to ensure these are processed after resource handlers
         registry.setOrder(Ordered.LOWEST_PRECEDENCE)
+    }
+    
+    override fun addInterceptors(registry: InterceptorRegistry) {
+        logger.info("🔧 Configuring request logging interceptor...")
+        
+        // Register the request logging interceptor for all paths
+        registry.addInterceptor(requestLoggingInterceptor)
+            .addPathPatterns("/**")
+            .order(1) // Run after correlation ID filter but before other interceptors
+        
+        logger.info("✅ Request logging interceptor registered for all paths")
     }
 }

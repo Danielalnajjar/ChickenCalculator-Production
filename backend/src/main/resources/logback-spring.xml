@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    
+    <!-- Define properties for log configuration -->
+    <springProfile name="!production">
+        <property name="LOG_LEVEL" value="${LOG_LEVEL:-INFO}"/>
+        <property name="ROOT_LOG_LEVEL" value="${ROOT_LOG_LEVEL:-WARN}"/>
+    </springProfile>
+    
+    <springProfile name="production">
+        <property name="LOG_LEVEL" value="${LOG_LEVEL:-INFO}"/>
+        <property name="ROOT_LOG_LEVEL" value="${ROOT_LOG_LEVEL:-WARN}"/>
+    </springProfile>
+    
+    <!-- Console appender for development (human-readable with correlation ID) -->
+    <springProfile name="!production">
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+                <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{correlationId:-NO_CORRELATION_ID}] %logger{36} - %msg%n</pattern>
+            </encoder>
+        </appender>
+    </springProfile>
+    
+    <!-- JSON appender for production (structured logging) -->
+    <springProfile name="production">
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+                <providers>
+                    <timestamp>
+                        <timeZone>UTC</timeZone>
+                    </timestamp>
+                    <version/>
+                    <logLevel/>
+                    <message/>
+                    <mdc/>
+                    <arguments/>
+                    <stackTrace/>
+                    <pattern>
+                        <pattern>
+                            {
+                                "app": "chicken-calculator",
+                                "correlationId": "%X{correlationId:-}",
+                                "thread": "%thread",
+                                "logger": "%logger"
+                            }
+                        </pattern>
+                    </pattern>
+                </providers>
+            </encoder>
+        </appender>
+    </springProfile>
+    
+    <!-- File appender for persistent logging (optional) -->
+    <springProfile name="production">
+        <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+            <file>/app/logs/chicken-calculator.log</file>
+            <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+                <fileNamePattern>/app/logs/chicken-calculator.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+                <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                    <maxFileSize>100MB</maxFileSize>
+                </timeBasedFileNamingAndTriggeringPolicy>
+                <maxHistory>30</maxHistory>
+                <totalSizeCap>3GB</totalSizeCap>
+            </rollingPolicy>
+            <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+                <providers>
+                    <timestamp>
+                        <timeZone>UTC</timeZone>
+                    </timestamp>
+                    <version/>
+                    <logLevel/>
+                    <message/>
+                    <mdc/>
+                    <arguments/>
+                    <stackTrace/>
+                    <pattern>
+                        <pattern>
+                            {
+                                "app": "chicken-calculator",
+                                "correlationId": "%X{correlationId:-}",
+                                "thread": "%thread",
+                                "logger": "%logger"
+                            }
+                        </pattern>
+                    </pattern>
+                </providers>
+            </encoder>
+        </appender>
+    </springProfile>
+    
+    <!-- Logger configurations -->
+    
+    <!-- Application logger -->
+    <logger name="com.example.chickencalculator" level="${LOG_LEVEL}"/>
+    
+    <!-- Spring framework loggers -->
+    <logger name="org.springframework" level="WARN"/>
+    <logger name="org.springframework.web" level="WARN"/>
+    <logger name="org.springframework.security" level="WARN"/>
+    <logger name="org.springframework.boot" level="INFO"/>
+    
+    <!-- Database loggers -->
+    <logger name="org.hibernate" level="WARN"/>
+    <logger name="org.hibernate.SQL" level="${SQL_LOG_LEVEL:-WARN}"/>
+    <logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="WARN"/>
+    <logger name="org.flywaydb" level="INFO"/>
+    
+    <!-- HTTP client loggers -->
+    <logger name="org.apache.http" level="WARN"/>
+    <logger name="httpclient" level="WARN"/>
+    
+    <!-- Jackson JSON processing -->
+    <logger name="com.fasterxml.jackson" level="WARN"/>
+    
+    <!-- Tomcat/Servlet container -->
+    <logger name="org.apache.catalina" level="WARN"/>
+    <logger name="org.apache.coyote" level="WARN"/>
+    
+    <!-- Request/Response logging -->
+    <logger name="com.example.chickencalculator.filter" level="DEBUG"/>
+    <logger name="com.example.chickencalculator.interceptor" level="DEBUG"/>
+    
+    <!-- Exception handling -->
+    <logger name="com.example.chickencalculator.exception" level="INFO"/>
+    
+    <!-- Actuator endpoints -->
+    <logger name="org.springframework.boot.actuate" level="INFO"/>
+    
+    <!-- Sentry logging -->
+    <logger name="io.sentry" level="${SENTRY_LOG_LEVEL:-WARN}"/>
+    
+    <!-- Sentry appender for error tracking -->
+    <appender name="SENTRY" class="io.sentry.logback.SentryAppender">
+        <minimumEventLevel>WARN</minimumEventLevel>
+        <minimumBreadcrumbLevel>INFO</minimumBreadcrumbLevel>
+    </appender>
+    
+    <!-- Root logger -->
+    <root level="${ROOT_LOG_LEVEL}">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="SENTRY"/>
+        <springProfile name="production">
+            <appender-ref ref="FILE"/>
+        </springProfile>
+    </root>
+    
+</configuration>

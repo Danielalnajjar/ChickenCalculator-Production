@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.transaction.annotation.Isolation
 import org.springframework.web.server.ResponseStatusException
 import java.time.LocalDate
 
@@ -23,6 +24,7 @@ class SalesDataService(
     /**
      * Get all sales data for a specific location
      */
+    @Transactional(readOnly = true)
     fun getAllSalesDataByLocation(locationId: Long): List<SalesData> {
         validateLocationExists(locationId)
         return salesDataRepository.findByLocationIdOrderByDateDesc(locationId)
@@ -31,6 +33,7 @@ class SalesDataService(
     /**
      * Get sales totals for a specific location
      */
+    @Transactional(readOnly = true)
     fun getSalesTotalsByLocation(locationId: Long): SalesTotals {
         validateLocationExists(locationId)
         return salesDataRepository.getSalesTotalsByLocation(locationId)
@@ -39,7 +42,7 @@ class SalesDataService(
     /**
      * Add new sales data for a location
      */
-    @Transactional
+    @Transactional(rollbackFor = [Exception::class])
     fun addSalesData(salesData: SalesData, locationId: Long): SalesData {
         val location = getLocationById(locationId)
         
@@ -62,7 +65,7 @@ class SalesDataService(
     /**
      * Delete specific sales data entry
      */
-    @Transactional
+    @Transactional(rollbackFor = [Exception::class])
     fun deleteSalesData(salesDataId: Long, locationId: Long) {
         val salesData = salesDataRepository.findById(salesDataId).orElseThrow {
             ResponseStatusException(HttpStatus.NOT_FOUND, "Sales data not found")
@@ -81,7 +84,7 @@ class SalesDataService(
     /**
      * Delete all sales data for a location
      */
-    @Transactional
+    @Transactional(rollbackFor = [Exception::class])
     fun deleteAllSalesDataByLocation(locationId: Long) {
         // Validate that the location exists
         validateLocationExists(locationId)
@@ -94,6 +97,7 @@ class SalesDataService(
     /**
      * Get sales data for a specific date and location
      */
+    @Transactional(readOnly = true)
     fun getSalesDataByLocationAndDate(locationId: Long, date: LocalDate): SalesData? {
         val location = getLocationById(locationId)
         return salesDataRepository.findByLocationAndDate(location, date)
@@ -102,6 +106,7 @@ class SalesDataService(
     /**
      * Get sales data within a date range for a location
      */
+    @Transactional(readOnly = true)
     fun getSalesDataByLocationAndDateRange(
         locationId: Long, 
         startDate: LocalDate, 
@@ -114,6 +119,7 @@ class SalesDataService(
     /**
      * Get sales totals for a date range
      */
+    @Transactional(readOnly = true)
     fun getSalesTotalsByLocationAndDateRange(
         locationId: Long,
         startDate: LocalDate,
@@ -126,7 +132,7 @@ class SalesDataService(
     /**
      * Update existing sales data
      */
-    @Transactional
+    @Transactional(rollbackFor = [Exception::class])
     fun updateSalesData(salesDataId: Long, updatedSalesData: SalesData, locationId: Long): SalesData {
         val existingSalesData = salesDataRepository.findById(salesDataId).orElseThrow {
             ResponseStatusException(HttpStatus.NOT_FOUND, "Sales data not found")
@@ -152,6 +158,7 @@ class SalesDataService(
      * Extract location ID from request header or fallback to default location
      * This ensures backward compatibility while enabling multi-tenant support
      */
+    @Transactional(readOnly = true)
     fun resolveLocationId(locationIdHeader: String?): Long {
         return if (locationIdHeader != null) {
             try {

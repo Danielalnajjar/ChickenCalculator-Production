@@ -1,6 +1,7 @@
 package com.example.chickencalculator.exception
 
 import com.example.chickencalculator.dto.ErrorResponse
+import com.example.chickencalculator.filter.CorrelationIdContext
 import io.jsonwebtoken.ExpiredJwtException
 import io.jsonwebtoken.MalformedJwtException
 import io.jsonwebtoken.security.SignatureException
@@ -45,7 +46,7 @@ class GlobalExceptionHandler {
         ex: LocationNotFoundException,
         request: WebRequest
     ): ResponseEntity<ErrorResponse> {
-        val correlationId = generateCorrelationId()
+        val correlationId = getCorrelationId()
         logException("Location not found", ex, correlationId, "WARN")
         
         return buildErrorResponse(
@@ -62,7 +63,7 @@ class GlobalExceptionHandler {
         ex: InvalidCredentialsException,
         request: WebRequest
     ): ResponseEntity<ErrorResponse> {
-        val correlationId = generateCorrelationId()
+        val correlationId = getCorrelationId()
         logException("Invalid credentials", ex, correlationId, "WARN")
         
         return buildErrorResponse(
@@ -79,7 +80,7 @@ class GlobalExceptionHandler {
         ex: InsufficientPermissionsException,
         request: WebRequest
     ): ResponseEntity<ErrorResponse> {
-        val correlationId = generateCorrelationId()
+        val correlationId = getCorrelationId()
         logException("Insufficient permissions", ex, correlationId, "WARN")
         
         return buildErrorResponse(
@@ -96,7 +97,7 @@ class GlobalExceptionHandler {
         ex: BusinessValidationException,
         request: WebRequest
     ): ResponseEntity<ErrorResponse> {
-        val correlationId = generateCorrelationId()
+        val correlationId = getCorrelationId()
         logException("Business validation failed", ex, correlationId, "WARN")
         
         val details = ex.fieldErrors?.takeIf { it.isNotEmpty() }?.let { errors ->
@@ -120,7 +121,7 @@ class GlobalExceptionHandler {
         ex: MethodArgumentNotValidException,
         request: WebRequest
     ): ResponseEntity<ErrorResponse> {
-        val correlationId = generateCorrelationId()
+        val correlationId = getCorrelationId()
         
         val fieldErrors = ex.bindingResult.fieldErrors.associate { error ->
             error.field to (error.defaultMessage ?: "Invalid value")
@@ -150,7 +151,7 @@ class GlobalExceptionHandler {
         ex: ConstraintViolationException,
         request: WebRequest
     ): ResponseEntity<ErrorResponse> {
-        val correlationId = generateCorrelationId()
+        val correlationId = getCorrelationId()
         
         val violations = ex.constraintViolations.associate { violation ->
             violation.propertyPath.toString() to (violation.message ?: "Constraint violation")
@@ -176,7 +177,7 @@ class GlobalExceptionHandler {
         ex: BadCredentialsException,
         request: WebRequest
     ): ResponseEntity<ErrorResponse> {
-        val correlationId = generateCorrelationId()
+        val correlationId = getCorrelationId()
         logException("Authentication failed", ex, correlationId, "WARN")
         
         return buildErrorResponse(
@@ -193,7 +194,7 @@ class GlobalExceptionHandler {
         ex: AuthenticationException,
         request: WebRequest
     ): ResponseEntity<ErrorResponse> {
-        val correlationId = generateCorrelationId()
+        val correlationId = getCorrelationId()
         logException("Authentication error", ex, correlationId, "WARN")
         
         return buildErrorResponse(
@@ -210,7 +211,7 @@ class GlobalExceptionHandler {
         ex: AccessDeniedException,
         request: WebRequest
     ): ResponseEntity<ErrorResponse> {
-        val correlationId = generateCorrelationId()
+        val correlationId = getCorrelationId()
         logException("Access denied", ex, correlationId, "WARN")
         
         return buildErrorResponse(
@@ -229,7 +230,7 @@ class GlobalExceptionHandler {
         ex: ExpiredJwtException,
         request: WebRequest
     ): ResponseEntity<ErrorResponse> {
-        val correlationId = generateCorrelationId()
+        val correlationId = getCorrelationId()
         logException("JWT token expired", ex, correlationId, "WARN")
         
         return buildErrorResponse(
@@ -246,7 +247,7 @@ class GlobalExceptionHandler {
         ex: Exception,
         request: WebRequest
     ): ResponseEntity<ErrorResponse> {
-        val correlationId = generateCorrelationId()
+        val correlationId = getCorrelationId()
         logException("Invalid JWT token", ex, correlationId, "WARN")
         
         return buildErrorResponse(
@@ -265,7 +266,7 @@ class GlobalExceptionHandler {
         ex: HttpRequestMethodNotSupportedException,
         request: WebRequest
     ): ResponseEntity<ErrorResponse> {
-        val correlationId = generateCorrelationId()
+        val correlationId = getCorrelationId()
         val supportedMethods = ex.supportedMethods?.joinToString(", ") ?: "Unknown"
         logException("Method not supported: ${ex.method}. Supported: $supportedMethods", ex, correlationId, "WARN")
         
@@ -284,7 +285,7 @@ class GlobalExceptionHandler {
         ex: HttpMediaTypeNotSupportedException,
         request: WebRequest
     ): ResponseEntity<ErrorResponse> {
-        val correlationId = generateCorrelationId()
+        val correlationId = getCorrelationId()
         val supportedTypes = ex.supportedMediaTypes.joinToString(", ")
         logException("Media type not supported: ${ex.contentType}. Supported: $supportedTypes", ex, correlationId, "WARN")
         
@@ -303,7 +304,7 @@ class GlobalExceptionHandler {
         ex: HttpMessageNotReadableException,
         request: WebRequest
     ): ResponseEntity<ErrorResponse> {
-        val correlationId = generateCorrelationId()
+        val correlationId = getCorrelationId()
         logException("Message not readable", ex, correlationId, "WARN")
         
         return buildErrorResponse(
@@ -320,7 +321,7 @@ class GlobalExceptionHandler {
         ex: MissingServletRequestParameterException,
         request: WebRequest
     ): ResponseEntity<ErrorResponse> {
-        val correlationId = generateCorrelationId()
+        val correlationId = getCorrelationId()
         logException("Missing request parameter: ${ex.parameterName}", ex, correlationId, "WARN")
         
         return buildErrorResponse(
@@ -338,7 +339,7 @@ class GlobalExceptionHandler {
         ex: MethodArgumentTypeMismatchException,
         request: WebRequest
     ): ResponseEntity<ErrorResponse> {
-        val correlationId = generateCorrelationId()
+        val correlationId = getCorrelationId()
         val expectedType = ex.requiredType?.simpleName ?: "Unknown"
         logException("Type mismatch for parameter: ${ex.name}", ex, correlationId, "WARN")
         
@@ -361,7 +362,7 @@ class GlobalExceptionHandler {
         ex: IllegalArgumentException,
         request: WebRequest
     ): ResponseEntity<ErrorResponse> {
-        val correlationId = generateCorrelationId()
+        val correlationId = getCorrelationId()
         logException("Invalid argument", ex, correlationId, "WARN")
         
         return buildErrorResponse(
@@ -378,7 +379,7 @@ class GlobalExceptionHandler {
         ex: IllegalStateException,
         request: WebRequest
     ): ResponseEntity<ErrorResponse> {
-        val correlationId = generateCorrelationId()
+        val correlationId = getCorrelationId()
         logException("Illegal state", ex, correlationId, "WARN")
         
         return buildErrorResponse(
@@ -395,7 +396,7 @@ class GlobalExceptionHandler {
         ex: NoSuchElementException,
         request: WebRequest
     ): ResponseEntity<ErrorResponse> {
-        val correlationId = generateCorrelationId()
+        val correlationId = getCorrelationId()
         logException("Resource not found", ex, correlationId, "WARN")
         
         return buildErrorResponse(
@@ -414,7 +415,7 @@ class GlobalExceptionHandler {
         ex: Exception,
         request: WebRequest
     ): ResponseEntity<ErrorResponse> {
-        val correlationId = generateCorrelationId()
+        val correlationId = getCorrelationId()
         logException("Unexpected error occurred", ex, correlationId, "ERROR")
         
         // Don't expose internal error details in production
@@ -436,11 +437,10 @@ class GlobalExceptionHandler {
     
     // ===== Utility Methods =====
     
-    private fun generateCorrelationId(): String {
-        // Try to get existing correlation ID from MDC first
-        return MDC.get("correlationId") ?: UUID.randomUUID().toString().also {
-            MDC.put("correlationId", it)
-        }
+    private fun getCorrelationId(): String {
+        // Get correlation ID from MDC (set by CorrelationIdFilter)
+        // If for some reason it's not present, generate one as fallback
+        return CorrelationIdContext.getOrGenerateCorrelationId()
     }
     
     private fun buildErrorResponse(

@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.transaction.annotation.Isolation
 import org.springframework.web.server.ResponseStatusException
 import java.time.LocalDateTime
 
@@ -24,6 +25,7 @@ class LocationManagementService(
     /**
      * Get all locations with additional metadata
      */
+    @Transactional(readOnly = true)
     fun getAllLocations(): List<Location> {
         return locationRepository.findAll().sortedBy { it.name }
     }
@@ -31,6 +33,7 @@ class LocationManagementService(
     /**
      * Get locations by status
      */
+    @Transactional(readOnly = true)
     fun getLocationsByStatus(status: LocationStatus): List<Location> {
         return locationRepository.findByStatusOrderByNameAsc(status)
     }
@@ -38,6 +41,7 @@ class LocationManagementService(
     /**
      * Get active locations only
      */
+    @Transactional(readOnly = true)
     fun getActiveLocations(): List<Location> {
         return getLocationsByStatus(LocationStatus.ACTIVE)
     }
@@ -45,6 +49,7 @@ class LocationManagementService(
     /**
      * Get location by ID with validation
      */
+    @Transactional(readOnly = true)
     fun getLocationById(id: Long): Location? {
         return locationRepository.findById(id).orElse(null)
     }
@@ -52,6 +57,7 @@ class LocationManagementService(
     /**
      * Get location by ID or throw exception
      */
+    @Transactional(readOnly = true)
     fun getLocationByIdOrThrow(id: Long): Location {
         return locationRepository.findById(id).orElseThrow {
             ResponseStatusException(HttpStatus.NOT_FOUND, "Location with ID $id not found")
@@ -61,6 +67,7 @@ class LocationManagementService(
     /**
      * Get location by slug with validation
      */
+    @Transactional(readOnly = true)
     fun getLocationBySlug(slug: String): Location? {
         return locationRepository.findBySlug(slug)
     }
@@ -68,6 +75,7 @@ class LocationManagementService(
     /**
      * Get location by slug or throw exception
      */
+    @Transactional(readOnly = true)
     fun getLocationBySlugOrThrow(slug: String): Location {
         return locationRepository.findBySlug(slug) ?: throw ResponseStatusException(
             HttpStatus.NOT_FOUND, "Location with slug '$slug' not found"
@@ -77,6 +85,7 @@ class LocationManagementService(
     /**
      * Get default location
      */
+    @Transactional(readOnly = true)
     fun getDefaultLocation(): Location? {
         return locationRepository.findByIsDefaultTrue()
     }
@@ -84,6 +93,7 @@ class LocationManagementService(
     /**
      * Get default location or throw exception
      */
+    @Transactional(readOnly = true)
     fun getDefaultLocationOrThrow(): Location {
         return locationRepository.findByIsDefaultTrue() ?: throw ResponseStatusException(
             HttpStatus.INTERNAL_SERVER_ERROR, "No default location configured"
@@ -93,7 +103,7 @@ class LocationManagementService(
     /**
      * Create a new location with full validation
      */
-    @Transactional
+    @Transactional(rollbackFor = [Exception::class])
     fun createLocation(
         name: String,
         address: String?,
@@ -134,7 +144,7 @@ class LocationManagementService(
     /**
      * Update an existing location
      */
-    @Transactional
+    @Transactional(rollbackFor = [Exception::class])
     fun updateLocation(
         id: Long,
         name: String? = null,
@@ -178,7 +188,7 @@ class LocationManagementService(
     /**
      * Delete a location with proper validation and cleanup
      */
-    @Transactional
+    @Transactional(rollbackFor = [Exception::class])
     fun deleteLocation(id: Long): LocationDeletionResult {
         val location = getLocationByIdOrThrow(id)
         
@@ -227,7 +237,7 @@ class LocationManagementService(
     /**
      * Force delete a location and all associated data
      */
-    @Transactional
+    @Transactional(rollbackFor = [Exception::class])
     fun forceDeleteLocation(id: Long): LocationDeletionResult {
         val location = getLocationByIdOrThrow(id)
         
@@ -262,7 +272,7 @@ class LocationManagementService(
     /**
      * Activate or deactivate a location
      */
-    @Transactional
+    @Transactional(rollbackFor = [Exception::class])
     fun toggleLocationStatus(id: Long): Location {
         val location = getLocationByIdOrThrow(id)
         
@@ -277,6 +287,7 @@ class LocationManagementService(
     /**
      * Check if a slug is available
      */
+    @Transactional(readOnly = true)
     fun isSlugAvailable(slug: String): Boolean {
         return locationRepository.findBySlug(slug) == null
     }
@@ -284,6 +295,7 @@ class LocationManagementService(
     /**
      * Validate location exists
      */
+    @Transactional(readOnly = true)
     fun validateLocationExists(id: Long): Boolean {
         return locationRepository.existsById(id)
     }

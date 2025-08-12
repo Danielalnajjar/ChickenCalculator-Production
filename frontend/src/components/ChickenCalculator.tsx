@@ -80,7 +80,7 @@ const ChickenCalculator: React.FC<ChickenCalculatorProps> = React.memo(() => {
   return (
     <div>
       <div className="form-container">
-        <h1>Chicken Marination Calculator</h1>
+        <h1 id="calculator-title">Chicken Marination Calculator</h1>
         
         {!hasSalesData && (
           <div className="alert warning">
@@ -95,11 +95,12 @@ const ChickenCalculator: React.FC<ChickenCalculatorProps> = React.memo(() => {
         )}
 
         <div className="form-section">
-          <h2 className="section-title">Current Inventory (Pans)</h2>
-          <div className="form-row">
+          <h2 className="section-title" id="inventory-section">Current Inventory (Pans)</h2>
+          <div className="form-row" role="group" aria-labelledby="inventory-section">
             <div className="form-group">
-              <label>Soy Pans</label>
+              <label htmlFor="soy-pans">Soy Pans</label>
               <input
+                id="soy-pans"
                 type="number"
                 min="0"
                 step="0.1"
@@ -108,11 +109,17 @@ const ChickenCalculator: React.FC<ChickenCalculatorProps> = React.memo(() => {
                   ...inventory,
                   pansSoy: parseFloat(e.target.value) || 0
                 })}
+                aria-describedby="soy-pans-help"
+                aria-label="Number of soy chicken pans in current inventory"
               />
+              <div id="soy-pans-help" className="sr-only">
+                Enter the number of soy chicken pans currently in inventory
+              </div>
             </div>
             <div className="form-group">
-              <label>Teriyaki Pans</label>
+              <label htmlFor="teriyaki-pans">Teriyaki Pans</label>
               <input
+                id="teriyaki-pans"
                 type="number"
                 min="0"
                 step="0.1"
@@ -121,11 +128,17 @@ const ChickenCalculator: React.FC<ChickenCalculatorProps> = React.memo(() => {
                   ...inventory,
                   pansTeriyaki: parseFloat(e.target.value) || 0
                 })}
+                aria-describedby="teriyaki-pans-help"
+                aria-label="Number of teriyaki chicken pans in current inventory"
               />
+              <div id="teriyaki-pans-help" className="sr-only">
+                Enter the number of teriyaki chicken pans currently in inventory
+              </div>
             </div>
             <div className="form-group">
-              <label>Turmeric Pans</label>
+              <label htmlFor="turmeric-pans">Turmeric Pans</label>
               <input
+                id="turmeric-pans"
                 type="number"
                 min="0"
                 step="0.1"
@@ -134,17 +147,23 @@ const ChickenCalculator: React.FC<ChickenCalculatorProps> = React.memo(() => {
                   ...inventory,
                   pansTurmeric: parseFloat(e.target.value) || 0
                 })}
+                aria-describedby="turmeric-pans-help"
+                aria-label="Number of turmeric chicken pans in current inventory"
               />
+              <div id="turmeric-pans-help" className="sr-only">
+                Enter the number of turmeric chicken pans currently in inventory
+              </div>
             </div>
           </div>
         </div>
 
         <div className="form-section">
-          <h2 className="section-title">Projected Sales (Next 4 Days)</h2>
-          <div className="form-row">
+          <h2 className="section-title" id="sales-section">Projected Sales (Next 4 Days)</h2>
+          <div className="form-row" role="group" aria-labelledby="sales-section">
             <div className="form-group">
-              <label>Day 0 (Today) Sales ($)</label>
+              <label htmlFor="day0-sales">Day 0 (Today) Sales ($)</label>
               <input
+                id="day0-sales"
                 type="number"
                 min="0"
                 value={projectedSales.day0}
@@ -152,11 +171,17 @@ const ChickenCalculator: React.FC<ChickenCalculatorProps> = React.memo(() => {
                   ...projectedSales,
                   day0: parseFloat(e.target.value) || 0
                 })}
+                aria-describedby="day0-sales-help"
+                aria-label="Projected sales amount for today in dollars"
               />
+              <div id="day0-sales-help" className="sr-only">
+                Enter projected sales amount for today in dollars
+              </div>
             </div>
             <div className="form-group">
-              <label>Day 1 Sales ($)</label>
+              <label htmlFor="day1-sales">Day 1 Sales ($)</label>
               <input
+                id="day1-sales"
                 type="number"
                 min="0"
                 value={projectedSales.day1}
@@ -164,11 +189,17 @@ const ChickenCalculator: React.FC<ChickenCalculatorProps> = React.memo(() => {
                   ...projectedSales,
                   day1: parseFloat(e.target.value) || 0
                 })}
+                aria-describedby="day1-sales-help"
+                aria-label="Projected sales amount for day 1 in dollars"
               />
+              <div id="day1-sales-help" className="sr-only">
+                Enter projected sales amount for day 1 in dollars
+              </div>
             </div>
             <div className="form-group">
-              <label>Day 2 Sales ($)</label>
+              <label htmlFor="day2-sales">Day 2 Sales ($)</label>
               <input
+                id="day2-sales"
                 type="number"
                 min="0"
                 value={projectedSales.day2}
@@ -176,11 +207,17 @@ const ChickenCalculator: React.FC<ChickenCalculatorProps> = React.memo(() => {
                   ...projectedSales,
                   day2: parseFloat(e.target.value) || 0
                 })}
+                aria-describedby="day2-sales-help"
+                aria-label="Projected sales amount for day 2 in dollars"
               />
+              <div id="day2-sales-help" className="sr-only">
+                Enter projected sales amount for day 2 in dollars
+              </div>
             </div>
             <div className="form-group">
-              <label>Day 3 Sales ($)</label>
+              <label htmlFor="day3-sales">Day 3 Sales ($)</label>
               <input
+                id="day3-sales"
                 type="number"
                 min="0"
                 value={projectedSales.day3}
@@ -188,34 +225,50 @@ const ChickenCalculator: React.FC<ChickenCalculatorProps> = React.memo(() => {
                   ...projectedSales,
                   day3: parseFloat(e.target.value) || 0
                 })}
+                aria-describedby="day3-sales-help"
+                aria-label="Projected sales amount for day 3 in dollars"
               />
+              <div id="day3-sales-help" className="sr-only">
+                Enter projected sales amount for day 3 in dollars
+              </div>
             </div>
           </div>
         </div>
 
         <div className="form-section">
           <div className="form-group">
-            <label>
+            <label htmlFor="use-available-chicken" className="checkbox-label">
               <input
+                id="use-available-chicken"
                 type="checkbox"
                 checked={useAvailableChicken}
                 onChange={(e) => setUseAvailableChicken(e.target.checked)}
                 style={{ marginRight: '10px' }}
+                aria-describedby="use-available-chicken-help"
               />
               Limit by available raw chicken
             </label>
+            <div id="use-available-chicken-help" className="sr-only">
+              Check this box to limit calculations based on available raw chicken inventory
+            </div>
           </div>
           
           {useAvailableChicken && (
             <div className="form-group">
-              <label>Available Raw Chicken (kg)</label>
+              <label htmlFor="available-chicken-kg">Available Raw Chicken (kg)</label>
               <input
+                id="available-chicken-kg"
                 type="number"
                 min="0"
                 step="0.1"
                 value={availableRawChickenKg}
                 onChange={(e) => setAvailableRawChickenKg(parseFloat(e.target.value) || 0)}
+                aria-describedby="available-chicken-help"
+                aria-label="Amount of available raw chicken in kilograms"
               />
+              <div id="available-chicken-help" className="sr-only">
+                Enter the amount of raw chicken available for marination in kilograms
+              </div>
             </div>
           )}
         </div>
@@ -223,46 +276,63 @@ const ChickenCalculator: React.FC<ChickenCalculatorProps> = React.memo(() => {
         <button 
           onClick={handleCalculate} 
           disabled={loading || !hasSalesData}
+          aria-describedby="calculate-button-help"
+          aria-label={loading ? 'Calculating marination requirements' : 'Calculate marination requirements based on entered data'}
         >
           {loading ? 'Calculating...' : 'Calculate Marination'}
         </button>
+        <div id="calculate-button-help" className="sr-only">
+          Click to calculate how much chicken to marinate based on inventory and projected sales
+        </div>
       </div>
 
       {result && (
-        <div className="results-container">
-          <h2>Marination Results</h2>
-          <div className="results-grid">
-            <div className="result-card">
-              <h3>Soy Chicken</h3>
-              <div className="result-value">
+        <div className="results-container" role="region" aria-labelledby="results-title">
+          <h2 id="results-title">Marination Results</h2>
+          <div className="results-grid" role="group" aria-labelledby="results-title">
+            <div className="result-card" role="article" aria-labelledby="soy-result">
+              <h3 id="soy-result">Soy Chicken</h3>
+              <div className="result-value" aria-label={`${formatToKg(result.rawToMarinateSoy)} kilograms of soy chicken to marinate`}>
                 {formatToKg(result.rawToMarinateSoy)} <span className="result-unit">kg</span>
               </div>
-              <p>({formatToPans(result.rawToMarinateSoy, 3000 / 0.73)} pans approx.)</p>
+              <p aria-label={`Approximately ${formatToPans(result.rawToMarinateSoy, 3000 / 0.73)} pans`}>
+                ({formatToPans(result.rawToMarinateSoy, 3000 / 0.73)} pans approx.)
+              </p>
             </div>
             
-            <div className="result-card">
-              <h3>Teriyaki Chicken</h3>
-              <div className="result-value">
+            <div className="result-card" role="article" aria-labelledby="teriyaki-result">
+              <h3 id="teriyaki-result">Teriyaki Chicken</h3>
+              <div className="result-value" aria-label={`${formatToKg(result.rawToMarinateTeriyaki)} kilograms of teriyaki chicken to marinate`}>
                 {formatToKg(result.rawToMarinateTeriyaki)} <span className="result-unit">kg</span>
               </div>
-              <p>({formatToPans(result.rawToMarinateTeriyaki, 3200 / 0.88)} pans approx.)</p>
+              <p aria-label={`Approximately ${formatToPans(result.rawToMarinateTeriyaki, 3200 / 0.88)} pans`}>
+                ({formatToPans(result.rawToMarinateTeriyaki, 3200 / 0.88)} pans approx.)
+              </p>
             </div>
             
-            <div className="result-card">
-              <h3>Turmeric Chicken</h3>
-              <div className="result-value">
+            <div className="result-card" role="article" aria-labelledby="turmeric-result">
+              <h3 id="turmeric-result">Turmeric Chicken</h3>
+              <div className="result-value" aria-label={`${formatToKg(result.rawToMarinateTurmeric)} kilograms of turmeric chicken to marinate`}>
                 {formatToKg(result.rawToMarinateTurmeric)} <span className="result-unit">kg</span>
               </div>
-              <p>({formatToPans(result.rawToMarinateTurmeric, 1500 / 0.86)} pans approx.)</p>
+              <p aria-label={`Approximately ${formatToPans(result.rawToMarinateTurmeric, 1500 / 0.86)} pans`}>
+                ({formatToPans(result.rawToMarinateTurmeric, 1500 / 0.86)} pans approx.)
+              </p>
             </div>
           </div>
 
-          <div className="alert info">
-            <strong>Historical Ratios (per $1000 sales):</strong>
+          <div className="alert info" role="complementary" aria-labelledby="historical-ratios">
+            <strong id="historical-ratios">Historical Ratios (per $1000 sales):</strong>
             <br />
-            Soy: {result.portionsPer1000Soy.toFixed(1)} portions | 
-            Teriyaki: {result.portionsPer1000Teriyaki.toFixed(1)} portions | 
-            Turmeric: {result.portionsPer1000Turmeric.toFixed(1)} portions
+            <span aria-label={`Soy: ${result.portionsPer1000Soy.toFixed(1)} portions per 1000 dollars in sales`}>
+              Soy: {result.portionsPer1000Soy.toFixed(1)} portions
+            </span> | 
+            <span aria-label={`Teriyaki: ${result.portionsPer1000Teriyaki.toFixed(1)} portions per 1000 dollars in sales`}>
+              Teriyaki: {result.portionsPer1000Teriyaki.toFixed(1)} portions
+            </span> | 
+            <span aria-label={`Turmeric: ${result.portionsPer1000Turmeric.toFixed(1)} portions per 1000 dollars in sales`}>
+              Turmeric: {result.portionsPer1000Turmeric.toFixed(1)} portions
+            </span>
           </div>
         </div>
       )}

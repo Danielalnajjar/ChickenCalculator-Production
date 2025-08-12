@@ -8,6 +8,7 @@ import com.example.chickencalculator.repository.AdminUserRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.transaction.annotation.Isolation
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import java.time.LocalDateTime
 import java.security.SecureRandom
@@ -17,7 +18,7 @@ class AdminService(private val adminUserRepository: AdminUserRepository) {
     private val logger = LoggerFactory.getLogger(AdminService::class.java)
     private val passwordEncoder = BCryptPasswordEncoder(10)
     
-    @Transactional
+    @Transactional(rollbackFor = [Exception::class])
     fun authenticate(email: String, password: String): AdminUser {
         logger.debug("Authentication attempt for email: {}", email)
         val user = adminUserRepository.findByEmail(email)
@@ -38,7 +39,7 @@ class AdminService(private val adminUserRepository: AdminUserRepository) {
         return updatedUser
     }
     
-    @Transactional
+    @Transactional(rollbackFor = [Exception::class])
     fun createAdminUser(email: String, password: String, name: String, role: AdminRole, passwordChangeRequired: Boolean = false): AdminUser {
         validatePassword(password) // Validate before hashing
         
@@ -91,7 +92,7 @@ class AdminService(private val adminUserRepository: AdminUserRepository) {
     }
     
     // Initialize default admin user if none exists
-    @Transactional
+    @Transactional(rollbackFor = [Exception::class])
     fun initializeDefaultAdmin() {
         logger.info("Checking for existing admin users")
         val forceReset = System.getenv("FORCE_ADMIN_RESET") == "true"
@@ -147,19 +148,22 @@ class AdminService(private val adminUserRepository: AdminUserRepository) {
     }
     
     // Helper methods for debugging
+    @Transactional(readOnly = true)
     fun getAdminCount(): Long {
         return adminUserRepository.count()
     }
     
+    @Transactional(readOnly = true)
     fun getAllAdminEmails(): List<String> {
         return adminUserRepository.findAll().map { it.email }
     }
     
+    @Transactional(readOnly = true)
     fun getAdminByEmail(email: String): AdminUser? {
         return adminUserRepository.findByEmail(email)
     }
     
-    @Transactional
+    @Transactional(rollbackFor = [Exception::class])
     fun changePassword(userId: Long, currentPassword: String, newPassword: String): Boolean {
         val user = adminUserRepository.findById(userId).orElseThrow {
             BusinessValidationException("User not found with ID: $userId")

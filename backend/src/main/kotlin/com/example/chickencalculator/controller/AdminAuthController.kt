@@ -4,6 +4,8 @@ import com.example.chickencalculator.config.ApiVersionConfig
 import com.example.chickencalculator.dto.PasswordChangeRequest
 import com.example.chickencalculator.service.AdminService
 import com.example.chickencalculator.service.JwtService
+import com.example.chickencalculator.service.MetricsService
+import io.micrometer.core.annotation.Timed
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
@@ -57,11 +59,13 @@ data class CsrfTokenResponse(
 )
 class AdminAuthController(
     private val adminService: AdminService,
-    private val jwtService: JwtService
+    private val jwtService: JwtService,
+    private val metricsService: MetricsService
 ) {
     private val logger = LoggerFactory.getLogger(AdminAuthController::class.java)
     
     @PostMapping("/login")
+    @Timed(value = "chicken.calculator.admin.login.time", description = "Time taken for admin login")
     @Operation(summary = "Admin login", description = "Authenticate admin user and set JWT token as httpOnly cookie")
     @ApiResponses(value = [
         ApiResponse(responseCode = "200", description = "Successfully authenticated"),
@@ -69,36 +73,49 @@ class AdminAuthController(
         ApiResponse(responseCode = "400", description = "Invalid request format")
     ])
     fun login(@Valid @RequestBody request: LoginRequest, response: HttpServletResponse): ResponseEntity<LoginResponse> {
-        // AdminService.authenticate now throws InvalidCredentialsException on failure
-        val adminUser = adminService.authenticate(request.email, request.password)
+        val startTime = System.currentTimeMillis()
         
-        // Generate JWT token
-        val token = jwtService.generateToken(
-            email = adminUser.email,
-            userId = adminUser.id!!,
-            role = adminUser.role.name
-        )
-        
-        // Set JWT as httpOnly cookie
-        val cookie = Cookie("jwt_token", token).apply {
-            isHttpOnly = true
-            secure = true // Use HTTPS in production
-            path = "/"
-            maxAge = 24 * 60 * 60 // 24 hours
+        return try {
+            // AdminService.authenticate now throws InvalidCredentialsException on failure
+            val adminUser = adminService.authenticate(request.email, request.password)
+            
+            // Generate JWT token
+            val token = jwtService.generateToken(
+                email = adminUser.email,
+                userId = adminUser.id!!,
+                role = adminUser.role.name
+            )
+            
+            // Set JWT as httpOnly cookie
+            val cookie = Cookie("jwt_token", token).apply {
+                isHttpOnly = true
+                secure = true // Use HTTPS in production
+                path = "/"
+                maxAge = 24 * 60 * 60 // 24 hours
+            }
+            response.addCookie(cookie)
+            
+            val processingTime = System.currentTimeMillis() - startTime
+            metricsService.recordAdminOperation("login", true, processingTime)
+            
+            ResponseEntity.ok(LoginResponse(
+                id = adminUser.id.toString(),
+                email = adminUser.email,
+                name = adminUser.name,
+                role = adminUser.role.name.lowercase(),
+                token = null, // Don't send token in response body
+                passwordChangeRequired = adminUser.passwordChangeRequired
+            ))
+        } catch (e: Exception) {
+            val processingTime = System.currentTimeMillis() - startTime
+            metricsService.recordAdminOperation("login", false, processingTime)
+            metricsService.recordAuthFailure("invalid_credentials", request.email)
+            throw e
         }
-        response.addCookie(cookie)
-        
-        return ResponseEntity.ok(LoginResponse(
-            id = adminUser.id.toString(),
-            email = adminUser.email,
-            name = adminUser.name,
-            role = adminUser.role.name.lowercase(),
-            token = null, // Don't send token in response body
-            passwordChangeRequired = adminUser.passwordChangeRequired
-        ))
     }
     
     @PostMapping("/validate")
+    @Timed(value = "chicken.calculator.admin.validate.time", description = "Time taken to validate JWT token")
     @Operation(summary = "Validate JWT token", description = "Validate the current JWT token from cookie or header and return user information")
     @ApiResponses(value = [
         ApiResponse(responseCode = "200", description = "Token is valid"),
@@ -108,43 +125,60 @@ class AdminAuthController(
         @RequestHeader("Authorization") authHeader: String?,
         request: HttpServletRequest
     ): ResponseEntity<LoginResponse> {
-        // Try to get token from cookie first, then fallback to Authorization header
-        val token = getTokenFromRequest(request, authHeader)
+        val startTime = System.currentTimeMillis()
         
-        if (token == null) {
-            return ResponseEntity.status(401).build()
-        }
-        
-        if (!jwtService.validateToken(token)) {
-            return ResponseEntity.status(401).build()
-        }
-        
-        val email = jwtService.getEmailFromToken(token)
-        val userId = jwtService.getUserIdFromToken(token)
-        val role = jwtService.getRoleFromToken(token)
-        
-        if (email == null || userId == null || role == null) {
-            return ResponseEntity.status(401).build()
-        }
-        
-        // Get fresh user data from database
-        val adminUser = adminService.getAdminByEmail(email)
-        
-        return if (adminUser != null) {
-            ResponseEntity.ok(LoginResponse(
-                id = adminUser.id.toString(),
-                email = adminUser.email,
-                name = adminUser.name,
-                role = adminUser.role.name.lowercase(),
-                token = null, // Don't regenerate token on validation
-                passwordChangeRequired = adminUser.passwordChangeRequired
-            ))
-        } else {
-            ResponseEntity.status(401).build()
+        try {
+            // Try to get token from cookie first, then fallback to Authorization header
+            val token = getTokenFromRequest(request, authHeader)
+            
+            if (token == null) {
+                metricsService.recordAuthFailure("no_token")
+                return ResponseEntity.status(401).build()
+            }
+            
+            if (!jwtService.validateToken(token)) {
+                metricsService.recordAuthFailure("invalid_token")
+                return ResponseEntity.status(401).build()
+            }
+            
+            val email = jwtService.getEmailFromToken(token)
+            val userId = jwtService.getUserIdFromToken(token)
+            val role = jwtService.getRoleFromToken(token)
+            
+            if (email == null || userId == null || role == null) {
+                metricsService.recordAuthFailure("invalid_token_claims")
+                return ResponseEntity.status(401).build()
+            }
+            
+            // Get fresh user data from database
+            val adminUser = adminService.getAdminByEmail(email)
+            val processingTime = System.currentTimeMillis() - startTime
+            
+            return if (adminUser != null) {
+                metricsService.recordAdminOperation("validate_token", true, processingTime)
+                ResponseEntity.ok(LoginResponse(
+                    id = adminUser.id.toString(),
+                    email = adminUser.email,
+                    name = adminUser.name,
+                    role = adminUser.role.name.lowercase(),
+                    token = null, // Don't regenerate token on validation
+                    passwordChangeRequired = adminUser.passwordChangeRequired
+                ))
+            } else {
+                metricsService.recordAdminOperation("validate_token", false, processingTime)
+                metricsService.recordAuthFailure("user_not_found", email)
+                ResponseEntity.status(401).build()
+            }
+        } catch (e: Exception) {
+            val processingTime = System.currentTimeMillis() - startTime
+            metricsService.recordAdminOperation("validate_token", false, processingTime)
+            metricsService.recordError("admin_validate_token", e.javaClass.simpleName)
+            throw e
         }
     }
     
     @PostMapping("/change-password")
+    @Timed(value = "chicken.calculator.admin.change_password.time", description = "Time taken to change admin password")
     @Operation(summary = "Change admin password", description = "Change the password for an authenticated admin user")
     @SecurityRequirement(name = "bearerAuth")
     @ApiResponses(value = [
@@ -157,29 +191,45 @@ class AdminAuthController(
         @Valid @RequestBody passwordRequest: PasswordChangeRequest,
         httpRequest: HttpServletRequest
     ): ResponseEntity<Map<String, String>> {
-        val token = getTokenFromRequest(httpRequest, authHeader)
+        val startTime = System.currentTimeMillis()
         
-        if (token == null) {
-            return ResponseEntity.status(401).body(mapOf("error" to "Authentication required"))
+        return try {
+            val token = getTokenFromRequest(httpRequest, authHeader)
+            
+            if (token == null) {
+                metricsService.recordAuthFailure("no_token")
+                return ResponseEntity.status(401).body(mapOf("error" to "Authentication required"))
+            }
+            
+            if (!jwtService.validateToken(token)) {
+                metricsService.recordAuthFailure("invalid_token")
+                return ResponseEntity.status(401).body(mapOf("error" to "Invalid token"))
+            }
+            
+            // Validate password confirmation
+            if (passwordRequest.newPassword != passwordRequest.confirmPassword) {
+                metricsService.recordError("admin_change_password", "PasswordMismatchException")
+                return ResponseEntity.badRequest().body(mapOf("error" to "New password and confirmation do not match"))
+            }
+            
+            val userId = jwtService.getUserIdFromToken(token)
+            if (userId == null) {
+                metricsService.recordAuthFailure("invalid_token_claims")
+                return ResponseEntity.status(401).body(mapOf("error" to "Invalid token"))
+            }
+            
+            // AdminService.changePassword now throws appropriate exceptions
+            adminService.changePassword(userId, passwordRequest.currentPassword, passwordRequest.newPassword)
+            val processingTime = System.currentTimeMillis() - startTime
+            
+            metricsService.recordAdminOperation("change_password", true, processingTime)
+            ResponseEntity.ok(mapOf("message" to "Password changed successfully"))
+        } catch (e: Exception) {
+            val processingTime = System.currentTimeMillis() - startTime
+            metricsService.recordAdminOperation("change_password", false, processingTime)
+            metricsService.recordError("admin_change_password", e.javaClass.simpleName)
+            throw e
         }
-        
-        if (!jwtService.validateToken(token)) {
-            return ResponseEntity.status(401).body(mapOf("error" to "Invalid token"))
-        }
-        
-        // Validate password confirmation
-        if (passwordRequest.newPassword != passwordRequest.confirmPassword) {
-            return ResponseEntity.badRequest().body(mapOf("error" to "New password and confirmation do not match"))
-        }
-        
-        val userId = jwtService.getUserIdFromToken(token)
-        if (userId == null) {
-            return ResponseEntity.status(401).body(mapOf("error" to "Invalid token"))
-        }
-        
-        // AdminService.changePassword now throws appropriate exceptions
-        adminService.changePassword(userId, passwordRequest.currentPassword, passwordRequest.newPassword)
-        return ResponseEntity.ok(mapOf("message" to "Password changed successfully"))
     }
     
     @GetMapping("/csrf-token")
@@ -203,21 +253,34 @@ class AdminAuthController(
     }
     
     @PostMapping("/logout")
+    @Timed(value = "chicken.calculator.admin.logout.time", description = "Time taken for admin logout")
     @Operation(summary = "Admin logout", description = "Logout the current admin user and clear JWT cookie")
     @ApiResponses(value = [
         ApiResponse(responseCode = "200", description = "Successfully logged out")
     ])
     fun logout(response: HttpServletResponse): ResponseEntity<Map<String, String>> {
-        // Clear the JWT cookie
-        val cookie = Cookie("jwt_token", "").apply {
-            isHttpOnly = true
-            secure = true
-            path = "/"
-            maxAge = 0 // Delete the cookie
-        }
-        response.addCookie(cookie)
+        val startTime = System.currentTimeMillis()
         
-        return ResponseEntity.ok(mapOf("message" to "Logged out successfully"))
+        try {
+            // Clear the JWT cookie
+            val cookie = Cookie("jwt_token", "").apply {
+                isHttpOnly = true
+                secure = true
+                path = "/"
+                maxAge = 0 // Delete the cookie
+            }
+            response.addCookie(cookie)
+            
+            val processingTime = System.currentTimeMillis() - startTime
+            metricsService.recordAdminOperation("logout", true, processingTime)
+            
+            ResponseEntity.ok(mapOf("message" to "Logged out successfully"))
+        } catch (e: Exception) {
+            val processingTime = System.currentTimeMillis() - startTime
+            metricsService.recordAdminOperation("logout", false, processingTime)
+            metricsService.recordError("admin_logout", e.javaClass.simpleName)
+            throw e
+        }
     }
     
     // OPTIONS handler for CORS preflight

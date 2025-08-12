@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.transaction.annotation.Isolation
 import org.springframework.web.server.ResponseStatusException
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -23,6 +24,7 @@ class MarinationLogService(
     /**
      * Get all marination logs for a specific location
      */
+    @Transactional(readOnly = true)
     fun getAllMarinationLogsByLocation(locationId: Long): List<MarinationLog> {
         val location = getLocationById(locationId)
         return marinationLogRepository.findByLocationOrderByTimestampDesc(location)
@@ -31,6 +33,7 @@ class MarinationLogService(
     /**
      * Get today's marination logs for a specific location
      */
+    @Transactional(readOnly = true)
     fun getTodaysMarinationLogsByLocation(locationId: Long): List<MarinationLog> {
         val location = getLocationById(locationId)
         
@@ -48,6 +51,7 @@ class MarinationLogService(
     /**
      * Get marination logs for a specific date range
      */
+    @Transactional(readOnly = true)
     fun getMarinationLogsByLocationAndDateRange(
         locationId: Long,
         startDate: LocalDateTime,
@@ -60,7 +64,7 @@ class MarinationLogService(
     /**
      * Add new marination log for a location
      */
-    @Transactional
+    @Transactional(rollbackFor = [Exception::class])
     fun addMarinationLog(marinationLog: MarinationLog, locationId: Long): MarinationLog {
         val location = getLocationById(locationId)
         
@@ -80,7 +84,7 @@ class MarinationLogService(
     /**
      * Delete specific marination log entry
      */
-    @Transactional
+    @Transactional(rollbackFor = [Exception::class])
     fun deleteMarinationLog(marinationLogId: Long, locationId: Long) {
         val log = marinationLogRepository.findById(marinationLogId).orElseThrow {
             ResponseStatusException(HttpStatus.NOT_FOUND, "Marination log not found")
@@ -99,7 +103,7 @@ class MarinationLogService(
     /**
      * Delete all marination logs for a location
      */
-    @Transactional
+    @Transactional(rollbackFor = [Exception::class])
     fun deleteAllMarinationLogsByLocation(locationId: Long) {
         val location = getLocationById(locationId)
         
@@ -111,7 +115,7 @@ class MarinationLogService(
     /**
      * Update existing marination log
      */
-    @Transactional
+    @Transactional(rollbackFor = [Exception::class])
     fun updateMarinationLog(marinationLogId: Long, updatedLog: MarinationLog, locationId: Long): MarinationLog {
         val existingLog = marinationLogRepository.findById(marinationLogId).orElseThrow {
             ResponseStatusException(HttpStatus.NOT_FOUND, "Marination log not found")
@@ -140,6 +144,7 @@ class MarinationLogService(
     /**
      * Get the latest marination log for a location
      */
+    @Transactional(readOnly = true)
     fun getLatestMarinationLogByLocation(locationId: Long): MarinationLog? {
         val location = getLocationById(locationId)
         return marinationLogRepository.findByLocationOrderByTimestampDesc(location).firstOrNull()
@@ -148,6 +153,7 @@ class MarinationLogService(
     /**
      * Get end-of-day marination logs for a location
      */
+    @Transactional(readOnly = true)
     fun getEndOfDayLogsByLocation(locationId: Long): List<MarinationLog> {
         val location = getLocationById(locationId)
         return marinationLogRepository.findByLocationAndIsEndOfDayTrueOrderByTimestampDesc(location)
@@ -157,6 +163,7 @@ class MarinationLogService(
      * Extract location ID from request header or fallback to default location
      * This ensures backward compatibility while enabling multi-tenant support
      */
+    @Transactional(readOnly = true)
     fun resolveLocationId(locationIdHeader: String?): Long {
         return if (locationIdHeader != null) {
             try {

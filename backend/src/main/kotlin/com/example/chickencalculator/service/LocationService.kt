@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.transaction.annotation.Isolation
 import org.springframework.web.server.ResponseStatusException
 import java.time.LocalDateTime
 
@@ -17,35 +18,41 @@ class LocationService(
     
     private val logger = LoggerFactory.getLogger(LocationService::class.java)
     
+    @Transactional(readOnly = true)
     fun getAllLocations(): List<Location> {
         return locationRepository.findAll()
     }
     
+    @Transactional(readOnly = true)
     fun getLocationById(id: Long): Location? {
         return locationRepository.findById(id).orElse(null)
     }
     
+    @Transactional(readOnly = true)
     fun getLocationByIdOrThrow(id: Long): Location {
         return locationRepository.findById(id).orElseThrow { 
             ResponseStatusException(HttpStatus.NOT_FOUND, "Location with ID $id not found")
         }
     }
     
+    @Transactional(readOnly = true)
     fun getLocationBySlug(slug: String): Location? {
         return locationRepository.findBySlug(slug)
     }
     
+    @Transactional(readOnly = true)
     fun getLocationBySlugOrThrow(slug: String): Location {
         return locationRepository.findBySlug(slug) ?: throw ResponseStatusException(
             HttpStatus.NOT_FOUND, "Location with slug '$slug' not found"
         )
     }
     
+    @Transactional(readOnly = true)
     fun getDefaultLocation(): Location? {
         return locationRepository.findByIsDefaultTrue()
     }
     
-    @Transactional
+    @Transactional(rollbackFor = [Exception::class])
     fun createLocation(
         name: String,
         address: String?,
@@ -87,7 +94,7 @@ class LocationService(
         return locationRepository.save(location)
     }
     
-    @Transactional
+    @Transactional(rollbackFor = [Exception::class])
     fun updateLocation(
         id: Long,
         name: String? = null,
@@ -111,7 +118,7 @@ class LocationService(
         return locationRepository.save(updatedLocation)
     }
     
-    @Transactional
+    @Transactional(rollbackFor = [Exception::class])
     fun deleteLocation(id: Long) {
         val location = locationRepository.findById(id).orElse(null)
         if (location != null && !location.isDefault) {

@@ -116,47 +116,57 @@ const Dashboard: React.FC = () => {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+        <h1 className="text-3xl font-bold text-gray-900" id="dashboard-title">Dashboard</h1>
         <p className="text-gray-600">Overview of all Chicken Calculator locations</p>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white rounded-lg shadow p-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" role="region" aria-labelledby="stats-title">
+        <h2 id="stats-title" className="sr-only">Dashboard Statistics</h2>
+        
+        <div className="bg-white rounded-lg shadow p-6" role="article" aria-labelledby="total-locations-stat">
           <div className="flex items-center">
-            <BuildingStorefrontIcon className="h-8 w-8 text-blue-600" />
+            <BuildingStorefrontIcon className="h-8 w-8 text-blue-600" aria-hidden="true" />
             <div className="ml-4">
-              <p className="text-2xl font-bold text-gray-900">{stats.totalLocations}</p>
+              <p className="text-2xl font-bold text-gray-900" id="total-locations-stat" aria-label={`${stats.totalLocations} total locations`}>
+                {stats.totalLocations}
+              </p>
               <p className="text-sm text-gray-600">Total Locations</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white rounded-lg shadow p-6" role="article" aria-labelledby="active-locations-stat">
           <div className="flex items-center">
-            <CheckCircleIcon className="h-8 w-8 text-green-600" />
+            <CheckCircleIcon className="h-8 w-8 text-green-600" aria-hidden="true" />
             <div className="ml-4">
-              <p className="text-2xl font-bold text-gray-900">{stats.activeLocations}</p>
+              <p className="text-2xl font-bold text-gray-900" id="active-locations-stat" aria-label={`${stats.activeLocations} active locations`}>
+                {stats.activeLocations}
+              </p>
               <p className="text-sm text-gray-600">Active</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white rounded-lg shadow p-6" role="article" aria-labelledby="total-transactions-stat">
           <div className="flex items-center">
-            <ChartBarIcon className="h-8 w-8 text-purple-600" />
+            <ChartBarIcon className="h-8 w-8 text-purple-600" aria-hidden="true" />
             <div className="ml-4">
-              <p className="text-2xl font-bold text-gray-900">{stats.totalTransactions.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-gray-900" id="total-transactions-stat" aria-label={`${stats.totalTransactions.toLocaleString()} total transactions`}>
+                {stats.totalTransactions.toLocaleString()}
+              </p>
               <p className="text-sm text-gray-600">Total Transactions</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white rounded-lg shadow p-6" role="article" aria-labelledby="total-revenue-stat">
           <div className="flex items-center">
-            <ServerIcon className="h-8 w-8 text-green-600" />
+            <ServerIcon className="h-8 w-8 text-green-600" aria-hidden="true" />
             <div className="ml-4">
-              <p className="text-2xl font-bold text-gray-900">${stats.totalRevenue.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-gray-900" id="total-revenue-stat" aria-label={`$${stats.totalRevenue.toLocaleString()} total revenue`}>
+                ${stats.totalRevenue.toLocaleString()}
+              </p>
               <p className="text-sm text-gray-600">Total Revenue</p>
             </div>
           </div>
@@ -165,9 +175,9 @@ const Dashboard: React.FC = () => {
 
       {/* Alerts */}
       {stats.errorLocations > 0 && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4" role="alert" aria-live="polite">
           <div className="flex">
-            <ExclamationTriangleIcon className="h-5 w-5 text-red-400" />
+            <ExclamationTriangleIcon className="h-5 w-5 text-red-400" aria-hidden="true" />
             <div className="ml-3">
               <h3 className="text-sm font-medium text-red-800">
                 {stats.errorLocations} location(s) need attention
@@ -183,28 +193,28 @@ const Dashboard: React.FC = () => {
       {/* Locations Table */}
       <div className="bg-white shadow rounded-lg">
         <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">All Locations</h2>
+          <h2 className="text-xl font-semibold text-gray-900" id="locations-table-title">All Locations</h2>
         </div>
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
+          <table className="min-w-full divide-y divide-gray-200" role="table" aria-labelledby="locations-table-title">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Location
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Manager
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Infrastructure
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Last Seen
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
@@ -245,15 +255,29 @@ const Dashboard: React.FC = () => {
                     {new Date(location.lastSeen).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <a href={`https://${location.domain}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-900 mr-4">
-                      Visit
-                    </a>
-                    <button className="text-indigo-600 hover:text-indigo-900 mr-4">
-                      Manage
-                    </button>
-                    <button className="text-red-600 hover:text-red-900">
-                      Delete
-                    </button>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <a 
+                        href={`https://${location.domain}`} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="text-blue-600 hover:text-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-2 py-1 min-h-[44px] flex items-center justify-center"
+                        aria-label={`Visit ${location.name} location`}
+                      >
+                        Visit
+                      </a>
+                      <button 
+                        className="text-indigo-600 hover:text-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded px-2 py-1 min-h-[44px]"
+                        aria-label={`Manage ${location.name} location`}
+                      >
+                        Manage
+                      </button>
+                      <button 
+                        className="text-red-600 hover:text-red-900 focus:outline-none focus:ring-2 focus:ring-red-500 rounded px-2 py-1 min-h-[44px]"
+                        aria-label={`Delete ${location.name} location`}
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -261,16 +285,17 @@ const Dashboard: React.FC = () => {
           </table>
           
           {locations.length === 0 && (
-            <div className="text-center py-12">
-              <BuildingStorefrontIcon className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900">No locations yet</h3>
+            <div className="text-center py-12" role="region" aria-labelledby="no-locations-title">
+              <BuildingStorefrontIcon className="mx-auto h-12 w-12 text-gray-400" aria-hidden="true" />
+              <h3 id="no-locations-title" className="mt-2 text-sm font-medium text-gray-900">No locations yet</h3>
               <p className="mt-1 text-sm text-gray-500">Get started by creating your first location.</p>
               <div className="mt-6">
                 <button
                   type="button"
-                  className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                  className="inline-flex items-center px-4 py-3 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 min-h-[44px]"
+                  aria-label="Create your first location"
                 >
-                  <BuildingStorefrontIcon className="-ml-1 mr-2 h-5 w-5" />
+                  <BuildingStorefrontIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
                   Create Location
                 </button>
               </div>

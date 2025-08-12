@@ -6,6 +6,7 @@ import com.example.chickencalculator.repository.SalesDataRepository
 import com.example.chickencalculator.utils.ChickenCalculator
 import com.example.chickencalculator.utils.max
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
 
 @Service
@@ -13,6 +14,7 @@ class ChickenCalculatorService(
     private val salesDataRepository: SalesDataRepository
 ) {
     
+    @Transactional(readOnly = true)
     fun calculateMarination(request: MarinationRequest): CalculationResult {
         val salesTotals = salesDataRepository.getSalesTotals()
         
@@ -60,6 +62,7 @@ class ChickenCalculatorService(
         }
     }
     
+    @Transactional(readOnly = true)
     fun hasSalesData(): Boolean {
         val totals = salesDataRepository.getSalesTotals()
         return totals.totalSales > BigDecimal.ZERO

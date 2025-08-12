@@ -65,20 +65,76 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics
+        include: health,info,metrics,prometheus
+      base-path: /actuator
   endpoint:
     health:
       show-details: when-authorized
+    prometheus:
+      enabled: true
   metrics:
     export:
+      # Prometheus metrics configuration
+      prometheus:
+        enabled: true
+        step: 10s
+        descriptions: true
       # Enable HikariCP metrics
       simple:
         enabled: true
+    # Enable JVM metrics
+    enable:
+      jvm: true
+      system: true
+      process: true
+      hikaricp: true
+      web: true
+    # Custom metrics configuration
+    distribution:
+      percentiles-histogram:
+        "[http.server.requests]": true
+        "[chicken.calculator.calculations]": true
+      sla:
+        "[http.server.requests]": 50ms, 100ms, 200ms, 500ms, 1s, 2s, 5s
+        "[chicken.calculator.calculations]": 10ms, 25ms, 50ms, 100ms, 200ms
+    tags:
+      application: chicken-calculator
+      environment: ${SPRING_PROFILES_ACTIVE:development}
+
+# Sentry Error Tracking Configuration
+sentry:
+  dsn: ${SENTRY_DSN:}
+  environment: ${SPRING_PROFILES_ACTIVE:development}
+  release: ${SENTRY_RELEASE:chicken-calculator@1.0.0}
+  traces-sample-rate: ${SENTRY_TRACES_SAMPLE_RATE:1.0}
+  enable-tracing: ${SENTRY_ENABLE_TRACING:true}
+  server-name: ${SENTRY_SERVER_NAME:chicken-calculator-backend}
+  # Additional Sentry configuration
+  send-default-pii: false
+  attach-stacktrace: true
+  attach-threads: true
+  enable-shutdown-hook: true
+  max-breadcrumbs: 100
+  # Integration configuration
+  integrations:
+    logback:
+      enabled: true
+      minimum-event-level: error
+      minimum-breadcrumb-level: info
+    spring:
+      enabled: true
+    jdbc:
+      enabled: true
 
 logging:
   level:
     com.example.chickencalculator: ${LOG_LEVEL:INFO}
+    com.example.chickencalculator.filter: ${FILTER_LOG_LEVEL:DEBUG}
+    com.example.chickencalculator.interceptor: ${INTERCEPTOR_LOG_LEVEL:DEBUG}
+    com.example.chickencalculator.exception: INFO
     org.springframework.web: WARN
     org.hibernate.SQL: ${SQL_LOG_LEVEL:WARN}
+    io.sentry: ${SENTRY_LOG_LEVEL:WARN}
   pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{correlationId:-NO_CORRELATION_ID}] %logger{36} - %msg%n"
+  config: ${LOGGING_CONFIG:classpath:logback-spring.xml}
