@@ -2,7 +2,7 @@ import axios from 'axios';
 import { CalculationResult, MarinationRequest, SalesData, SalesTotals, MarinationLog } from '../types';
 
 // Use relative URL in production, or environment variable for development
-const API_BASE_URL = process.env.REACT_APP_API_URL || '/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || '/api/v1';
 
 const api = axios.create({
   baseURL: API_BASE_URL,

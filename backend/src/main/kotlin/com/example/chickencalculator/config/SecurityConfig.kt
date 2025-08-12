@@ -33,15 +33,29 @@ class SecurityConfig(
                 csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                     .csrfTokenRequestHandler(CsrfTokenRequestAttributeHandler())
                     .ignoringRequestMatchers(
-                        "/api/admin/auth/login", // Allow login without CSRF
-                        "/api/admin/auth/validate", // Allow token validation without CSRF
-                        "/api/admin/auth/logout", // Allow logout without CSRF
-                        "/api/admin/auth/csrf-token", // Allow CSRF token retrieval
-                        "/api/health/**",
-                        "/actuator/health",
+                        // Versioned API endpoints
+                        "${ApiVersionConfig.API_VERSION}/admin/auth/login",
+                        "${ApiVersionConfig.API_VERSION}/admin/auth/validate",
+                        "${ApiVersionConfig.API_VERSION}/admin/auth/logout",
+                        "${ApiVersionConfig.API_VERSION}/admin/auth/csrf-token",
+                        "${ApiVersionConfig.API_VERSION}/calculator/**",
+                        "${ApiVersionConfig.API_VERSION}/sales-data/**",
+                        "${ApiVersionConfig.API_VERSION}/marination-log/**",
+                        "${ApiVersionConfig.API_VERSION}/debug/**",
+                        // Legacy API endpoints (for backward compatibility)
+                        "/api/admin/auth/login",
+                        "/api/admin/auth/validate",
+                        "/api/admin/auth/logout",
+                        "/api/admin/auth/csrf-token",
                         "/api/calculator/**",
                         "/api/sales-data/**",
                         "/api/marination-log/**",
+                        "/api/debug/**",
+                        // Health endpoints (unversioned)
+                        "/api/health/**",
+                        "/actuator/health",
+                        "/actuator/prometheus",
+                        "/actuator/metrics/**",
                         "/",
                         "/static/**",
                         "/admin/**",
@@ -59,14 +73,27 @@ class SecurityConfig(
             .authorizeHttpRequests { auth ->
                 // Public endpoints - no authentication required
                 auth.requestMatchers(
+                    // Versioned API endpoints
+                    "${ApiVersionConfig.API_VERSION}/admin/auth/login",
+                    "${ApiVersionConfig.API_VERSION}/admin/auth/register",
+                    "${ApiVersionConfig.API_VERSION}/admin/auth/csrf-token",
+                    "${ApiVersionConfig.API_VERSION}/calculator/**",
+                    "${ApiVersionConfig.API_VERSION}/sales-data/**",
+                    "${ApiVersionConfig.API_VERSION}/marination-log/**",
+                    "${ApiVersionConfig.API_VERSION}/debug/**",
+                    // Legacy API endpoints (for backward compatibility)
                     "/api/admin/auth/login",
                     "/api/admin/auth/register",
-                    "/api/admin/auth/csrf-token", // Allow CSRF token retrieval
+                    "/api/admin/auth/csrf-token",
+                    "/api/calculator/**",
+                    "/api/sales-data/**",
+                    "/api/marination-log/**",
+                    "/api/debug/**",
+                    // Health endpoints (unversioned)
                     "/api/health/**",
                     "/actuator/health",
-                    "/api/calculator/**",  // Public calculator endpoints
-                    "/api/sales-data/**",  // Public sales data endpoints for main app
-                    "/api/marination-log/**",  // Public marination log for main app
+                    "/actuator/prometheus",
+                    "/actuator/metrics/**",
                     "/",
                     "/static/**",
                     "/admin/**",  // Admin portal static files
@@ -80,7 +107,8 @@ class SecurityConfig(
                 ).permitAll()
                 
                 // Admin endpoints - require authentication
-                auth.requestMatchers("/api/admin/**").authenticated()
+                auth.requestMatchers("${ApiVersionConfig.API_VERSION}/admin/**").authenticated()
+                auth.requestMatchers("/api/admin/**").authenticated() // Legacy support
                 auth.requestMatchers("/api/locations/**").authenticated()
                 
                 // All other requests require authentication

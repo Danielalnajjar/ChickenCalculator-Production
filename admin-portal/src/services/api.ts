@@ -5,7 +5,7 @@
 
 // Constants - TOKEN_KEY kept for compatibility but no longer used for storage
 export const TOKEN_KEY = 'chicken_admin_token';
-const API_BASE = '/api/admin';
+const API_BASE = '/api/v1/admin';
 
 // Types
 export interface ApiResponse<T = any> {

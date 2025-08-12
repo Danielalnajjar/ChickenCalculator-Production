@@ -1,5 +1,6 @@
 package com.example.chickencalculator.controller
 
+import com.example.chickencalculator.config.ApiVersionConfig
 import com.example.chickencalculator.dto.PasswordChangeRequest
 import com.example.chickencalculator.service.AdminService
 import com.example.chickencalculator.service.JwtService
@@ -46,7 +47,7 @@ data class CsrfTokenResponse(
 )
 
 @RestController
-@RequestMapping("/api/admin/auth")
+@RequestMapping("${ApiVersionConfig.API_VERSION}/admin/auth")
 @Tag(name = "Admin Authentication", description = "Admin authentication endpoints")
 @CrossOrigin(
     origins = ["http://localhost:3000", "http://localhost:8080", "https://yourcompany.com"],

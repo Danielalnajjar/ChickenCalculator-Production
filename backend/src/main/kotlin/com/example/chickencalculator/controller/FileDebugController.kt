@@ -1,12 +1,13 @@
 package com.example.chickencalculator.controller
 
+import com.example.chickencalculator.config.ApiVersionConfig
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import java.io.File
 
 @RestController
-@RequestMapping("/api/debug")
+@RequestMapping("${ApiVersionConfig.API_VERSION}/debug")
 class FileDebugController {
     
     data class FileInfo(

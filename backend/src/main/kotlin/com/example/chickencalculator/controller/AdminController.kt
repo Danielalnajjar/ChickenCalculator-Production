@@ -1,10 +1,11 @@
 package com.example.chickencalculator.controller
 
+import com.example.chickencalculator.config.ApiVersionConfig
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @RestController
-@RequestMapping("/api/admin")
+@RequestMapping("${ApiVersionConfig.API_VERSION}/admin")
 @Deprecated("Use AdminAuthController and AdminLocationController instead")
 class AdminController {
     

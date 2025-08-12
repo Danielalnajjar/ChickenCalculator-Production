@@ -1,8 +1,11 @@
 package com.example.chickencalculator.controller
 
+import com.example.chickencalculator.config.ApiVersionConfig
 import com.example.chickencalculator.entity.Location
 import com.example.chickencalculator.entity.LocationStatus
 import com.example.chickencalculator.service.LocationManagementService
+import com.example.chickencalculator.service.MetricsService
+import io.micrometer.core.annotation.Timed
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.responses.ApiResponse
@@ -50,7 +53,7 @@ data class DashboardStats(
 )
 
 @RestController
-@RequestMapping("/api/admin")
+@RequestMapping("${ApiVersionConfig.API_VERSION}/admin")
 @Tag(name = "Admin Location Management", description = "Admin location management endpoints")
 @SecurityRequirement(name = "bearerAuth")
 @CrossOrigin(
@@ -60,39 +63,67 @@ data class DashboardStats(
     methods = [RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.OPTIONS]
 )
 class AdminLocationController(
-    private val locationManagementService: LocationManagementService
+    private val locationManagementService: LocationManagementService,
+    private val metricsService: MetricsService
 ) {
     private val logger = LoggerFactory.getLogger(AdminLocationController::class.java)
     
     @GetMapping("/stats")
+    @Timed(value = "chicken.calculator.admin.stats.time", description = "Time taken to get dashboard statistics")
     @Operation(summary = "Get dashboard statistics", description = "Retrieve dashboard statistics including location counts and status")
     @ApiResponses(value = [
         ApiResponse(responseCode = "200", description = "Statistics retrieved successfully"),
         ApiResponse(responseCode = "401", description = "Unauthorized")
     ])
     fun getDashboardStats(): ResponseEntity<DashboardStats> {
-        val locations = locationManagementService.getAllLocations()
-        val stats = DashboardStats(
-            totalLocations = locations.size,
-            activeLocations = locations.count { it.status == LocationStatus.ACTIVE },
-            deployingLocations = 0, // No longer deploying locations
-            errorLocations = locations.count { it.status == LocationStatus.INACTIVE }
-        )
-        return ResponseEntity.ok(stats)
+        val startTime = System.currentTimeMillis()
+        
+        return try {
+            val locations = locationManagementService.getAllLocations()
+            val stats = DashboardStats(
+                totalLocations = locations.size,
+                activeLocations = locations.count { it.status == LocationStatus.ACTIVE },
+                deployingLocations = 0, // No longer deploying locations
+                errorLocations = locations.count { it.status == LocationStatus.INACTIVE }
+            )
+            val processingTime = System.currentTimeMillis() - startTime
+            
+            metricsService.recordAdminOperation("get_stats", true, processingTime)
+            ResponseEntity.ok(stats)
+        } catch (e: Exception) {
+            val processingTime = System.currentTimeMillis() - startTime
+            metricsService.recordAdminOperation("get_stats", false, processingTime)
+            metricsService.recordError("admin_get_stats", e.javaClass.simpleName)
+            throw e
+        }
     }
     
     @GetMapping("/locations")
+    @Timed(value = "chicken.calculator.admin.get_locations.time", description = "Time taken to get all locations")
     @Operation(summary = "Get all locations", description = "Retrieve a list of all locations")
     @ApiResponses(value = [
         ApiResponse(responseCode = "200", description = "Locations retrieved successfully"),
         ApiResponse(responseCode = "401", description = "Unauthorized")
     ])
     fun getAllLocations(): ResponseEntity<List<Location>> {
-        val locations = locationManagementService.getAllLocations()
-        return ResponseEntity.ok(locations)
+        val startTime = System.currentTimeMillis()
+        
+        return try {
+            val locations = locationManagementService.getAllLocations()
+            val processingTime = System.currentTimeMillis() - startTime
+            
+            metricsService.recordAdminOperation("get_all_locations", true, processingTime)
+            ResponseEntity.ok(locations)
+        } catch (e: Exception) {
+            val processingTime = System.currentTimeMillis() - startTime
+            metricsService.recordAdminOperation("get_all_locations", false, processingTime)
+            metricsService.recordError("admin_get_locations", e.javaClass.simpleName)
+            throw e
+        }
     }
     
     @PostMapping("/locations")
+    @Timed(value = "chicken.calculator.admin.create_location.time", description = "Time taken to create location")
     @Operation(summary = "Create new location", description = "Create a new location with manager details")
     @ApiResponses(value = [
         ApiResponse(responseCode = "200", description = "Location created successfully"),
@@ -101,28 +132,41 @@ class AdminLocationController(
         ApiResponse(responseCode = "500", description = "Internal server error")
     ])
     fun createLocation(@Valid @RequestBody request: CreateLocationRequest): ResponseEntity<CreateLocationResponse> {
+        val startTime = System.currentTimeMillis()
         logger.info("Received location creation request for: ${request.name}")
         logger.debug("Request details - Name: ${request.name}, Manager: ${request.managerName}, Email: ${request.managerEmail}")
         
-        // LocationManagementService.createLocation now throws appropriate exceptions
-        val location = locationManagementService.createLocation(
-            name = request.name,
-            address = request.address,
-            managerName = request.managerName,
-            managerEmail = request.managerEmail
-        )
-        
-        logger.info("✅ Location created successfully: ${location.name} with slug: ${location.slug}")
-        
-        return ResponseEntity.ok(CreateLocationResponse(
-            id = location.id,
-            message = "Location created successfully",
-            status = "active",
-            slug = location.slug
-        ))
+        return try {
+            // LocationManagementService.createLocation now throws appropriate exceptions
+            val location = locationManagementService.createLocation(
+                name = request.name,
+                address = request.address,
+                managerName = request.managerName,
+                managerEmail = request.managerEmail
+            )
+            val processingTime = System.currentTimeMillis() - startTime
+            
+            logger.info("✅ Location created successfully: ${location.name} with slug: ${location.slug}")
+            
+            metricsService.recordLocationCreated(location.slug)
+            metricsService.recordAdminOperation("create_location", true, processingTime)
+            
+            ResponseEntity.ok(CreateLocationResponse(
+                id = location.id,
+                message = "Location created successfully",
+                status = "active",
+                slug = location.slug
+            ))
+        } catch (e: Exception) {
+            val processingTime = System.currentTimeMillis() - startTime
+            metricsService.recordAdminOperation("create_location", false, processingTime)
+            metricsService.recordError("admin_create_location", e.javaClass.simpleName)
+            throw e
+        }
     }
     
     @DeleteMapping("/locations/{id}")
+    @Timed(value = "chicken.calculator.admin.delete_location.time", description = "Time taken to delete location")
     @Operation(summary = "Delete location", description = "Delete a location by its ID")
     @ApiResponses(value = [
         ApiResponse(responseCode = "200", description = "Location deleted successfully"),
@@ -134,15 +178,34 @@ class AdminLocationController(
         @Parameter(description = "ID of the location to delete")
         @PathVariable id: Long
     ): ResponseEntity<Map<String, String>> {
-        // LocationManagementService.deleteLocation now throws appropriate exceptions
-        val result = locationManagementService.deleteLocation(id)
-        return ResponseEntity.ok(mapOf(
-            "message" to result.message,
-            "softDelete" to result.softDelete.toString()
-        ))
+        val startTime = System.currentTimeMillis()
+        
+        return try {
+            // Get location info before deletion for metrics
+            val location = locationManagementService.getLocationByIdOrThrow(id)
+            val locationSlug = location.slug
+            
+            // LocationManagementService.deleteLocation now throws appropriate exceptions
+            val result = locationManagementService.deleteLocation(id)
+            val processingTime = System.currentTimeMillis() - startTime
+            
+            metricsService.recordLocationDeleted(locationSlug)
+            metricsService.recordAdminOperation("delete_location", true, processingTime)
+            
+            ResponseEntity.ok(mapOf(
+                "message" to result.message,
+                "softDelete" to result.softDelete.toString()
+            ))
+        } catch (e: Exception) {
+            val processingTime = System.currentTimeMillis() - startTime
+            metricsService.recordAdminOperation("delete_location", false, processingTime)
+            metricsService.recordError("admin_delete_location", e.javaClass.simpleName)
+            throw e
+        }
     }
     
     @GetMapping("/locations/{id}")
+    @Timed(value = "chicken.calculator.admin.get_location.time", description = "Time taken to get location by ID")
     @Operation(summary = "Get location by ID", description = "Retrieve a specific location by its ID")
     @ApiResponses(value = [
         ApiResponse(responseCode = "200", description = "Location retrieved successfully"),
@@ -153,8 +216,20 @@ class AdminLocationController(
         @Parameter(description = "ID of the location to retrieve")
         @PathVariable id: Long
     ): ResponseEntity<Location> {
-        // Use the new method that throws appropriate exceptions
-        val location = locationManagementService.getLocationByIdOrThrow(id)
-        return ResponseEntity.ok(location)
+        val startTime = System.currentTimeMillis()
+        
+        return try {
+            // Use the new method that throws appropriate exceptions
+            val location = locationManagementService.getLocationByIdOrThrow(id)
+            val processingTime = System.currentTimeMillis() - startTime
+            
+            metricsService.recordAdminOperation("get_location", true, processingTime)
+            ResponseEntity.ok(location)
+        } catch (e: Exception) {
+            val processingTime = System.currentTimeMillis() - startTime
+            metricsService.recordAdminOperation("get_location", false, processingTime)
+            metricsService.recordError("admin_get_location", e.javaClass.simpleName)
+            throw e
+        }
     }
 }
