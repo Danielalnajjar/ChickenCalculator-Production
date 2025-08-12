@@ -42,7 +42,8 @@
       "WebFetch(domain:chickencalculator-production-production-2953.up.railway.app)",
       "Bash(git log:*)",
       "Bash(mvn test:*)",
-      "Bash(mvn compile:*)"
+      "Bash(mvn compile:*)",
+      "Bash(mvn package:*)"
     ],
     "deny": []
   }
