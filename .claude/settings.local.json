@@ -161,7 +161,8 @@
       "mcp__railway__variable_set",
       "mcp__railway__deployment_trigger",
       "Bash(mvn clean:*)",
-      "Bash(mvn test-compile:*)"
+      "Bash(mvn test-compile:*)",
+      "Bash(mvn:*)"
     ],
     "deny": []
   }
