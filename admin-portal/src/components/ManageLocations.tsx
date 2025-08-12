@@ -5,6 +5,7 @@ import {
   EyeIcon,
   ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
+import apiService from '../services/api';
 
 interface Location {
   id: string;
@@ -28,10 +29,11 @@ const ManageLocations: React.FC = () => {
 
   const fetchLocations = async () => {
     try {
-      const response = await fetch('/api/admin/locations');
-      if (response.ok) {
-        const data = await response.json();
-        setLocations(data);
+      const response = await apiService.getLocations();
+      if (response.ok && response.data) {
+        setLocations(response.data);
+      } else if (response.error) {
+        console.error('Error fetching locations:', response.error);
       }
     } catch (error) {
       console.error('Error fetching locations:', error);
@@ -42,13 +44,14 @@ const ManageLocations: React.FC = () => {
 
   const handleDelete = async (id: string) => {
     try {
-      const response = await fetch(`/api/admin/locations/${id}`, {
-        method: 'DELETE',
-      });
+      const response = await apiService.deleteLocation(id);
       
       if (response.ok) {
         setLocations(locations.filter(location => location.id !== id));
         setDeleteConfirm(null);
+      } else if (response.error) {
+        console.error('Error deleting location:', response.error);
+        alert(`Failed to delete location: ${response.error}`);
       }
     } catch (error) {
       console.error('Error deleting location:', error);

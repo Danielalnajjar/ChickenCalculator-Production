@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import apiService, { TOKEN_KEY } from '../services/api';
 
 interface User {
   id: string;
@@ -30,7 +31,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     // Check for stored authentication token (not user data)
-    const storedToken = sessionStorage.getItem('chicken_admin_token');
+    const storedToken = sessionStorage.getItem(TOKEN_KEY);
     if (storedToken) {
       // Validate token with backend
       validateToken(storedToken);
@@ -41,23 +42,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const validateToken = async (token: string) => {
     try {
-      const response = await fetch('/api/admin/auth/validate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const response = await apiService.validateToken();
       
-      if (response.ok) {
-        const userData = await response.json();
-        setUser(userData);
+      if (response.ok && response.data) {
+        setUser(response.data);
       } else {
-        sessionStorage.removeItem('chicken_admin_token');
+        sessionStorage.removeItem(TOKEN_KEY);
       }
     } catch (error) {
       console.error('Token validation error:', error);
-      sessionStorage.removeItem('chicken_admin_token');
+      sessionStorage.removeItem(TOKEN_KEY);
     } finally {
       setIsLoading(false);
     }
@@ -65,20 +59,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      const response = await fetch('/api/admin/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-        credentials: 'include' // Include cookies for session management
-      });
+      const response = await apiService.login(email, password);
 
-      if (response.ok) {
-        const data = await response.json();
+      if (response.ok && response.data) {
+        const data = response.data;
         // Store only the token, not user data
         if (data.token) {
-          sessionStorage.setItem('chicken_admin_token', data.token);
+          sessionStorage.setItem(TOKEN_KEY, data.token);
         }
         // Extract user info from response
         const userData: User = {
@@ -100,15 +87,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = async () => {
     try {
       // Notify backend about logout
-      await fetch('/api/admin/auth/logout', {
-        method: 'POST',
-        credentials: 'include'
-      });
+      await apiService.logout();
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
       setUser(null);
-      sessionStorage.removeItem('chicken_admin_token');
+      sessionStorage.removeItem(TOKEN_KEY);
     }
   };
 

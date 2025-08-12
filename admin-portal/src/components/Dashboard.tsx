@@ -7,6 +7,7 @@ import {
   CheckCircleIcon,
   ClockIcon
 } from '@heroicons/react/24/outline';
+import apiService from '../services/api';
 
 interface Location {
   id: string;
@@ -45,15 +46,24 @@ const Dashboard: React.FC = () => {
     const fetchDashboardData = async () => {
       try {
         const [locationsResponse, statsResponse] = await Promise.all([
-          fetch('/api/admin/locations'),
-          fetch('/api/admin/stats'),
+          apiService.getLocations(),
+          apiService.getDashboardStats(),
         ]);
 
-        if (locationsResponse.ok && statsResponse.ok) {
-          const locationsData = await locationsResponse.json();
-          const statsData = await statsResponse.json();
-          setLocations(locationsData);
-          setStats(statsData);
+        if (locationsResponse.ok && locationsResponse.data) {
+          setLocations(locationsResponse.data);
+        }
+        
+        if (statsResponse.ok && statsResponse.data) {
+          setStats(statsResponse.data);
+        }
+        
+        // Log any errors
+        if (!locationsResponse.ok) {
+          console.error('Error fetching locations:', locationsResponse.error);
+        }
+        if (!statsResponse.ok) {
+          console.error('Error fetching stats:', statsResponse.error);
         }
       } catch (error) {
         console.error('Error fetching dashboard data:', error);

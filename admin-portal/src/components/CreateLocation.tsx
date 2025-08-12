@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { BuildingStorefrontIcon, MapPinIcon } from '@heroicons/react/24/outline';
+import apiService from '../services/api';
 
 interface LocationFormData {
   name: string;
@@ -48,24 +49,9 @@ const CreateLocation: React.FC = () => {
     setStatusMessage('Creating location...');
 
     try {
-      const token = sessionStorage.getItem('token');
-      if (!token) {
-        setStatusMessage('❌ Authentication error: Please login again');
-        setIsLoading(false);
-        return;
-      }
+      const response = await apiService.createLocation(formData);
 
-      const response = await fetch('/api/admin/locations', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(formData),
-      });
-
-      if (response.ok) {
-        const result = await response.json();
+      if (response.ok && response.data) {
         setStatusMessage(`✅ Location "${formData.name}" created successfully!`);
         
         // Reset form
@@ -80,31 +66,7 @@ const CreateLocation: React.FC = () => {
           setStatusMessage(null);
         }, 3000);
       } else {
-        // Try to parse as JSON first, fall back to text
-        let errorMessage = `Status ${response.status}: `;
-        const contentType = response.headers.get('content-type');
-        
-        if (contentType && contentType.includes('application/json')) {
-          try {
-            const errorJson = await response.json();
-            errorMessage += errorJson.message || errorJson.error || JSON.stringify(errorJson);
-          } catch {
-            errorMessage += await response.text();
-          }
-        } else {
-          const errorText = await response.text();
-          // If it's HTML, just show the status
-          if (errorText.includes('<!DOCTYPE') || errorText.includes('<html')) {
-            errorMessage += response.status === 401 ? 'Unauthorized - Please login again' :
-                          response.status === 403 ? 'Forbidden - Access denied' :
-                          response.status === 500 ? 'Server error' :
-                          'Request failed';
-          } else {
-            errorMessage += errorText;
-          }
-        }
-        
-        setStatusMessage(`❌ Failed to create location: ${errorMessage}`);
+        setStatusMessage(`❌ Failed to create location: ${response.error || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error creating location:', error);
