@@ -5,7 +5,10 @@ import com.example.chickencalculator.entity.AdminRole
 import com.example.chickencalculator.entity.Location
 import com.example.chickencalculator.entity.SalesData
 import com.example.chickencalculator.entity.MarinationLog
-import com.example.chickencalculator.model.ChickenCalculationRequest
+import com.example.chickencalculator.model.MarinationRequest
+import com.example.chickencalculator.model.InventoryData
+import com.example.chickencalculator.model.ProjectedSales
+import java.math.BigDecimal
 import java.time.LocalDateTime
 import java.time.LocalDate
 
@@ -37,12 +40,18 @@ abstract class TestBase {
         fun createTestLocation(
             id: Long = 1L,
             name: String = "Test Restaurant",
-            slug: String = "test-restaurant"
+            slug: String = "test-restaurant",
+            managerName: String = "Test Manager",
+            managerEmail: String = "manager@test.com",
+            address: String? = "123 Test Street"
         ): Location {
             return Location(
                 id = id,
                 name = name,
                 slug = slug,
+                managerName = managerName,
+                managerEmail = managerEmail,
+                address = address,
                 createdAt = LocalDateTime.now()
             )
         }
@@ -51,18 +60,19 @@ abstract class TestBase {
         fun createTestSalesData(
             id: Long = 1L,
             location: Location = createTestLocation(),
-            peopleCount: Int = 10,
-            totalPieces: Int = 20,
-            totalWeight: Double = 3.0,
+            totalSales: BigDecimal = BigDecimal("100.00"),
+            portionsSoy: BigDecimal = BigDecimal("30.00"),
+            portionsTeriyaki: BigDecimal = BigDecimal("40.00"),
+            portionsTurmeric: BigDecimal = BigDecimal("30.00"),
             date: LocalDate = LocalDate.now()
         ): SalesData {
             return SalesData(
                 id = id,
                 location = location,
-                peopleCount = peopleCount,
-                totalPieces = totalPieces,
-                totalWeight = totalWeight,
-                timestamp = LocalDateTime.now(),
+                totalSales = totalSales,
+                portionsSoy = portionsSoy,
+                portionsTeriyaki = portionsTeriyaki,
+                portionsTurmeric = portionsTurmeric,
                 date = date
             )
         }
@@ -71,34 +81,58 @@ abstract class TestBase {
         fun createTestMarinationLog(
             id: Long = 1L,
             location: Location = createTestLocation(),
-            pieces: Int = 20,
-            weight: Double = 3.0,
-            marinationTime: Int = 120,
-            date: LocalDate = LocalDate.now()
+            soySuggested: BigDecimal = BigDecimal("10.0"),
+            teriyakiSuggested: BigDecimal = BigDecimal("10.0"),
+            turmericSuggested: BigDecimal = BigDecimal("10.0"),
+            soyPans: BigDecimal = BigDecimal("2.0"),
+            teriyakiPans: BigDecimal = BigDecimal("2.0"),
+            turmericPans: BigDecimal = BigDecimal("2.0"),
+            isEndOfDay: Boolean = false
         ): MarinationLog {
             return MarinationLog(
                 id = id,
                 location = location,
-                pieces = pieces,
-                weight = weight,
-                marinationTime = marinationTime,
-                timestamp = LocalDateTime.now(),
-                date = date
+                soySuggested = soySuggested,
+                teriyakiSuggested = teriyakiSuggested,
+                turmericSuggested = turmericSuggested,
+                soyPans = soyPans,
+                teriyakiPans = teriyakiPans,
+                turmericPans = turmericPans,
+                isEndOfDay = isEndOfDay,
+                timestamp = LocalDateTime.now()
             )
         }
 
-        // Test Chicken Calculation Requests
-        fun createTestCalculationRequest(
-            peopleCount: Int = 10,
-            piecesPerPerson: Int = 2,
-            desiredCookingTime: Int = 45,
-            currentTime: String = "14:00"
-        ): ChickenCalculationRequest {
-            return ChickenCalculationRequest(
-                peopleCount = peopleCount,
-                piecesPerPerson = piecesPerPerson,
-                desiredCookingTime = desiredCookingTime,
-                currentTime = currentTime
+        // Test Marination Requests
+        fun createTestMarinationRequest(
+            pansSoy: BigDecimal = BigDecimal("10.0"),
+            pansTeriyaki: BigDecimal = BigDecimal("10.0"),
+            pansTurmeric: BigDecimal = BigDecimal("10.0"),
+            salesDay0: BigDecimal = BigDecimal("50.0"),
+            salesDay1: BigDecimal = BigDecimal("60.0"),
+            salesDay2: BigDecimal = BigDecimal("55.0"),
+            salesDay3: BigDecimal = BigDecimal("45.0"),
+            availableRawChickenKg: BigDecimal? = BigDecimal("10.0"),
+            alreadyMarinatedSoy: BigDecimal = BigDecimal("5.0"),
+            alreadyMarinatedTeriyaki: BigDecimal = BigDecimal("5.0"),
+            alreadyMarinatedTurmeric: BigDecimal = BigDecimal("5.0")
+        ): MarinationRequest {
+            return MarinationRequest(
+                inventory = InventoryData(
+                    pansSoy = pansSoy,
+                    pansTeriyaki = pansTeriyaki,
+                    pansTurmeric = pansTurmeric
+                ),
+                projectedSales = ProjectedSales(
+                    day0 = salesDay0,
+                    day1 = salesDay1,
+                    day2 = salesDay2,
+                    day3 = salesDay3
+                ),
+                availableRawChickenKg = availableRawChickenKg,
+                alreadyMarinatedSoy = alreadyMarinatedSoy,
+                alreadyMarinatedTeriyaki = alreadyMarinatedTeriyaki,
+                alreadyMarinatedTurmeric = alreadyMarinatedTurmeric
             )
         }
 
@@ -115,44 +149,42 @@ abstract class TestBase {
         // Multiple Test Sales Data
         fun createMultipleTestSalesData(location: Location): List<SalesData> {
             return listOf(
-                createTestSalesData(1L, location, 10, 20, 3.0, LocalDate.now()),
-                createTestSalesData(2L, location, 15, 30, 4.5, LocalDate.now().minusDays(1)),
-                createTestSalesData(3L, location, 8, 16, 2.4, LocalDate.now().minusDays(2)),
-                createTestSalesData(4L, location, 25, 50, 7.5, LocalDate.now().minusWeeks(1))
+                createTestSalesData(1L, location, BigDecimal("100.00"), BigDecimal("30.00"), BigDecimal("40.00"), BigDecimal("30.00"), LocalDate.now()),
+                createTestSalesData(2L, location, BigDecimal("150.00"), BigDecimal("45.00"), BigDecimal("60.00"), BigDecimal("45.00"), LocalDate.now().minusDays(1)),
+                createTestSalesData(3L, location, BigDecimal("80.00"), BigDecimal("24.00"), BigDecimal("32.00"), BigDecimal("24.00"), LocalDate.now().minusDays(2)),
+                createTestSalesData(4L, location, BigDecimal("250.00"), BigDecimal("75.00"), BigDecimal("100.00"), BigDecimal("75.00"), LocalDate.now().minusWeeks(1))
             )
         }
 
         // Test Data Validation Helpers
-        fun createInvalidCalculationRequests(): List<ChickenCalculationRequest> {
+        fun createInvalidMarinationRequests(): List<MarinationRequest> {
             return listOf(
                 // Negative values
-                createTestCalculationRequest(peopleCount = -5),
-                createTestCalculationRequest(piecesPerPerson = -2),
-                createTestCalculationRequest(desiredCookingTime = -30),
+                createTestMarinationRequest(pansSoy = BigDecimal("-5.0")),
+                createTestMarinationRequest(salesDay0 = BigDecimal("-10.0")),
+                createTestMarinationRequest(availableRawChickenKg = BigDecimal("-5.0")),
                 // Zero values
-                createTestCalculationRequest(peopleCount = 0),
-                createTestCalculationRequest(piecesPerPerson = 0),
+                createTestMarinationRequest(pansSoy = BigDecimal.ZERO),
+                createTestMarinationRequest(salesDay0 = BigDecimal.ZERO),
                 // Very large values
-                createTestCalculationRequest(peopleCount = 10000),
-                createTestCalculationRequest(piecesPerPerson = 100),
-                // Invalid time format
-                createTestCalculationRequest(currentTime = "invalid-time"),
-                createTestCalculationRequest(currentTime = "25:00"),
-                createTestCalculationRequest(currentTime = "12:70")
+                createTestMarinationRequest(pansSoy = BigDecimal("10000.0")),
+                createTestMarinationRequest(salesDay0 = BigDecimal("10000.0")),
+                // Null chicken weight
+                createTestMarinationRequest(availableRawChickenKg = null)
             )
         }
 
         // Edge Case Test Data
-        fun createEdgeCaseCalculationRequests(): List<ChickenCalculationRequest> {
+        fun createEdgeCaseMarinationRequests(): List<MarinationRequest> {
             return listOf(
                 // Minimum valid values
-                createTestCalculationRequest(peopleCount = 1, piecesPerPerson = 1, desiredCookingTime = 1),
+                createTestMarinationRequest(pansSoy = BigDecimal("0.1"), salesDay0 = BigDecimal("1.0")),
                 // Maximum reasonable values
-                createTestCalculationRequest(peopleCount = 500, piecesPerPerson = 10, desiredCookingTime = 480),
-                // Various time formats
-                createTestCalculationRequest(currentTime = "00:00"),
-                createTestCalculationRequest(currentTime = "23:59"),
-                createTestCalculationRequest(currentTime = "12:30")
+                createTestMarinationRequest(pansSoy = BigDecimal("100.0"), salesDay0 = BigDecimal("500.0")),
+                // Various chicken weights
+                createTestMarinationRequest(availableRawChickenKg = BigDecimal("0.5")),
+                createTestMarinationRequest(availableRawChickenKg = BigDecimal("100.0")),
+                createTestMarinationRequest(availableRawChickenKg = BigDecimal("50.25"))
             )
         }
 

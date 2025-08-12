@@ -37,7 +37,7 @@ class ChickenCalculatorController(
             // Record metrics
             metricsService.recordCalculation(
                 locationSlug = locationSlug,
-                weight = request.currentWeight,
+                weight = request.availableRawChickenKg?.toDouble() ?: 0.0,
                 processingTimeMs = processingTime
             )
             

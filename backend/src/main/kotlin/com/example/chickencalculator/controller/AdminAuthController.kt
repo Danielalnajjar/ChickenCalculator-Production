@@ -261,7 +261,7 @@ class AdminAuthController(
     fun logout(response: HttpServletResponse): ResponseEntity<Map<String, String>> {
         val startTime = System.currentTimeMillis()
         
-        try {
+        return try {
             // Clear the JWT cookie
             val cookie = Cookie("jwt_token", "").apply {
                 isHttpOnly = true

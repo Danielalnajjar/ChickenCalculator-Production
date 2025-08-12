@@ -13,4 +13,5 @@ interface LocationRepository : JpaRepository<Location, Long> {
     fun findByManagerEmail(managerEmail: String): List<Location>
     fun findByIsDefaultTrue(): Location?
     fun findByNameIgnoreCase(name: String): Location?
+    fun existsBySlug(slug: String): Boolean
 }

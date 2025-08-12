@@ -2,6 +2,7 @@ package com.example.chickencalculator.config
 
 import io.micrometer.core.aop.TimedAspect
 import io.micrometer.core.instrument.MeterRegistry
+import io.micrometer.core.instrument.Tag
 import io.micrometer.core.instrument.config.MeterFilter
 import org.springframework.boot.actuate.autoconfigure.metrics.MeterRegistryCustomizer
 import org.springframework.context.annotation.Bean
@@ -37,11 +38,11 @@ class MetricsConfig {
         return MeterRegistryCustomizer { registry ->
             // Add common tags to all metrics
             registry.config()
-                .commonTags(
-                    "application", "chicken-calculator",
-                    "component", "backend",
-                    "version", "1.0.0"
-                )
+                .commonTags(listOf(
+                    Tag.of("application", "chicken-calculator"),
+                    Tag.of("component", "backend"),
+                    Tag.of("version", "1.0.0")
+                ))
                 // Configure meter filters
                 .meterFilter(MeterFilter.deny { id ->
                     // Filter out noisy JVM metrics that aren't useful for business monitoring
@@ -66,10 +67,10 @@ class MetricsConfig {
         val environment = System.getenv("SPRING_PROFILES_ACTIVE") ?: "development"
         val railwayEnvironment = System.getenv("RAILWAY_ENVIRONMENT") ?: "unknown"
         
-        return MeterFilter.commonTags(
-            "environment", environment,
-            "deployment.platform", "railway",
-            "deployment.environment", railwayEnvironment
-        )
+        return MeterFilter.commonTags(listOf(
+            Tag.of("environment", environment),
+            Tag.of("deployment.platform", "railway"),
+            Tag.of("deployment.environment", railwayEnvironment)
+        ))
     }
 }

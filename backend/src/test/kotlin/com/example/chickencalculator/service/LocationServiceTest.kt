@@ -34,6 +34,29 @@ class LocationServiceTest {
             id = 1L,
             name = "Test Restaurant",
             slug = "test-restaurant",
+            managerName = "Test Manager",
+            managerEmail = "manager@test.com",
+            address = "123 Test Street",
+            createdAt = LocalDateTime.now()
+        )
+    }
+    
+    // Helper function to create test locations
+    private fun createTestLocation(
+        id: Long = 1L,
+        name: String = "Test Location",
+        slug: String = "test-location",
+        managerName: String = "Test Manager",
+        managerEmail: String = "manager@test.com",
+        address: String? = "123 Test Street"
+    ): Location {
+        return Location(
+            id = id,
+            name = name,
+            slug = slug,
+            managerName = managerName,
+            managerEmail = managerEmail,
+            address = address,
             createdAt = LocalDateTime.now()
         )
     }
@@ -50,7 +73,7 @@ class LocationServiceTest {
             whenever(locationRepository.findBySlug(slug)).thenReturn(testLocation)
 
             // When
-            val result = locationService.findBySlug(slug)
+            val result = locationService.getLocationBySlug(slug)
 
             // Then
             assertNotNull(result)
@@ -67,7 +90,7 @@ class LocationServiceTest {
             whenever(locationRepository.findBySlug(slug)).thenReturn(null)
 
             // When
-            val result = locationService.findBySlug(slug)
+            val result = locationService.getLocationBySlug(slug)
 
             // Then
             assertNull(result)
@@ -82,7 +105,7 @@ class LocationServiceTest {
             whenever(locationRepository.findBySlug(slug)).thenReturn(null)
 
             // When
-            val result = locationService.findBySlug(slug)
+            val result = locationService.getLocationBySlug(slug)
 
             // Then
             assertNull(result)
@@ -97,7 +120,7 @@ class LocationServiceTest {
             whenever(locationRepository.findBySlug(slug)).thenReturn(null)
 
             // When
-            val result = locationService.findBySlug(slug)
+            val result = locationService.getLocationBySlug(slug)
 
             // Then
             assertNull(result) // Assuming slugs are case-sensitive
@@ -115,7 +138,7 @@ class LocationServiceTest {
             // Given
             val locations = listOf(
                 testLocation,
-                Location(2L, "Another Restaurant", "another-restaurant", LocalDateTime.now())
+                createTestLocation(2L, "Another Restaurant", "another-restaurant")
             )
             whenever(locationRepository.findAll()).thenReturn(locations)
 
@@ -162,8 +185,8 @@ class LocationServiceTest {
 
             // Then
             assertNotNull(result)
-            assertEquals(testLocation.id, result.id)
-            assertEquals(testLocation.name, result.name)
+            assertEquals(testLocation.id, result?.id)
+            assertEquals(testLocation.name, result?.name)
             verify(locationRepository).findById(locationId)
         }
 
@@ -176,7 +199,7 @@ class LocationServiceTest {
 
             // When & Then
             assertThrows<LocationNotFoundException> {
-                locationService.getLocationById(locationId)
+                locationService.getLocationByIdOrThrow(locationId)
             }
             verify(locationRepository).findById(locationId)
         }
@@ -190,7 +213,7 @@ class LocationServiceTest {
 
             // When & Then
             assertThrows<LocationNotFoundException> {
-                locationService.getLocationById(locationId)
+                locationService.getLocationByIdOrThrow(locationId)
             }
             verify(locationRepository).findById(locationId)
         }
@@ -206,18 +229,22 @@ class LocationServiceTest {
             // Given
             val locationName = "New Restaurant"
             val expectedSlug = "new-restaurant"
-            val savedLocation = Location(
+            val savedLocation = createTestLocation(
                 id = 2L,
                 name = locationName,
-                slug = expectedSlug,
-                createdAt = LocalDateTime.now()
+                slug = expectedSlug
             )
             
             whenever(locationRepository.existsBySlug(expectedSlug)).thenReturn(false)
             whenever(locationRepository.save(any<Location>())).thenReturn(savedLocation)
 
             // When
-            val result = locationService.createLocation(locationName)
+            val result = locationService.createLocation(
+                name = locationName,
+                address = "Test Address",
+                managerName = "Test Manager",
+                managerEmail = "test@example.com"
+            )
 
             // Then
             assertNotNull(result)
@@ -238,16 +265,20 @@ class LocationServiceTest {
             whenever(locationRepository.existsBySlug(baseSlug)).thenReturn(true)
             whenever(locationRepository.existsBySlug(uniqueSlug)).thenReturn(false)
             
-            val savedLocation = Location(
+            val savedLocation = createTestLocation(
                 id = 3L,
                 name = locationName,
-                slug = uniqueSlug,
-                createdAt = LocalDateTime.now()
+                slug = uniqueSlug
             )
             whenever(locationRepository.save(any<Location>())).thenReturn(savedLocation)
 
             // When
-            val result = locationService.createLocation(locationName)
+            val result = locationService.createLocation(
+                name = locationName,
+                address = "Test Address",
+                managerName = "Test Manager",
+                managerEmail = "test@example.com"
+            )
 
             // Then
             assertNotNull(result)
@@ -266,16 +297,20 @@ class LocationServiceTest {
             
             whenever(locationRepository.existsBySlug(expectedSlug)).thenReturn(false)
             
-            val savedLocation = Location(
+            val savedLocation = createTestLocation(
                 id = 4L,
                 name = locationName,
-                slug = expectedSlug,
-                createdAt = LocalDateTime.now()
+                slug = expectedSlug
             )
             whenever(locationRepository.save(any<Location>())).thenReturn(savedLocation)
 
             // When
-            val result = locationService.createLocation(locationName)
+            val result = locationService.createLocation(
+                name = locationName,
+                address = "Test Address",
+                managerName = "Test Manager",
+                managerEmail = "test@example.com"
+            )
 
             // Then
             assertNotNull(result)
@@ -291,7 +326,12 @@ class LocationServiceTest {
 
             // When & Then
             assertThrows<IllegalArgumentException> {
-                locationService.createLocation(locationName)
+                locationService.createLocation(
+                    name = locationName,
+                    address = "Test Address",
+                    managerName = "Test Manager",
+                    managerEmail = "test@example.com"
+                )
             }
         }
 
@@ -303,7 +343,12 @@ class LocationServiceTest {
 
             // When & Then
             assertThrows<IllegalArgumentException> {
-                locationService.createLocation(locationName)
+                locationService.createLocation(
+                    name = locationName,
+                    address = "Test Address",
+                    managerName = "Test Manager",
+                    managerEmail = "test@example.com"
+                )
             }
         }
     }
@@ -362,7 +407,12 @@ class LocationServiceTest {
                 location.copy(id = 1L)
             }
 
-            val result = locationService.createLocation(locationName)
+            val result = locationService.createLocation(
+                name = locationName,
+                address = "Test Address",
+                managerName = "Test Manager",
+                managerEmail = "test@example.com"
+            )
 
             assertEquals(expectedSlug, result.slug)
         }
@@ -379,7 +429,12 @@ class LocationServiceTest {
                 location.copy(id = 1L)
             }
 
-            val result = locationService.createLocation(locationName)
+            val result = locationService.createLocation(
+                name = locationName,
+                address = "Test Address",
+                managerName = "Test Manager",
+                managerEmail = "test@example.com"
+            )
 
             assertEquals(expectedSlug, result.slug)
         }
