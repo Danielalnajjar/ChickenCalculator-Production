@@ -196,12 +196,19 @@ class AdminAuthController(
         return try {
             val token = getTokenFromRequest(httpRequest, authHeader)
             
+            logger.info("Password change attempt - Token present: {}", token != null)
+            
             if (token == null) {
+                logger.error("No JWT token found for password change request")
                 metricsService.recordAuthFailure("no_token")
                 return ResponseEntity.status(401).body(mapOf("error" to "Authentication required"))
             }
             
-            if (!jwtService.validateToken(token)) {
+            val tokenValid = jwtService.validateToken(token)
+            logger.info("Token validation result: {}", tokenValid)
+            
+            if (!tokenValid) {
+                logger.error("JWT token validation failed for password change")
                 metricsService.recordAuthFailure("invalid_token")
                 return ResponseEntity.status(401).body(mapOf("error" to "Invalid token"))
             }
@@ -213,15 +220,20 @@ class AdminAuthController(
             }
             
             val userId = jwtService.getUserIdFromToken(token)
+            logger.info("User ID from token: {}", userId)
+            
             if (userId == null) {
+                logger.error("No user ID found in JWT token claims")
                 metricsService.recordAuthFailure("invalid_token_claims")
                 return ResponseEntity.status(401).body(mapOf("error" to "Invalid token"))
             }
             
             // AdminService.changePassword now throws appropriate exceptions
+            logger.info("Attempting to change password for user ID: {}", userId)
             adminService.changePassword(userId, passwordRequest.currentPassword, passwordRequest.newPassword)
             val processingTime = System.currentTimeMillis() - startTime
             
+            logger.info("Password changed successfully for user ID: {}", userId)
             metricsService.recordAdminOperation("change_password", true, processingTime)
             ResponseEntity.ok(mapOf("message" to "Password changed successfully"))
         } catch (e: Exception) {

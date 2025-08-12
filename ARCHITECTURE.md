@@ -51,8 +51,11 @@ The ChickenCalculator is a production-ready, multi-tenant restaurant management 
 └─────────────────────────────────────────────────────────┘
                             │
 ┌─────────────────────────────────────────────────────────┐
-│                    PostgreSQL Database                   │
+│              PostgreSQL 16.8 on Railway                  │
 │                   (Flyway Migrations)                    │
+│  • Connection: HikariCP pool (5-10 connections)         │
+│  • SSL/TLS: Enforced for production                     │
+│  • Migrations: V1-V4 applied                            │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -117,6 +120,26 @@ Request Flow:
 
 ## Database Design
 
+### PostgreSQL Configuration
+```yaml
+Database Platform: PostgreSQL 16.8
+Connection Pool: HikariCP
+Pool Size: 10 (Railway optimized)
+Min Idle: 2
+Max Lifetime: 900000ms (15 minutes)
+Connection Timeout: 20000ms
+SSL Mode: require
+```
+
+### Connection Handling (Railway-Specific)
+```kotlin
+// DatabaseConfig.kt handles Railway's PostgreSQL URLs
+// Supports both formats:
+// - postgresql://user:pass@host:port/db
+// - jdbc:postgresql://host:port/db
+// Extracts embedded credentials and uses PGUSER/PGPASSWORD
+```
+
 ### Schema (Managed by Flyway)
 ```sql
 -- Core Tables
@@ -143,10 +166,17 @@ marination_log (
 ```
 
 ### Migration Strategy
-- **Version Control**: Flyway migrations (V1, V2, V3...)
+- **Version Control**: Flyway migrations (V1, V2, V3, V4)
+- **PostgreSQL Sequences**: entity_id_seq for all tables
 - **Rollback Support**: Down migrations for each version
 - **Data Integrity**: Foreign key constraints
 - **Performance**: Optimized indexes on common queries
+
+### Applied Migrations
+1. **V1__initial_schema.sql**: Core tables with PostgreSQL sequences
+2. **V2__add_password_change_required.sql**: Password policy support
+3. **V3__add_marination_defaults.sql**: Default values for marination
+4. **V4__reset_admin_password.sql**: Admin recovery mechanism
 
 ## API Design
 
@@ -209,17 +239,23 @@ Prometheus Metrics:
 
 ### Railway Deployment
 - **Auto-Deploy**: GitHub push triggers deployment
+- **PostgreSQL Service**: Managed database with auto-backup
 - **Environment Variables**: Secure secret management
+  - DATABASE_URL auto-injected by Railway
+  - PGUSER, PGPASSWORD, PGHOST managed by platform
 - **Health Checks**: Automatic monitoring
 - **Rollback**: Quick rollback capability
+- **Single Port**: All traffic through port 8080
 
 ## Performance Optimizations
 
 ### Backend
-- **Connection Pooling**: HikariCP with 5-8 connections
-- **Transaction Management**: @Transactional boundaries
-- **Query Optimization**: Indexed database queries
+- **Connection Pooling**: HikariCP with 10 connections (Railway optimized)
+- **Transaction Management**: @Transactional with isolation levels
+- **Query Optimization**: PostgreSQL-specific indexes
 - **Lazy Loading**: JPA fetch strategies
+- **Sequence Generation**: PostgreSQL sequences for IDs
+- **Date Functions**: CAST(timestamp AS DATE) for PostgreSQL compatibility
 
 ### Frontend
 - **Code Splitting**: Lazy loading of routes

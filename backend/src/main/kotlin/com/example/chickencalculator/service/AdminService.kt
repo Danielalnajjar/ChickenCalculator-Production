@@ -9,14 +9,16 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.transaction.annotation.Isolation
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
+import org.springframework.security.crypto.password.PasswordEncoder
 import java.time.LocalDateTime
 import java.security.SecureRandom
 
 @Service
-class AdminService(private val adminUserRepository: AdminUserRepository) {
+class AdminService(
+    private val adminUserRepository: AdminUserRepository,
+    private val passwordEncoder: PasswordEncoder
+) {
     private val logger = LoggerFactory.getLogger(AdminService::class.java)
-    private val passwordEncoder = BCryptPasswordEncoder(10)
     
     @Transactional(rollbackFor = [Exception::class])
     fun authenticate(email: String, password: String): AdminUser {
