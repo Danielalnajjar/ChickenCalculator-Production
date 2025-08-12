@@ -46,7 +46,9 @@
       "Bash(mvn package:*)",
       "Bash(mv:*)",
       "mcp__ide__getDiagnostics",
-      "Bash(del \"C:\\Users\\danie\\Code\\ChickenCalculator-Production\\backend\\src\\test\\kotlin\\com\\example\\chickencalculator\\service\\ChickenCalculatorServiceTest.kt\")"
+      "Bash(del \"C:\\Users\\danie\\Code\\ChickenCalculator-Production\\backend\\src\\test\\kotlin\\com\\example\\chickencalculator\\service\\ChickenCalculatorServiceTest.kt\")",
+      "mcp__railway__list_service_variables",
+      "mcp__railway__variable_set"
     ],
     "deny": []
   }
