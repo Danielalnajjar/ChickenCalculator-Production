@@ -4,8 +4,10 @@ import com.example.chickencalculator.entity.Location
 import com.example.chickencalculator.entity.LocationStatus
 import com.example.chickencalculator.repository.LocationRepository
 import org.slf4j.LoggerFactory
+import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.web.server.ResponseStatusException
 import java.time.LocalDateTime
 
 @Service
@@ -23,8 +25,20 @@ class LocationService(
         return locationRepository.findById(id).orElse(null)
     }
     
+    fun getLocationByIdOrThrow(id: Long): Location {
+        return locationRepository.findById(id).orElseThrow { 
+            ResponseStatusException(HttpStatus.NOT_FOUND, "Location with ID $id not found")
+        }
+    }
+    
     fun getLocationBySlug(slug: String): Location? {
         return locationRepository.findBySlug(slug)
+    }
+    
+    fun getLocationBySlugOrThrow(slug: String): Location {
+        return locationRepository.findBySlug(slug) ?: throw ResponseStatusException(
+            HttpStatus.NOT_FOUND, "Location with slug '$slug' not found"
+        )
     }
     
     fun getDefaultLocation(): Location? {
@@ -38,8 +52,26 @@ class LocationService(
         managerName: String,
         managerEmail: String
     ): Location {
+        // Validate business rules
+        if (name.isBlank()) {
+            throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Location name cannot be blank")
+        }
+        
+        if (managerName.isBlank()) {
+            throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Manager name cannot be blank")
+        }
+        
+        if (managerEmail.isBlank()) {
+            throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Manager email cannot be blank")
+        }
+        
         // Generate slug from name
         val slug = generateSlug(name)
+        
+        // Check if slug already exists
+        if (locationRepository.findBySlug(slug) != null) {
+            throw ResponseStatusException(HttpStatus.CONFLICT, "A location with this name already exists")
+        }
         
         val location = Location(
             name = name,

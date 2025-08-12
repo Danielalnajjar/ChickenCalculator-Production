@@ -55,4 +55,9 @@ interface MarinationLogRepository : JpaRepository<MarinationLog, Long> {
         @Param("startOfDay") startOfDay: LocalDateTime,
         @Param("endOfDay") endOfDay: LocalDateTime
     ): List<MarinationLog>
+    
+    // Additional methods for service layer support
+    fun findByLocationAndIsEndOfDayTrueOrderByTimestampDesc(location: Location): List<MarinationLog>
+    
+    fun deleteByLocation(location: Location): Long
 }

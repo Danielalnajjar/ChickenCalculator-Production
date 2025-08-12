@@ -8,10 +8,10 @@ spring:
     username: ${DATABASE_USERNAME:sa}
     password: ${DATABASE_PASSWORD:}
     driver-class-name: ${DATABASE_DRIVER:org.h2.Driver}
-    # HikariCP connection pool settings for production
+    # HikariCP connection pool settings for Railway production
     hikari:
-      maximum-pool-size: ${DB_POOL_SIZE:20}
-      minimum-idle: ${DB_MIN_IDLE:5}
+      maximum-pool-size: ${DB_POOL_SIZE:5}
+      minimum-idle: ${DB_MIN_IDLE:2}
       connection-timeout: ${DB_CONNECTION_TIMEOUT:30000}
       idle-timeout: ${DB_IDLE_TIMEOUT:600000}
       max-lifetime: ${DB_MAX_LIFETIME:1800000}
@@ -67,20 +67,32 @@ jwt:
   secret: ${JWT_SECRET}
   expiration: ${JWT_EXPIRATION:86400000}
 
-# Actuator for health checks
+# Actuator for health checks and monitoring
 management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,metrics
   endpoint:
     health:
       show-details: always
+    metrics:
+      enabled: true
+  metrics:
+    export:
+      simple:
+        enabled: true
+    # Enable HikariCP metrics
+    enable:
+      hikaricp: true
       
-# Logging
+# Logging with HikariCP pool monitoring
 logging:
   level:
     com.example.chickencalculator: INFO
     org.springframework.web: INFO
+    # Enable HikariCP pool statistics logging
+    com.zaxxer.hikari.HikariConfig: DEBUG
+    com.zaxxer.hikari: INFO
   pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"

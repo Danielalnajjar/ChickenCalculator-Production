@@ -1,0 +1,47 @@
+package com.example.chickencalculator.controller
+
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.responses.ApiResponse
+import io.swagger.v3.oas.annotations.responses.ApiResponses
+import io.swagger.v3.oas.annotations.tags.Tag
+import org.slf4j.LoggerFactory
+import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.*
+
+/**
+ * Legacy AdminController - DEPRECATED
+ * 
+ * This controller has been split into:
+ * - AdminAuthController: Handles authentication endpoints (/api/admin/auth/*)
+ * - AdminLocationController: Handles location management endpoints (/api/admin/locations/*, /api/admin/stats)
+ * 
+ * This controller is kept for backward compatibility but should not be extended.
+ * New functionality should be added to the appropriate specialized controllers.
+ */
+@RestController
+@RequestMapping("/api/admin")
+@Tag(name = "Admin (Legacy)", description = "Legacy admin controller - functionality moved to specialized controllers")
+@CrossOrigin(
+    origins = ["http://localhost:3000", "http://localhost:8080", "https://yourcompany.com"],
+    allowCredentials = "true",
+    allowedHeaders = ["Content-Type", "Authorization", "X-Requested-With"],
+    methods = [RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.OPTIONS]
+)
+@Deprecated("Use AdminAuthController and AdminLocationController instead")
+class AdminController {
+    private val logger = LoggerFactory.getLogger(AdminController::class.java)
+    
+    @GetMapping("/health")
+    @Operation(summary = "Admin health check", description = "Basic health check endpoint for admin system")
+    @ApiResponses(value = [
+        ApiResponse(responseCode = "200", description = "Admin system is healthy")
+    ])
+    fun healthCheck(): ResponseEntity<Map<String, String>> {
+        logger.debug("Admin health check requested")
+        return ResponseEntity.ok(mapOf(
+            "status" to "healthy",
+            "message" to "Admin system operational",
+            "note" to "Functionality moved to AdminAuthController and AdminLocationController"
+        ))
+    }
+}

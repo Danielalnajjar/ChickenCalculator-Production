@@ -22,9 +22,9 @@ spring:
     driverClassName: ${DATABASE_DRIVER:org.h2.Driver}
     username: ${DATABASE_USERNAME:sa}
     password: ${DATABASE_PASSWORD:}
-    # HikariCP connection pool settings
+    # HikariCP connection pool settings - Railway optimized
     hikari:
-      maximum-pool-size: ${DB_POOL_SIZE:10}
+      maximum-pool-size: ${DB_POOL_SIZE:8}
       minimum-idle: ${DB_MIN_IDLE:2}
       connection-timeout: ${DB_CONNECTION_TIMEOUT:30000}
       idle-timeout: ${DB_IDLE_TIMEOUT:600000}
@@ -60,15 +60,20 @@ server:
     include-message: never
     include-stacktrace: never
 
-# Actuator for health checks
+# Actuator for health checks and metrics
 management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,metrics
   endpoint:
     health:
       show-details: when-authorized
+  metrics:
+    export:
+      # Enable HikariCP metrics
+      simple:
+        enabled: true
 
 logging:
   level:

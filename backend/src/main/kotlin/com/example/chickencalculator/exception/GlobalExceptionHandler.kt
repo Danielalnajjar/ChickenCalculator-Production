@@ -1,170 +1,489 @@
 package com.example.chickencalculator.exception
 
+import com.example.chickencalculator.dto.ErrorResponse
 import io.jsonwebtoken.ExpiredJwtException
 import io.jsonwebtoken.MalformedJwtException
 import io.jsonwebtoken.security.SignatureException
+import jakarta.servlet.http.HttpServletRequest
 import jakarta.validation.ConstraintViolationException
 import org.slf4j.LoggerFactory
+import org.slf4j.MDC
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.http.converter.HttpMessageNotReadableException
+import org.springframework.security.access.AccessDeniedException
 import org.springframework.security.authentication.BadCredentialsException
 import org.springframework.security.core.AuthenticationException
+import org.springframework.web.HttpMediaTypeNotSupportedException
+import org.springframework.web.HttpRequestMethodNotSupportedException
 import org.springframework.web.bind.MethodArgumentNotValidException
-import org.springframework.web.bind.annotation.ControllerAdvice
+import org.springframework.web.bind.MissingServletRequestParameterException
 import org.springframework.web.bind.annotation.ExceptionHandler
-import org.springframework.web.bind.annotation.ResponseStatus
-import java.time.LocalDateTime
+import org.springframework.web.bind.annotation.RestControllerAdvice
+import org.springframework.web.context.request.WebRequest
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException
+import java.util.*
 
-data class ErrorResponse(
-    val timestamp: LocalDateTime = LocalDateTime.now(),
-    val status: Int,
-    val error: String,
-    val message: String,
-    val path: String? = null
-)
-
-@ControllerAdvice
+/**
+ * Global exception handler that provides standardized error responses
+ * across the entire application with correlation IDs and proper logging.
+ */
+@RestControllerAdvice
 class GlobalExceptionHandler {
     
     private val logger = LoggerFactory.getLogger(GlobalExceptionHandler::class.java)
     
+    companion object {
+        private const val CORRELATION_ID_HEADER = "X-Correlation-ID"
+        private const val GENERIC_ERROR_MESSAGE = "An unexpected error occurred. Please try again later."
+    }
+    
+    // ===== Custom Business Exceptions =====
+    
+    @ExceptionHandler(LocationNotFoundException::class)
+    fun handleLocationNotFoundException(
+        ex: LocationNotFoundException,
+        request: WebRequest
+    ): ResponseEntity<ErrorResponse> {
+        val correlationId = generateCorrelationId()
+        logException("Location not found", ex, correlationId, "WARN")
+        
+        return buildErrorResponse(
+            status = HttpStatus.NOT_FOUND,
+            error = "Location Not Found",
+            message = ex.message ?: "The requested location was not found",
+            path = getPath(request),
+            correlationId = correlationId
+        )
+    }
+    
+    @ExceptionHandler(InvalidCredentialsException::class)
+    fun handleInvalidCredentialsException(
+        ex: InvalidCredentialsException,
+        request: WebRequest
+    ): ResponseEntity<ErrorResponse> {
+        val correlationId = generateCorrelationId()
+        logException("Invalid credentials", ex, correlationId, "WARN")
+        
+        return buildErrorResponse(
+            status = HttpStatus.UNAUTHORIZED,
+            error = "Authentication Failed",
+            message = ex.message ?: "Invalid email or password",
+            path = getPath(request),
+            correlationId = correlationId
+        )
+    }
+    
+    @ExceptionHandler(InsufficientPermissionsException::class)
+    fun handleInsufficientPermissionsException(
+        ex: InsufficientPermissionsException,
+        request: WebRequest
+    ): ResponseEntity<ErrorResponse> {
+        val correlationId = generateCorrelationId()
+        logException("Insufficient permissions", ex, correlationId, "WARN")
+        
+        return buildErrorResponse(
+            status = HttpStatus.FORBIDDEN,
+            error = "Access Denied",
+            message = ex.message ?: "You do not have permission to access this resource",
+            path = getPath(request),
+            correlationId = correlationId
+        )
+    }
+    
+    @ExceptionHandler(BusinessValidationException::class)
+    fun handleBusinessValidationException(
+        ex: BusinessValidationException,
+        request: WebRequest
+    ): ResponseEntity<ErrorResponse> {
+        val correlationId = generateCorrelationId()
+        logException("Business validation failed", ex, correlationId, "WARN")
+        
+        val details = ex.fieldErrors?.takeIf { it.isNotEmpty() }?.let { errors ->
+            mapOf("fieldErrors" to errors)
+        }
+        
+        return buildErrorResponse(
+            status = HttpStatus.BAD_REQUEST,
+            error = "Business Validation Failed",
+            message = ex.message ?: "The request contains invalid data",
+            path = getPath(request),
+            correlationId = correlationId,
+            details = details
+        )
+    }
+    
+    // ===== Spring Validation Exceptions =====
+    
     @ExceptionHandler(MethodArgumentNotValidException::class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    fun handleValidationExceptions(ex: MethodArgumentNotValidException): ResponseEntity<ErrorResponse> {
-        val errors = ex.bindingResult.fieldErrors
-            .joinToString(", ") { "${it.field}: ${it.defaultMessage}" }
+    fun handleValidationExceptions(
+        ex: MethodArgumentNotValidException,
+        request: WebRequest
+    ): ResponseEntity<ErrorResponse> {
+        val correlationId = generateCorrelationId()
         
-        logger.warn("Validation failed: $errors")
+        val fieldErrors = ex.bindingResult.fieldErrors.associate { error ->
+            error.field to (error.defaultMessage ?: "Invalid value")
+        }
         
-        return ResponseEntity.badRequest().body(
-            ErrorResponse(
-                status = HttpStatus.BAD_REQUEST.value(),
-                error = "Validation Failed",
-                message = errors
-            )
+        val globalErrors = ex.bindingResult.globalErrors.associate { error ->
+            error.objectName to (error.defaultMessage ?: "Validation failed")
+        }
+        
+        val allErrors = fieldErrors + globalErrors
+        val errorMessage = allErrors.entries.joinToString(", ") { "${it.key}: ${it.value}" }
+        
+        logException("Validation failed: $errorMessage", ex, correlationId, "WARN")
+        
+        return buildErrorResponse(
+            status = HttpStatus.BAD_REQUEST,
+            error = "Validation Failed",
+            message = "Request validation failed",
+            path = getPath(request),
+            correlationId = correlationId,
+            details = mapOf("fieldErrors" to allErrors)
         )
     }
     
     @ExceptionHandler(ConstraintViolationException::class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    fun handleConstraintViolationException(ex: ConstraintViolationException): ResponseEntity<ErrorResponse> {
-        val errors = ex.constraintViolations
-            .joinToString(", ") { "${it.propertyPath}: ${it.message}" }
+    fun handleConstraintViolationException(
+        ex: ConstraintViolationException,
+        request: WebRequest
+    ): ResponseEntity<ErrorResponse> {
+        val correlationId = generateCorrelationId()
         
-        logger.warn("Constraint violation: $errors")
+        val violations = ex.constraintViolations.associate { violation ->
+            violation.propertyPath.toString() to (violation.message ?: "Constraint violation")
+        }
         
-        return ResponseEntity.badRequest().body(
-            ErrorResponse(
-                status = HttpStatus.BAD_REQUEST.value(),
-                error = "Constraint Violation",
-                message = errors
-            )
+        val errorMessage = violations.entries.joinToString(", ") { "${it.key}: ${it.value}" }
+        logException("Constraint violation: $errorMessage", ex, correlationId, "WARN")
+        
+        return buildErrorResponse(
+            status = HttpStatus.BAD_REQUEST,
+            error = "Constraint Violation",
+            message = "Request constraints were violated",
+            path = getPath(request),
+            correlationId = correlationId,
+            details = mapOf("violations" to violations)
         )
     }
     
+    // ===== Spring Security Exceptions =====
+    
     @ExceptionHandler(BadCredentialsException::class)
-    @ResponseStatus(HttpStatus.UNAUTHORIZED)
-    fun handleBadCredentialsException(ex: BadCredentialsException): ResponseEntity<ErrorResponse> {
-        logger.warn("Authentication failed: ${ex.message}")
+    fun handleBadCredentialsException(
+        ex: BadCredentialsException,
+        request: WebRequest
+    ): ResponseEntity<ErrorResponse> {
+        val correlationId = generateCorrelationId()
+        logException("Authentication failed", ex, correlationId, "WARN")
         
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
-            ErrorResponse(
-                status = HttpStatus.UNAUTHORIZED.value(),
-                error = "Authentication Failed",
-                message = "Invalid email or password"
-            )
+        return buildErrorResponse(
+            status = HttpStatus.UNAUTHORIZED,
+            error = "Authentication Failed",
+            message = "Invalid email or password",
+            path = getPath(request),
+            correlationId = correlationId
         )
     }
     
     @ExceptionHandler(AuthenticationException::class)
-    @ResponseStatus(HttpStatus.UNAUTHORIZED)
-    fun handleAuthenticationException(ex: AuthenticationException): ResponseEntity<ErrorResponse> {
-        logger.warn("Authentication error: ${ex.message}")
+    fun handleAuthenticationException(
+        ex: AuthenticationException,
+        request: WebRequest
+    ): ResponseEntity<ErrorResponse> {
+        val correlationId = generateCorrelationId()
+        logException("Authentication error", ex, correlationId, "WARN")
         
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
-            ErrorResponse(
-                status = HttpStatus.UNAUTHORIZED.value(),
-                error = "Authentication Required",
-                message = "Please authenticate to access this resource"
-            )
+        return buildErrorResponse(
+            status = HttpStatus.UNAUTHORIZED,
+            error = "Authentication Required",
+            message = "Please authenticate to access this resource",
+            path = getPath(request),
+            correlationId = correlationId
         )
     }
     
-    @ExceptionHandler(ExpiredJwtException::class)
-    @ResponseStatus(HttpStatus.UNAUTHORIZED)
-    fun handleExpiredJwtException(ex: ExpiredJwtException): ResponseEntity<ErrorResponse> {
-        logger.warn("JWT token expired")
+    @ExceptionHandler(AccessDeniedException::class)
+    fun handleAccessDeniedException(
+        ex: AccessDeniedException,
+        request: WebRequest
+    ): ResponseEntity<ErrorResponse> {
+        val correlationId = generateCorrelationId()
+        logException("Access denied", ex, correlationId, "WARN")
         
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
-            ErrorResponse(
-                status = HttpStatus.UNAUTHORIZED.value(),
-                error = "Token Expired",
-                message = "Your session has expired. Please login again"
-            )
+        return buildErrorResponse(
+            status = HttpStatus.FORBIDDEN,
+            error = "Access Denied",
+            message = "You do not have permission to access this resource",
+            path = getPath(request),
+            correlationId = correlationId
+        )
+    }
+    
+    // ===== JWT Exceptions =====
+    
+    @ExceptionHandler(ExpiredJwtException::class)
+    fun handleExpiredJwtException(
+        ex: ExpiredJwtException,
+        request: WebRequest
+    ): ResponseEntity<ErrorResponse> {
+        val correlationId = generateCorrelationId()
+        logException("JWT token expired", ex, correlationId, "WARN")
+        
+        return buildErrorResponse(
+            status = HttpStatus.UNAUTHORIZED,
+            error = "Token Expired",
+            message = "Your session has expired. Please login again",
+            path = getPath(request),
+            correlationId = correlationId
         )
     }
     
     @ExceptionHandler(MalformedJwtException::class, SignatureException::class)
-    @ResponseStatus(HttpStatus.UNAUTHORIZED)
-    fun handleInvalidJwtException(ex: Exception): ResponseEntity<ErrorResponse> {
-        logger.warn("Invalid JWT token: ${ex.message}")
+    fun handleInvalidJwtException(
+        ex: Exception,
+        request: WebRequest
+    ): ResponseEntity<ErrorResponse> {
+        val correlationId = generateCorrelationId()
+        logException("Invalid JWT token", ex, correlationId, "WARN")
         
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
-            ErrorResponse(
-                status = HttpStatus.UNAUTHORIZED.value(),
-                error = "Invalid Token",
-                message = "Invalid authentication token"
+        return buildErrorResponse(
+            status = HttpStatus.UNAUTHORIZED,
+            error = "Invalid Token",
+            message = "Invalid authentication token",
+            path = getPath(request),
+            correlationId = correlationId
+        )
+    }
+    
+    // ===== Common Spring Web Exceptions =====
+    
+    @ExceptionHandler(HttpRequestMethodNotSupportedException::class)
+    fun handleMethodNotSupportedException(
+        ex: HttpRequestMethodNotSupportedException,
+        request: WebRequest
+    ): ResponseEntity<ErrorResponse> {
+        val correlationId = generateCorrelationId()
+        val supportedMethods = ex.supportedMethods?.joinToString(", ") ?: "Unknown"
+        logException("Method not supported: ${ex.method}. Supported: $supportedMethods", ex, correlationId, "WARN")
+        
+        return buildErrorResponse(
+            status = HttpStatus.METHOD_NOT_ALLOWED,
+            error = "Method Not Allowed",
+            message = "HTTP method '${ex.method}' is not supported for this endpoint",
+            path = getPath(request),
+            correlationId = correlationId,
+            details = mapOf("supportedMethods" to supportedMethods)
+        )
+    }
+    
+    @ExceptionHandler(HttpMediaTypeNotSupportedException::class)
+    fun handleMediaTypeNotSupportedException(
+        ex: HttpMediaTypeNotSupportedException,
+        request: WebRequest
+    ): ResponseEntity<ErrorResponse> {
+        val correlationId = generateCorrelationId()
+        val supportedTypes = ex.supportedMediaTypes.joinToString(", ")
+        logException("Media type not supported: ${ex.contentType}. Supported: $supportedTypes", ex, correlationId, "WARN")
+        
+        return buildErrorResponse(
+            status = HttpStatus.UNSUPPORTED_MEDIA_TYPE,
+            error = "Unsupported Media Type",
+            message = "Content type '${ex.contentType}' is not supported",
+            path = getPath(request),
+            correlationId = correlationId,
+            details = mapOf("supportedMediaTypes" to supportedTypes)
+        )
+    }
+    
+    @ExceptionHandler(HttpMessageNotReadableException::class)
+    fun handleMessageNotReadableException(
+        ex: HttpMessageNotReadableException,
+        request: WebRequest
+    ): ResponseEntity<ErrorResponse> {
+        val correlationId = generateCorrelationId()
+        logException("Message not readable", ex, correlationId, "WARN")
+        
+        return buildErrorResponse(
+            status = HttpStatus.BAD_REQUEST,
+            error = "Malformed Request",
+            message = "Request body could not be read or parsed",
+            path = getPath(request),
+            correlationId = correlationId
+        )
+    }
+    
+    @ExceptionHandler(MissingServletRequestParameterException::class)
+    fun handleMissingParameterException(
+        ex: MissingServletRequestParameterException,
+        request: WebRequest
+    ): ResponseEntity<ErrorResponse> {
+        val correlationId = generateCorrelationId()
+        logException("Missing request parameter: ${ex.parameterName}", ex, correlationId, "WARN")
+        
+        return buildErrorResponse(
+            status = HttpStatus.BAD_REQUEST,
+            error = "Missing Parameter",
+            message = "Required parameter '${ex.parameterName}' is missing",
+            path = getPath(request),
+            correlationId = correlationId,
+            details = mapOf("parameter" to ex.parameterName, "type" to ex.parameterType)
+        )
+    }
+    
+    @ExceptionHandler(MethodArgumentTypeMismatchException::class)
+    fun handleTypeMismatchException(
+        ex: MethodArgumentTypeMismatchException,
+        request: WebRequest
+    ): ResponseEntity<ErrorResponse> {
+        val correlationId = generateCorrelationId()
+        val expectedType = ex.requiredType?.simpleName ?: "Unknown"
+        logException("Type mismatch for parameter: ${ex.name}", ex, correlationId, "WARN")
+        
+        return buildErrorResponse(
+            status = HttpStatus.BAD_REQUEST,
+            error = "Type Mismatch",
+            message = "Parameter '${ex.name}' should be of type $expectedType",
+            path = getPath(request),
+            correlationId = correlationId,
+            details = mapOf(
+                "parameter" to ex.name,
+                "expectedType" to expectedType,
+                "actualValue" to (ex.value?.toString() ?: "null")
             )
         )
     }
     
     @ExceptionHandler(IllegalArgumentException::class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    fun handleIllegalArgumentException(ex: IllegalArgumentException): ResponseEntity<ErrorResponse> {
-        logger.warn("Invalid argument: ${ex.message}")
+    fun handleIllegalArgumentException(
+        ex: IllegalArgumentException,
+        request: WebRequest
+    ): ResponseEntity<ErrorResponse> {
+        val correlationId = generateCorrelationId()
+        logException("Invalid argument", ex, correlationId, "WARN")
         
-        return ResponseEntity.badRequest().body(
-            ErrorResponse(
-                status = HttpStatus.BAD_REQUEST.value(),
-                error = "Invalid Request",
-                message = ex.message ?: "Invalid request parameters"
-            )
+        return buildErrorResponse(
+            status = HttpStatus.BAD_REQUEST,
+            error = "Invalid Request",
+            message = ex.message ?: "Invalid request parameters",
+            path = getPath(request),
+            correlationId = correlationId
+        )
+    }
+    
+    @ExceptionHandler(IllegalStateException::class)
+    fun handleIllegalStateException(
+        ex: IllegalStateException,
+        request: WebRequest
+    ): ResponseEntity<ErrorResponse> {
+        val correlationId = generateCorrelationId()
+        logException("Illegal state", ex, correlationId, "WARN")
+        
+        return buildErrorResponse(
+            status = HttpStatus.CONFLICT,
+            error = "Invalid State",
+            message = ex.message ?: "The requested operation cannot be performed in the current state",
+            path = getPath(request),
+            correlationId = correlationId
         )
     }
     
     @ExceptionHandler(NoSuchElementException::class)
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    fun handleNotFoundException(ex: NoSuchElementException): ResponseEntity<ErrorResponse> {
-        logger.warn("Resource not found: ${ex.message}")
+    fun handleNotFoundException(
+        ex: NoSuchElementException,
+        request: WebRequest
+    ): ResponseEntity<ErrorResponse> {
+        val correlationId = generateCorrelationId()
+        logException("Resource not found", ex, correlationId, "WARN")
         
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
-            ErrorResponse(
-                status = HttpStatus.NOT_FOUND.value(),
-                error = "Not Found",
-                message = ex.message ?: "Requested resource not found"
-            )
+        return buildErrorResponse(
+            status = HttpStatus.NOT_FOUND,
+            error = "Not Found",
+            message = ex.message ?: "Requested resource not found",
+            path = getPath(request),
+            correlationId = correlationId
         )
     }
     
+    // ===== Generic Exception Handler =====
+    
     @ExceptionHandler(Exception::class)
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    fun handleGenericException(ex: Exception): ResponseEntity<ErrorResponse> {
-        logger.error("Unexpected error occurred", ex)
+    fun handleGenericException(
+        ex: Exception,
+        request: WebRequest
+    ): ResponseEntity<ErrorResponse> {
+        val correlationId = generateCorrelationId()
+        logException("Unexpected error occurred", ex, correlationId, "ERROR")
         
         // Don't expose internal error details in production
         val message = if (isProduction()) {
-            "An unexpected error occurred. Please try again later"
+            GENERIC_ERROR_MESSAGE
         } else {
             ex.message ?: "Unknown error"
         }
         
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-            ErrorResponse(
-                status = HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                error = "Internal Server Error",
-                message = message
-            )
+        return buildErrorResponse(
+            status = HttpStatus.INTERNAL_SERVER_ERROR,
+            error = "Internal Server Error",
+            message = message,
+            path = getPath(request),
+            correlationId = correlationId,
+            details = if (!isProduction()) mapOf("exceptionType" to (ex::class.simpleName ?: "Unknown")) else null
         )
+    }
+    
+    // ===== Utility Methods =====
+    
+    private fun generateCorrelationId(): String {
+        // Try to get existing correlation ID from MDC first
+        return MDC.get("correlationId") ?: UUID.randomUUID().toString().also {
+            MDC.put("correlationId", it)
+        }
+    }
+    
+    private fun buildErrorResponse(
+        status: HttpStatus,
+        error: String,
+        message: String,
+        path: String,
+        correlationId: String,
+        details: Map<String, Any>? = null
+    ): ResponseEntity<ErrorResponse> {
+        val errorResponse = ErrorResponse(
+            status = status.value(),
+            error = error,
+            message = message,
+            path = path,
+            correlationId = correlationId,
+            details = details
+        )
+        
+        return ResponseEntity.status(status)
+            .header(CORRELATION_ID_HEADER, correlationId)
+            .body(errorResponse)
+    }
+    
+    private fun getPath(request: WebRequest): String {
+        return try {
+            val servletRequest = (request as? org.springframework.web.context.request.ServletWebRequest)?.request as? HttpServletRequest
+            servletRequest?.requestURI ?: "unknown"
+        } catch (e: Exception) {
+            "unknown"
+        }
+    }
+    
+    private fun logException(message: String, ex: Throwable, correlationId: String, level: String) {
+        val logMessage = "[$correlationId] $message: ${ex.message}"
+        
+        when (level.uppercase()) {
+            "ERROR" -> logger.error(logMessage, ex)
+            "WARN" -> logger.warn(logMessage)
+            "INFO" -> logger.info(logMessage)
+            "DEBUG" -> logger.debug(logMessage)
+            else -> logger.warn(logMessage)
+        }
     }
     
     private fun isProduction(): Boolean {

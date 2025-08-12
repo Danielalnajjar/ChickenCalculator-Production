@@ -2,6 +2,8 @@ package com.example.chickencalculator.service
 
 import com.example.chickencalculator.entity.AdminUser
 import com.example.chickencalculator.entity.AdminRole
+import com.example.chickencalculator.exception.BusinessValidationException
+import com.example.chickencalculator.exception.InvalidCredentialsException
 import com.example.chickencalculator.repository.AdminUserRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -16,28 +18,24 @@ class AdminService(private val adminUserRepository: AdminUserRepository) {
     private val passwordEncoder = BCryptPasswordEncoder(10)
     
     @Transactional
-    fun authenticate(email: String, password: String): AdminUser? {
+    fun authenticate(email: String, password: String): AdminUser {
         logger.debug("Authentication attempt for email: {}", email)
         val user = adminUserRepository.findByEmail(email)
-        
-        if (user == null) {
-            logger.warn("No user found with email: {}", email)
-            return null
-        }
+            ?: throw InvalidCredentialsException(email)
         
         logger.debug("User found: {}, verifying password", user.email)
         val passwordMatches = verifyPassword(password, user.passwordHash)
         
-        return if (passwordMatches) {
-            // Update last login time
-            val updatedUser = user.copy(lastLoginAt = LocalDateTime.now())
-            adminUserRepository.save(updatedUser)
-            logger.info("Authentication successful for: {}", user.email)
-            updatedUser
-        } else {
+        if (!passwordMatches) {
             logger.warn("Password verification failed for: {}", user.email)
-            null
+            throw InvalidCredentialsException(email)
         }
+        
+        // Update last login time
+        val updatedUser = user.copy(lastLoginAt = LocalDateTime.now())
+        adminUserRepository.save(updatedUser)
+        logger.info("Authentication successful for: {}", user.email)
+        return updatedUser
     }
     
     @Transactional
@@ -69,20 +67,26 @@ class AdminService(private val adminUserRepository: AdminUserRepository) {
     }
     
     private fun validatePassword(password: String) {
+        val errors = mutableMapOf<String, String>()
+        
         if (password.length < 8) {
-            throw IllegalArgumentException("Password must be at least 8 characters long")
+            errors["length"] = "Password must be at least 8 characters long"
         }
         if (!password.any { it.isUpperCase() }) {
-            throw IllegalArgumentException("Password must contain at least one uppercase letter")
+            errors["uppercase"] = "Password must contain at least one uppercase letter"
         }
         if (!password.any { it.isLowerCase() }) {
-            throw IllegalArgumentException("Password must contain at least one lowercase letter")  
+            errors["lowercase"] = "Password must contain at least one lowercase letter"
         }
         if (!password.any { it.isDigit() }) {
-            throw IllegalArgumentException("Password must contain at least one number")
+            errors["digit"] = "Password must contain at least one number"
         }
         if (password.contains(" ")) {
-            throw IllegalArgumentException("Password cannot contain spaces")
+            errors["spaces"] = "Password cannot contain spaces"
+        }
+        
+        if (errors.isNotEmpty()) {
+            throw BusinessValidationException("Password validation failed", errors)
         }
     }
     
@@ -157,21 +161,18 @@ class AdminService(private val adminUserRepository: AdminUserRepository) {
     
     @Transactional
     fun changePassword(userId: Long, currentPassword: String, newPassword: String): Boolean {
-        val user = adminUserRepository.findById(userId).orElse(null) ?: return false
+        val user = adminUserRepository.findById(userId).orElseThrow {
+            BusinessValidationException("User not found with ID: $userId")
+        }
         
         // Verify current password
         if (!verifyPassword(currentPassword, user.passwordHash)) {
             logger.warn("Password change attempt with invalid current password for user: {}", user.email)
-            return false
+            throw InvalidCredentialsException("Current password is incorrect")
         }
         
         // Validate new password
-        try {
-            validatePassword(newPassword)
-        } catch (e: IllegalArgumentException) {
-            logger.warn("Password change attempt with invalid new password for user: {}: {}", user.email, e.message)
-            throw e
-        }
+        validatePassword(newPassword)
         
         // Update password and clear password change requirement
         val updatedUser = user.copy(

@@ -34,6 +34,8 @@ class SecurityConfig(
                     .csrfTokenRequestHandler(CsrfTokenRequestAttributeHandler())
                     .ignoringRequestMatchers(
                         "/api/admin/auth/login", // Allow login without CSRF
+                        "/api/admin/auth/validate", // Allow token validation without CSRF
+                        "/api/admin/auth/logout", // Allow logout without CSRF
                         "/api/admin/auth/csrf-token", // Allow CSRF token retrieval
                         "/api/health/**",
                         "/actuator/health",
