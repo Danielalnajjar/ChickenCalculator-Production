@@ -20,7 +20,8 @@ import java.time.LocalDate
 )
 data class SalesData(
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "entity_seq")
+    @SequenceGenerator(name = "entity_seq", sequenceName = "entity_id_seq", allocationSize = 1)
     val id: Long = 0,
     
     @Column(nullable = false)

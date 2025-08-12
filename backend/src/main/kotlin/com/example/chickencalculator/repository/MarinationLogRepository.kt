@@ -24,7 +24,7 @@ interface MarinationLogRepository : JpaRepository<MarinationLog, Long> {
     @Query("""
         SELECT m FROM MarinationLog m 
         WHERE m.location = :location
-        AND DATE(m.timestamp) = :date 
+        AND CAST(m.timestamp AS DATE) = :date 
         ORDER BY m.timestamp DESC
     """)
     fun findByLocationAndDate(
@@ -38,7 +38,7 @@ interface MarinationLogRepository : JpaRepository<MarinationLog, Long> {
     
     @Query("""
         SELECT m FROM MarinationLog m 
-        WHERE DATE(m.timestamp) = :date 
+        WHERE CAST(m.timestamp AS DATE) = :date 
         ORDER BY m.timestamp DESC
     """)
     @Deprecated("Use findByLocationAndDate for multi-tenancy")

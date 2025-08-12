@@ -25,10 +25,7 @@ spring:
       # SECURITY: Use validate to prevent automatic schema changes in production
       ddl-auto: validate
     show-sql: false
-    database-platform: ${DATABASE_PLATFORM:org.hibernate.dialect.H2Dialect}
-    properties:
-      hibernate:
-        dialect: ${DATABASE_DIALECT:org.hibernate.dialect.H2Dialect}
+    database-platform: ${DATABASE_PLATFORM:org.hibernate.dialect.PostgreSQLDialect}
     
   # Flyway configuration for production
   flyway:

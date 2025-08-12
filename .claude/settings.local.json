@@ -134,7 +134,14 @@
       "Bash(git mv:*)",
       "Bash(cmd /c:*)",
       "Bash(del nul)",
-      "Bash(set JWT_SECRET=test-secret-key-for-testing-purposes-only-1234567890)"
+      "Bash(set JWT_SECRET=test-secret-key-for-testing-purposes-only-1234567890)",
+      "mcp__railway__project_info",
+      "mcp__railway__template_list",
+      "Bash(grep:*)",
+      "mcp__railway__volume_list",
+      "mcp__railway__project_environments",
+      "mcp__railway__configure_api_token",
+      "mcp__railway__project_list"
     ],
     "deny": []
   }

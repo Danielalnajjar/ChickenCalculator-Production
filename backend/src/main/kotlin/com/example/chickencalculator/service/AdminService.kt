@@ -141,13 +141,6 @@ class AdminService(private val adminUserRepository: AdminUserRepository) {
                 logger.info("Admin user created successfully with ID: {}", adminUser.id)
                 logger.warn("Default admin created with email: {}. CHANGE PASSWORD IMMEDIATELY!", defaultEmail)
                 
-                // Test authentication
-                val testAuth = authenticate(defaultEmail, defaultPassword)
-                if (testAuth != null) {
-                    logger.info("Authentication test successful")
-                } else {
-                    logger.error("Authentication test failed! Check password encoder")
-                }
                 
             } catch (e: Exception) {
                 logger.error("Error creating admin user", e)
