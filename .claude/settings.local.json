@@ -154,7 +154,8 @@
       "mcp__railway__deployment_logs",
       "WebFetch(domain:chickencalculator-production-production-2953.up.railway.app)",
       "mcp__railway__deployment_status",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(git add:*)"
     ],
     "deny": []
   }

@@ -2,12 +2,8 @@ spring:
   application:
     name: chicken-calculator
   
-  # Database configuration - Use H2 if PostgreSQL not available
+  # Database configuration - Railway PostgreSQL URL conversion handled by DatabaseConfig
   datasource:
-    url: ${DATABASE_URL:jdbc:h2:file:/app/data/chicken-calculator-db;DB_CLOSE_ON_EXIT=FALSE;AUTO_RECONNECT=TRUE}
-    username: ${DATABASE_USERNAME:sa}
-    password: ${DATABASE_PASSWORD:}
-    driver-class-name: ${DATABASE_DRIVER:org.h2.Driver}
     # HikariCP connection pool settings for Railway production
     hikari:
       maximum-pool-size: ${DB_POOL_SIZE:15}
