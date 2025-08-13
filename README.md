@@ -1,17 +1,21 @@
 # 🐔 ChickenCalculator - Production-Ready Restaurant Management System
 
-[![Production Ready](https://img.shields.io/badge/Production%20Ready-7%2F10-yellow)](https://github.com/Danielalnajjar/ChickenCalculator-Production)
+[![Production Ready](https://img.shields.io/badge/Production%20Status-Critical%20Issue-red)](SERVLET_500_INVESTIGATION.md)
 [![Build Status](https://img.shields.io/badge/Build-Passing-brightgreen)](CLAUDE.md#latest-status-january-13-2025)
 [![Security](https://img.shields.io/badge/Security-Enhanced-green)](CLAUDE.md#location-authentication)
 [![WCAG 2.1](https://img.shields.io/badge/WCAG%202.1-AA%20Compliant-blue)](https://www.w3.org/WAI/WCAG21/quickref/)
 [![Monitoring](https://img.shields.io/badge/Monitoring-Prometheus-orange)](METRICS_IMPLEMENTATION.md)
-[![Issues](https://img.shields.io/badge/Critical%20Issue-500%20Errors-red)](KNOWN_ISSUES.md)
+[![Issues](https://img.shields.io/badge/Critical%20Issue-Servlet%20500%20Errors-red)](KNOWN_ISSUES.md)
+
+## 🚨 CRITICAL PRODUCTION ISSUE
+
+**⚠️ All custom endpoints returning HTTP 500 errors in production.** Controllers execute successfully but Spring MVC post-processing fails. See [SERVLET_500_INVESTIGATION.md](SERVLET_500_INVESTIGATION.md) for detailed investigation.
 
 ## 🎯 Overview
 
 A **production-ready**, multi-tenant restaurant management system for chicken inventory and marination planning. Built with enterprise-grade security, comprehensive monitoring, and full accessibility compliance.
 
-**Production Readiness Score: 7/10** ⚠️ Multi-location auth complete, but investigating servlet 500 errors on all endpoints.
+**Production Status**: Multi-location auth complete, but servlet 500 errors affecting all custom endpoints. Actuator endpoints working.
 
 ## 🌟 Key Features
 
@@ -45,7 +49,7 @@ A **production-ready**, multi-tenant restaurant management system for chicken in
    ```bash
    JWT_SECRET=your-32-character-minimum-secret-here
    ADMIN_DEFAULT_PASSWORD=SecurePassword123!
-   # SENTRY_DSN disabled - causes servlet exceptions
+   # SENTRY_DSN=<disabled> # DO NOT SET - causes servlet exceptions
    ```
 6. Railway auto-deploys everything!
 
@@ -133,11 +137,12 @@ All endpoints use `/api/v1` prefix for versioning.
 
 #### Monitoring Endpoints
 - `GET /actuator/prometheus` - Prometheus metrics
-- `GET /actuator/health` - Detailed health status
+- `GET /actuator/health` - Detailed health status (currently working)
 
-#### Debug Endpoints (for troubleshooting)
-- `GET /test` - Simple test endpoint
-- `GET /test-html` - HTML test endpoint
+#### Debug Endpoints (for troubleshooting servlet 500 errors)
+- `GET /test` - Simple test endpoint (returns 500)
+- `GET /test-html` - HTML test endpoint (returns 500)
+- `GET /minimal` - Minimal endpoint (returns 500)
 
 [Full API Documentation →](CLAUDE.md#api-documentation-v1)
 
@@ -156,8 +161,8 @@ All endpoints use `/api/v1` prefix for versioning.
 ```bash
 JWT_SECRET=<32+ character secret>        # Required
 ADMIN_DEFAULT_PASSWORD=<secure-password> # Required
-SENTRY_DSN=<your-sentry-dsn>            # Recommended
-DATABASE_URL=postgresql://...            # Production only
+# SENTRY_DSN=<disabled>                  # DO NOT SET - causes servlet exceptions
+DATABASE_URL=postgresql://...            # Railway provides automatically
 ```
 
 ## 📈 Production Metrics
@@ -216,6 +221,15 @@ DATABASE_URL=postgresql://...            # Production only
 - **Tests**: ✅ All compile successfully
 - **Deployment**: ✅ Running on Railway with V5 migration
 - **Multi-Location**: ✅ Password-protected access active
+- **Critical Issue**: ❌ Servlet 500 errors on all custom endpoints
+
+### Railway Production Details (For Claude Code Sessions)
+```yaml
+Project ID: 767deec0-30ac-4238-a57b-305f5470b318
+Service ID: fde8974b-10a3-4b70-b5f1-73c4c5cebbbe
+Environment: f57580c2-24dc-4c4e-adf2-313399c855a9
+Production URL: https://chickencalculator-production-production-2953.up.railway.app
+```
 
 ### Critical Issues Resolved (25/25) ✅
 - **Security (5/5)**: JWT, CSRF, passwords, XSS, console access
@@ -223,6 +237,13 @@ DATABASE_URL=postgresql://...            # Production only
 - **Architecture (6/6)**: Service layer, SRP, transactions, versioning, exceptions
 - **Operations (5/5)**: Metrics, logging, error tracking, tests
 - **Accessibility (4/4)**: WCAG compliance, mobile navigation
+
+### Current Investigation: Servlet 500 Errors
+- **Problem**: All custom endpoints return 500 after controllers succeed
+- **Diagnostic Tools**: ErrorTapFilter, ResponseProbeFilter, AfterCommitGuardFilter
+- **Ruled Out**: Write-after-commit, missing converters, Sentry interference
+- **Focus**: Spring MVC post-processing and controller return types
+- **Details**: See [SERVLET_500_INVESTIGATION.md](SERVLET_500_INVESTIGATION.md)
 
 ### Deployment Checklist
 1. Set required environment variables
@@ -235,10 +256,11 @@ DATABASE_URL=postgresql://...            # Production only
 ## 🚦 Project Status
 
 ### Current State
-- **Production Ready**: 10/10 score ✅
-- **Security**: All vulnerabilities fixed including password change
-- **Monitoring**: Full observability
-- **Testing**: Infrastructure in place
+- **Production Status**: Critical - Servlet 500 errors on all endpoints
+- **Security**: All vulnerabilities fixed including password change ✅
+- **Monitoring**: Full observability (Sentry disabled due to conflicts)
+- **Testing**: Infrastructure in place, all tests compile ✅
+- **Active Investigation**: Spring MVC post-processing failures
 
 ### Roadmap
 - [ ] Expand test coverage to 80%
@@ -266,6 +288,6 @@ See [CLAUDE.md Troubleshooting Guide](CLAUDE.md#troubleshooting-guide)
 
 **Built with ❤️ for efficient restaurant operations**
 
-*Production Ready since December 2024*
 *Multi-Location Authentication added January 2025*
-*Last Updated: January 13, 2025*
+*Currently investigating servlet 500 errors in production*
+*Last Updated: January 13, 2025 01:15 PST*

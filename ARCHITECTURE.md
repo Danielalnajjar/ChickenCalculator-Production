@@ -196,61 +196,111 @@ marination_log (
 4. **V4__reset_admin_password.sql**: Admin recovery mechanism
 5. **V5__add_location_authentication.sql**: Location auth fields and indexes (Jan 12, 2025)
 
-## Diagnostic Infrastructure
+## Diagnostic Infrastructure (January 13, 2025)
 
-### Production Debugging Components
-Added for investigating servlet 500 errors (January 13, 2025):
+### Current Production Issue
+**Status**: All custom endpoints return 500 errors AFTER controllers successfully process requests. Controllers return status=200, then Spring MVC post-processing fails.
 
-#### ErrorTapFilter
+### Filter Execution Order (Production)
+```
+1. errorTapFilter            - ERROR dispatch capture (HIGHEST_PRECEDENCE)
+2. characterEncodingFilter   - Spring Boot default
+3. responseProbeFilter       - Response lifecycle monitoring
+4. formContentFilter         - Spring Boot default
+5. requestContextFilter      - Spring Boot default
+6. afterCommitGuardFilter    - Write-after-commit detection
+7. locationAuthFilter        - Location authentication (single doFilter)
+8. jwtAuthenticationFilter   - Admin JWT auth (single doFilter)
+9. tailLogFilter            - Request/response logging
+```
+
+### Diagnostic Components
+
+#### Error Detection Filters
+
+**ErrorTapFilter**
+- **Order**: HIGHEST_PRECEDENCE
 - **Purpose**: Captures ERROR dispatch for servlet exceptions
-- **Order**: HIGHEST_PRECEDENCE to catch errors first
-- **Features**: 
-  - Logs ERROR_STATUS_CODE, ERROR_REQUEST_URI, ERROR_EXCEPTION
-  - Only processes ERROR dispatch type
-  - Critical for debugging production issues
+- **Key Finding**: ERROR_EXCEPTION attribute is empty (no exception attached)
+- **Implication**: Exception occurs but Spring doesn't capture it properly
 
-#### TailLogFilter
-- **Purpose**: Comprehensive request/response logging
-- **Features**:
-  - Logs request details (method, URI, headers)
-  - Captures response status and timing
-  - Helps trace request flow through filters
+**AfterCommitGuardFilter** 
+- **Order**: LOWEST_PRECEDENCE - 1
+- **Purpose**: Detects any response modifications after commit
+- **Key Finding**: NO violations detected in production
+- **Implication**: NOT a write-after-commit issue
 
-#### FilterInventory
-- **Purpose**: Documents filter registration order at startup
-- **Event**: ApplicationReadyEvent
+**ResponseProbeFilter**
+- **Order**: Early (position 3)
+- **Purpose**: Monitors all response lifecycle methods
+- **Key Finding**: Shows status=200 before servlet exception
+- **Implication**: Controllers complete successfully
+
+#### Error Handling Components
+
+**TappingErrorAttributes** (@Primary)
+- **Purpose**: Captures actual Throwable Spring uses for /error
+- **Key Finding**: NOT logging any exceptions
+- **Implication**: Spring has no exception to attach
+
+**PlainErrorController**
+- **Purpose**: Returns plain text errors to bypass JSON conversion
+- **Key Finding**: NOT being invoked
+- **Implication**: Error handling fails before reaching controller
+
+#### Diagnostic Utilities
+
+**FilterInventory**
+- **Trigger**: ApplicationReadyEvent
 - **Output**: Ordered list of all OncePerRequestFilter beans
-- **Use**: Verify filter execution order
+- **Use**: Verify filter registration and execution order
 
-#### MvcDiagnostics
-- **Purpose**: Logs HTTP message converters at startup
-- **Features**:
-  - Lists all registered HttpMessageConverter instances
-  - Verifies Jackson ObjectMapper presence
-  - Shows ObjectMapper modules (critical for Kotlin)
-- **Key Finding**: Production has 9 converters (vs 10 locally)
+**MvcDiagnostics**
+- **Trigger**: ApplicationReadyEvent  
+- **Output**: List of HTTP message converters
+- **Finding**: Production has 9 converters (vs 10 locally), Jackson present
 
-#### DebugMvcController (@Profile("dev"))
+**PathUtil**
+- **Purpose**: Normalizes request paths for consistent handling
+- **Critical**: Removes context path, handles null/empty paths
+- **Use**: All filters use this for path checking
+
+**DebugMvcController** (@Profile("dev"))
 - **Endpoint**: GET /debug/converters
 - **Purpose**: Runtime converter inspection
-- **Output**: JSON with converter list and ObjectMapper status
-- **Security**: Only active in dev profile
+- **Note**: Dev profile only for security
 
-#### PathUtil
-- **Purpose**: Normalizes request paths
-- **Method**: `normalizedPath(request: HttpServletRequest)`
-- **Use**: Consistent path handling across filters
-- **Critical**: Removes context path for proper matching
+### Filter Implementation Requirements
 
-### Filter Path Patterns (CRITICAL)
-**WARNING**: Use only simple string checks in filters:
-- ✅ `path.startsWith("/api")`
-- ✅ `path == "/test"`
-- ❌ NO Ant patterns (`**`, `*`)
-- ❌ NO PathMatcher usage
-- ❌ NO complex regex in filter skip logic
+#### Path Pattern Rules
+**CRITICAL**: Use only simple string operations in filters:
+```kotlin
+// CORRECT
+if (path.startsWith("/api")) { ... }
+if (path == "/test") { ... }
 
-Illegal patterns cause: "No more pattern data allowed after {*...} or ** pattern element"
+// WRONG - Causes "No more pattern data allowed" error
+if (pathMatcher.match("/**", path)) { ... }
+if (path.matches(Regex(".*")) { ... }
+```
+
+#### Filter Chain Rules
+**CRITICAL**: Each filter must call chain.doFilter() exactly ONCE:
+```kotlin
+// CORRECT - Single exit point
+override fun doFilterInternal(req: HttpServletRequest, res: HttpServletResponse, chain: FilterChain) {
+    // All logic here
+    chain.doFilter(req, res) // Only ONE call at the end
+}
+
+// WRONG - Multiple calls cause write-after-commit
+if (condition) {
+    chain.doFilter(req, res)
+    return
+}
+// ... more logic ...
+chain.doFilter(req, res)
+```
 
 ## Controller Architecture Best Practices
 
@@ -315,10 +365,14 @@ Prometheus Metrics:
 - **Sensitive Data**: Automatic exclusion of passwords/tokens
 
 ### Error Tracking
-- **Sentry Integration**: CURRENTLY DISABLED (causes servlet exceptions)
-- **Alternative**: Using ErrorTapFilter and TailLogFilter for diagnostics
-- **Correlation IDs**: Request tracing for error debugging
-- **Environment Tagging**: dev/staging/production
+- **Sentry Integration**: DISABLED (was causing servlet exceptions)
+- **Current Approach**: 
+  - ErrorTapFilter captures ERROR dispatch
+  - ResponseProbeFilter monitors response lifecycle
+  - AfterCommitGuardFilter detects write violations
+  - TappingErrorAttributes captures Spring errors
+- **Correlation IDs**: Request tracing across all components
+- **Key Finding**: Exception occurs in Spring MVC after controller returns
 
 ## Deployment Architecture
 

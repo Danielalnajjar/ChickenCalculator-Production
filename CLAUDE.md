@@ -45,26 +45,34 @@ git push origin main                       # Triggers Railway auto-deploy
 
 ## Current Production Status
 
+### 🔴 CRITICAL: Servlet 500 Errors (January 13, 2025)
+- **Issue**: All custom endpoints return 500 errors in production
+- **Root Cause**: Spring MVC post-processing fails AFTER controllers return successfully
+- **Investigation**: Controllers work (status=200), exception in Spring framework
+- **Next Focus**: Controller return types and Spring MVC configuration
+- **Details**: See [SERVLET_500_INVESTIGATION.md](SERVLET_500_INVESTIGATION.md)
+
 ### Version & Deployment
-- **Production Readiness**: 10/10 ✅ (Multi-location auth system active)
+- **Production Readiness**: 7/10 ⚠️ (Servlet errors blocking functionality)
 - **Database**: PostgreSQL 16.8 on Railway (V5 migration applied Jan 12, 2025)
-- **Platform**: Railway (Project ID: 767deec0-30ac-4238-a57b-305f5470b318)
-  - **Service ID**: fde8974b-10a3-4b70-b5f1-73c4c5cebbbe (ChickenCalculator-Production)
-  - **Postgres ID**: bbbadbce-026c-44f1-974c-00d5a457bccf
-  - **Environment**: production (f57580c2-24dc-4c4e-adf2-313399c855a9)
+- **Platform**: Railway - **CRITICAL IDs for MCP Commands**:
+  - **Project ID**: `767deec0-30ac-4238-a57b-305f5470b318`
+  - **Service ID**: `fde8974b-10a3-4b70-b5f1-73c4c5cebbbe`
+  - **Postgres ID**: `bbbadbce-026c-44f1-974c-00d5a457bccf`
+  - **Environment ID**: `f57580c2-24dc-4c4e-adf2-313399c855a9`
 - **GitHub**: https://github.com/Danielalnajjar/ChickenCalculator-Production
 - **Auto-Deploy**: Enabled from main branch
 - **Port**: 8080 (Railway single-port constraint)
 
-### ✅ Latest Status (January 13, 2025)
-- **Backend**: Fully compilable with multi-location auth
+### Latest Status (January 13, 2025)
+- **Backend**: Fully compilable with diagnostic infrastructure
 - **Database**: PostgreSQL with V5 migration (location auth)
-- **Tests**: All compile successfully  
-- **Production**: Running on Railway with location authentication
-- **Multi-Location**: ✅ Complete isolation with per-location auth
-- **Controllers**: Using @RestController for proper response handling
+- **Tests**: All compile successfully
+- **Production**: ❌ Custom endpoints fail with 500 (actuator works)
+- **Multi-Location**: ✅ Auth system complete
+- **Controllers**: Using @RestController, single chain.doFilter() in filters
 
-### Recent Major Improvements (December 2024 - January 2025)
+### Recent Changes (December 2024 - January 2025)
 - ✅ All 25 critical security vulnerabilities fixed
 - ✅ Multi-tenant data isolation with location authentication
 - ✅ WCAG 2.1 Level AA compliance achieved
@@ -75,6 +83,8 @@ git push origin main                       # Triggers Railway auto-deploy
 - ✅ PostgreSQL migration completed successfully
 - ✅ Password change feature FIXED (December 12, 2024)
 - ✅ Multi-location authentication system (January 12, 2025)
+- 🔄 Diagnostic infrastructure added for servlet debugging (January 13, 2025)
+- ✅ Filter chain issues fixed - single doFilter() calls (January 13, 2025)
 
 ## Architecture Overview
 
@@ -119,11 +129,22 @@ Railway Platform (PORT 8080)
 - `JwtService` - JWT token generation and validation
 
 #### Security & Infrastructure
-- `JwtAuthenticationFilter` - Admin JWT validation (httpOnly cookies)
-- `LocationAuthFilter` - Location-specific JWT validation (NEW)
+- `JwtAuthenticationFilter` - Admin JWT validation (single chain.doFilter())
+- `LocationAuthFilter` - Location-specific JWT validation (single chain.doFilter())
 - `GlobalExceptionHandler` - Standardized error responses
 - `CorrelationIdFilter` - Request tracing
 - `RequestLoggingInterceptor` - Structured logging
+
+#### Diagnostic Filters (Added for Servlet Investigation)
+- `ErrorTapFilter` - Captures ERROR dispatch at HIGHEST_PRECEDENCE
+- `ResponseProbeFilter` - Monitors response lifecycle and mutations
+- `AfterCommitGuardFilter` - Detects write-after-commit violations
+- `TailLogFilter` - Comprehensive request/response logging
+- `TappingErrorAttributes` - Captures Spring error attributes
+- `PlainErrorController` - Plain text error responses
+- `FilterInventory` - Documents filter registration order
+- `MvcDiagnostics` - Logs HTTP message converters
+- `PathUtil` - Normalizes request paths
 
 #### Database (PostgreSQL with Flyway Migrations)
 - **Current Version**: PostgreSQL 16.8 on Railway
@@ -419,13 +440,47 @@ openssl rand -base64 48
 
 ## Troubleshooting Guide
 
+### 🔴 CRITICAL: Servlet 500 Errors (Current Production Issue)
+
+#### Symptoms
+- All custom endpoints return 500 errors
+- Controllers execute successfully (reach return statement)
+- Exception occurs AFTER controller returns
+- Actuator endpoints work fine
+
+#### What's Been Ruled Out
+- ❌ Write-after-commit (AfterCommitGuardFilter found no violations)
+- ❌ Missing converters (Jackson present and configured)
+- ❌ Filter chain issues (single doFilter() calls implemented)
+- ❌ Sentry interference (disabled)
+- ❌ Path pattern issues (fixed)
+
+#### Next Investigation Steps
+1. Check controller return types and @ResponseBody usage
+2. Review WebConfig.kt for issues
+3. Test with minimal Spring Boot defaults
+4. Verify ResponseEntity usage in controllers
+
+#### Diagnostic Tools Available
+```bash
+# Check filter order and converters at startup
+grep "Registered OncePerRequestFilter" logs
+grep "MVC MESSAGE CONVERTERS" logs
+
+# Monitor for write-after-commit
+grep "AfterCommitGuard" logs
+
+# Check response lifecycle
+grep "ResponseProbe" logs
+```
+
 ### Common Issues
 
 #### Servlet Exception with @Controller and Resources
 - **Symptom**: 500 errors with "Servlet.service() threw exception"
 - **Cause**: Spring's Resource handling conflicts with servlet processing
-- **Solution**: Use @RestController instead of @Controller for endpoints returning ResponseEntity<String>
-- **Note**: @Controller with @ResponseBody can cause issues with Resource types
+- **Solution**: Use @RestController for all REST endpoints
+- **Note**: @Controller should only be used for view resolution
 
 #### Compilation Errors
 - **Micrometer API Type Mismatch**
@@ -545,12 +600,29 @@ openssl rand -base64 48
 
 ## Important Notes for Claude Code Sessions
 
-### ⚠️ Critical Warnings for Claude Code
-1. **Controller Types**: Always use @RestController for REST endpoints returning data. Only use @Controller for serving static files (like LocationSlugController)
-2. **Resource Handling**: Avoid returning Spring Resource types in @Controller endpoints - causes servlet exceptions
-3. **GlobalExceptionHandler**: Generic Exception handler can interfere with debugging - comment it out temporarily if needed
-4. **Railway IDs**: Use the exact service IDs provided above for Railway MCP commands
-5. **Test Endpoints**: TestController at `/test` and `/test-html` available for debugging
+### ⚠️ Critical Information for Claude Code Sessions
+
+#### Railway MCP Commands - Use These Exact IDs
+```bash
+# Critical IDs for Railway operations
+Project ID: 767deec0-30ac-4238-a57b-305f5470b318
+Service ID: fde8974b-10a3-4b70-b5f1-73c4c5cebbbe
+Environment ID: f57580c2-24dc-4c4e-adf2-313399c855a9
+Postgres ID: bbbadbce-026c-44f1-974c-00d5a457bccf
+```
+
+#### Current Production Issue
+- **Problem**: All custom endpoints return 500 errors
+- **Key Finding**: Controllers work, Spring MVC post-processing fails
+- **Focus**: Check controller return types and Spring MVC configuration
+- **Diagnostic Tools**: All in place and working (see filter list above)
+
+#### Best Practices
+1. **Controller Types**: Always use @RestController for REST endpoints
+2. **Filter Chains**: Ensure single doFilter() call per filter
+3. **Resource Handling**: Avoid returning Spring Resource types
+4. **GlobalExceptionHandler**: May mask real issues - disable for debugging
+5. **Test Endpoints**: `/minimal`, `/test`, `/test-html` available for debugging
 
 ### Railway Constraints
 - Single port exposure (8080)
@@ -588,6 +660,8 @@ openssl rand -base64 48
 
 ---
 
-*Last Updated: January 13, 2025 - All Issues Resolved - Production Status: 10/10*
-*Servlet exceptions FIXED - System fully production ready with multi-location auth!*
-*Railway Service IDs and best practices documented for future Claude Code sessions*
+*Last Updated: January 13, 2025 01:15 PST*  
+*Production Status: 7/10 - Servlet 500 errors on custom endpoints*  
+*Key Finding: Controllers work, Spring MVC post-processing fails*  
+*Diagnostic infrastructure in place - focus on controller return types*  
+*Railway Service IDs documented above for MCP commands*

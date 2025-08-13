@@ -1,61 +1,60 @@
 # Known Issues - ChickenCalculator Production
 
-## Critical Issues
+## 🔴 CRITICAL: Servlet 500 Errors in Production
 
-### 🔴 CRITICAL: Servlet 500 Errors in Production
 **Status**: UNRESOLVED - Under Active Investigation  
 **Severity**: Critical  
-**Impact**: All endpoints returning 500 errors in production  
-**Last Updated**: January 13, 2025  
+**Impact**: All custom endpoints returning 500 errors  
+**Last Updated**: January 13, 2025 01:10 PST  
 
-#### Symptoms
-- ALL endpoints return HTTP 500 Internal Server Error
-- Error message: "Servlet.service() for servlet [dispatcherServlet] threw exception"
-- No stack traces visible in logs
-- ErrorTapFilter captures ERROR dispatch but message is empty
-- Exception occurs twice per request (main request + error page processing)
-- Works locally but fails on Railway production environment
+### Problem Summary
+All custom REST endpoints fail with HTTP 500 after controllers successfully process requests (status=200). The exception occurs in Spring MVC post-processing, not in our application code.
 
-#### Investigation Progress
-✅ **Completed Investigations**:
-- **MVC Converters**: Verified 9 converters present including MappingJackson2HttpMessageConverter
-- **Jackson ObjectMapper**: Confirmed present with Kotlin module loaded
-- **Auto-Configuration**: No @EnableWebMvc or WebMvcConfigurationSupport breaking Spring Boot defaults
-- **Path Patterns**: Fixed all Ant-style patterns (removed **, *, {var} patterns)
-- **Sentry Integration**: Disabled SENTRY_DSN as it was causing some exceptions
-- **Filter Ordering**: Documented via FilterInventory
-- **Dependencies**: Added jackson-datatype-jsr310 for Java time support
+### Key Finding
+**Controllers execute successfully** → Response shows status=200 → **Exception in Spring MVC** → 500 error returned
 
-❌ **Still Failing Despite**:
-- All compilation errors resolved
-- Filters hardened with error handling
-- Path normalization implemented
-- Controllers using @RestController
-- GlobalExceptionHandler temporarily disabled
+### What We've Ruled Out ❌
+- **Write-after-commit issues** - AfterCommitGuardFilter found no violations
+- **Double filter chain calls** - Fixed in JwtAuthenticationFilter and LocationAuthFilter
+- **Missing converters** - Jackson present and configured correctly
+- **Path pattern issues** - All Ant patterns removed, using simple string operations
+- **Sentry interference** - Completely disabled
+- **Controller type issues** - Using @RestController everywhere
 
-#### Diagnostic Infrastructure Added
-1. **ErrorTapFilter**: Captures ERROR dispatch at HIGHEST_PRECEDENCE
-2. **TailLogFilter**: Logs request/response details for debugging
-3. **FilterInventory**: Shows filter registration order at startup
-4. **MvcDiagnostics**: Logs HTTP message converters at startup
-5. **DebugMvcController**: Dev-only endpoint to inspect converters
-6. **PathUtil**: Normalizes paths for consistent handling
+### Diagnostic Tools in Place ✅
+1. **ErrorTapFilter** - Captures ERROR dispatch (shows empty exception)
+2. **ResponseProbeFilter** - Shows status=200 before exception
+3. **AfterCommitGuardFilter** - Monitors post-commit writes (none found)
+4. **TappingErrorAttributes** - Captures Spring errors (not being invoked)
+5. **PlainErrorController** - Plain text errors (not reached)
+6. **MvcDiagnostics** - Logs converters at startup
+7. **FilterInventory** - Documents filter order
 
-#### Environment Differences
-- **Local (Working)**: 10 converters, direct execution
-- **Production (Failing)**: 9 converters, Railway containerized environment
-- **Key Difference**: Exception details not being captured in production
+### Most Likely Causes (Based on Evidence)
+1. **View Resolution Issue** - Controllers returning values Spring tries to resolve as views
+2. **Response Type Mismatch** - Spring failing to serialize response objects
+3. **Railway Environment** - Container-specific classpath or configuration issue
+4. **Spring MVC Config** - WebMvcConfigurer or handler mapping problem
 
-#### Next Investigation Steps
-1. Check for classpath/dependency conflicts in production
-2. Investigate filter chain execution differences
-3. Review Spring Security configuration impact
-4. Check for Railway-specific environment issues
-5. Deep dive into dispatcherServlet configuration
+### Next Steps for Investigation
+1. Examine controller return types and @ResponseBody usage
+2. Review WebConfig.kt for MVC configuration issues  
+3. Test with minimal Spring Boot defaults
+4. Add diagnostic controller with explicit ResponseEntity returns
+
+See [SERVLET_500_INVESTIGATION.md](SERVLET_500_INVESTIGATION.md) for complete investigation timeline.
+
+## Minor Issues
+
+### Railway Environment Variables
+**Status**: Active  
+**Severity**: Low  
+- `FORCE_ADMIN_RESET` env var doesn't work on Railway
+- Use database migrations instead for admin resets
 
 ---
 
-## Resolved Issues
+## ✅ Resolved Issues
 
 ### ✅ Admin Password Change Feature
 **Status**: RESOLVED  
@@ -153,4 +152,8 @@ If you're working on the servlet 500 error issue:
 
 ---
 
-*Last Updated: January 13, 2025 - Critical servlet issue under investigation*
+---
+
+*Last Updated: January 13, 2025 01:10 PST*  
+*Critical servlet 500 issue: Controllers work, Spring MVC post-processing fails*  
+*Investigation focus: Controller return types and Spring MVC configuration*

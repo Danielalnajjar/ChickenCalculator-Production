@@ -181,7 +181,8 @@
       "Bash(timeout:*)",
       "Bash(git merge:*)",
       "Bash(find:*)",
-      "Bash(run-dev-test.bat)"
+      "Bash(run-dev-test.bat)",
+      "Bash(echo:*)"
     ],
     "deny": []
   }
