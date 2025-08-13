@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory
  * The @EnableSentry annotation is intentionally NOT used to avoid bean conflicts.
  * Sentry is initialized manually to provide better control over configuration.
  */
-@Configuration
+// @Configuration  // DISABLED - Sentry causing servlet exceptions with Spring bean processing
 class SentryConfig {
 
     private val logger = LoggerFactory.getLogger(SentryConfig::class.java)
