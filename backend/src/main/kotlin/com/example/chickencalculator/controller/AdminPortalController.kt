@@ -83,10 +83,8 @@ class AdminPortalController @Autowired constructor(
             </html>
         """.trimIndent()
         
-        // Use Spring's ByteArrayResource for the error page with proper override
-        val errorResource = object : org.springframework.core.io.ByteArrayResource(errorHtml.toByteArray()) {
-            override fun getFilename() = "admin-portal-error.html"
-        }
+        // Use Spring's ByteArrayResource for the error page
+        val errorResource = org.springframework.core.io.ByteArrayResource(errorHtml.toByteArray())
         
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
             .contentType(MediaType.TEXT_HTML)

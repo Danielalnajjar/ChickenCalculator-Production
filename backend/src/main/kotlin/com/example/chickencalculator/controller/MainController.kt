@@ -24,7 +24,7 @@ class MainController @Autowired constructor(
      * This displays the location selection interface for multi-tenant access.
      */
     @GetMapping("/")
-    fun serveLandingPage(): ResponseEntity<*> {
+    fun serveLandingPage(): ResponseEntity<Resource> {
         logger.info("🏠 Serving main application landing page")
         
         // Try multiple resource locations in order of preference
@@ -121,10 +121,8 @@ class MainController @Autowired constructor(
             </html>
         """.trimIndent()
         
-        // Use Spring's ByteArrayResource for the error page with proper override
-        val errorResource = object : org.springframework.core.io.ByteArrayResource(errorHtml.toByteArray()) {
-            override fun getFilename() = "error.html"
-        }
+        // Use Spring's ByteArrayResource for the error page
+        val errorResource = org.springframework.core.io.ByteArrayResource(errorHtml.toByteArray())
         
         return ResponseEntity.status(404)
             .contentType(MediaType.TEXT_HTML)
