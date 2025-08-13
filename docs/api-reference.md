@@ -109,3 +109,13 @@ GET /actuator/metrics                     - JSON metrics
 - Soy: 9.5
 - Teriyaki: 9.5
 - Turmeric: 9.5
+
+## Advanced Business Logic (Undocumented Features)
+
+### Marination Calculation Algorithm
+- **Raw Chicken Distribution**: Proportional distribution when limited
+- **Safety Factor**: Configurable safety margins in calculations
+- **4-Day Optimization**: Considers full forecast period, not just daily
+- **Pan Rounding**: 30% threshold-based rounding for practical use
+- **Already-Marinated Handling**: Subtracts pre-marinated from requirements
+- **Emergency Priority**: Day 0 (emergency) gets priority allocation
