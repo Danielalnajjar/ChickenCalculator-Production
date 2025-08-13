@@ -11,8 +11,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 import org.springframework.web.servlet.resource.PathResourceResolver
 import java.io.File
 
-// Temporarily disabled to debug servlet exceptions
-// @Configuration
+@Configuration
 class WebConfig(
     private val requestLoggingInterceptor: RequestLoggingInterceptor
 ) : WebMvcConfigurer {
@@ -104,13 +103,11 @@ class WebConfig(
     }
     
     override fun addInterceptors(registry: InterceptorRegistry) {
-        logger.info("🔧 Configuring request logging interceptor...")
-        
-        // Register the request logging interceptor for all paths
-        registry.addInterceptor(requestLoggingInterceptor)
-            .addPathPatterns("/**")
-            .order(1) // Run after correlation ID filter but before other interceptors
-        
-        logger.info("✅ Request logging interceptor registered for all paths")
+        // Temporarily disable interceptor to isolate issue
+        // logger.info("🔧 Configuring request logging interceptor...")
+        // registry.addInterceptor(requestLoggingInterceptor)
+        //     .addPathPatterns("/**")
+        //     .order(1)
+        // logger.info("✅ Request logging interceptor registered for all paths")
     }
 }

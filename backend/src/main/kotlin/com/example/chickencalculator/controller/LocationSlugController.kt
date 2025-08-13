@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import java.io.File
 
-@RestController
+// @RestController  // Temporarily disabled - catching all paths causes servlet exceptions
 class LocationSlugController(
     private val locationManagementService: LocationManagementService,
     private val metricsService: MetricsService
