@@ -4,16 +4,14 @@ import com.example.chickencalculator.service.LocationManagementService
 import com.example.chickencalculator.service.MetricsService
 import io.micrometer.core.annotation.Timed
 import org.slf4j.LoggerFactory
-import org.springframework.core.io.FileSystemResource
-import org.springframework.core.io.Resource
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
-import org.springframework.stereotype.Controller
+import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import java.io.File
 
-@Controller
+@RestController
 class LocationSlugController(
     private val locationManagementService: LocationManagementService,
     private val metricsService: MetricsService
@@ -26,7 +24,7 @@ class LocationSlugController(
      */
     @GetMapping("/{slug}")
     @Timed(value = "chicken.calculator.location.slug.time", description = "Time taken to serve location by slug")
-    fun serveLocationBySlug(@PathVariable slug: String): ResponseEntity<Resource> {
+    fun serveLocationBySlug(@PathVariable slug: String): ResponseEntity<String> {
         val startTime = System.currentTimeMillis()
         logger.info("🔍 Checking slug: $slug")
         
@@ -61,12 +59,13 @@ class LocationSlugController(
                     val totalTime = System.currentTimeMillis() - startTime
                     metricsService.recordDatabaseOperation("location_slug_lookup", totalTime)
                     
+                    val content = fileResource.readText()
                     return ResponseEntity.ok()
                         .contentType(MediaType.TEXT_HTML)
                         .header("X-Location-Slug", slug)
                         .header("X-Location-Name", location.name)
                         .header("X-Location-Id", location.id.toString())
-                        .body(FileSystemResource(fileResource))
+                        .body(content)
                 } else {
                     logger.error("❌ Index.html not found at /app/static/app/index.html")
                     metricsService.recordError("location_slug_file_not_found", "FileNotFoundException", slug)
@@ -94,7 +93,7 @@ class LocationSlugController(
     fun serveLocationSubRoute(
         @PathVariable slug: String, 
         @PathVariable path: String
-    ): ResponseEntity<Resource> {
+    ): ResponseEntity<String> {
         val startTime = System.currentTimeMillis()
         logger.info("🔍 Checking location sub-route: $slug/$path")
         
@@ -123,12 +122,13 @@ class LocationSlugController(
                     val totalTime = System.currentTimeMillis() - startTime
                     metricsService.recordDatabaseOperation("location_subroute_lookup", totalTime)
                     
+                    val content = fileResource.readText()
                     return ResponseEntity.ok()
                         .contentType(MediaType.TEXT_HTML)
                         .header("X-Location-Slug", slug)
                         .header("X-Location-Name", location.name)
                         .header("X-Location-Id", location.id.toString())
-                        .body(FileSystemResource(fileResource))
+                        .body(content)
                 } else {
                     metricsService.recordError("location_subroute_file_not_found", "FileNotFoundException", slug)
                 }
