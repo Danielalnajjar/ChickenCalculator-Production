@@ -36,4 +36,12 @@ class TestController {
             .contentType(MediaType.TEXT_HTML)
             .body(html)
     }
+    
+    @GetMapping("/minimal")
+    fun minimal(): ResponseEntity<String> {
+        logger.info("🧪 Minimal endpoint called")
+        return ResponseEntity.ok()
+            .contentType(MediaType.TEXT_PLAIN)
+            .body("Minimal endpoint working")
+    }
 }
