@@ -232,13 +232,8 @@ DATABASE_URL=postgresql://...            # Railway provides automatically
 - **Multi-Location**: ✅ Password-protected access active
 - **All Endpoints**: ✅ Working correctly after servlet fix
 
-### Railway Production Details (For Claude Code Sessions)
-```yaml
-Project ID: 767deec0-30ac-4238-a57b-305f5470b318
-Service ID: fde8974b-10a3-4b70-b5f1-73c4c5cebbbe
-Environment: f57580c2-24dc-4c4e-adf2-313399c855a9
-Production URL: https://chickencalculator-production-production-2953.up.railway.app
-```
+### Railway Production Details
+See `docs/quick-reference.md` for Railway IDs and production URLs.
 
 ### Critical Issues Resolved (25/25) ✅
 - **Security (5/5)**: JWT, CSRF, passwords, XSS, console access

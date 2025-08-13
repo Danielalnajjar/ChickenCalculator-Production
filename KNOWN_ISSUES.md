@@ -203,10 +203,7 @@ If you encounter new issues:
    - `/api/health` endpoint
    - Railway dashboard logs
 
-2. **Key Railway IDs**:
-   - Project: `767deec0-30ac-4238-a57b-305f5470b318`
-   - Service: `fde8974b-10a3-4b70-b5f1-73c4c5cebbbe`
-   - Environment: `f57580c2-24dc-4c4e-adf2-313399c855a9`
+2. **Key Railway IDs**: See `docs/quick-reference.md`
 
 3. **Testing Commands**:
    ```bash
