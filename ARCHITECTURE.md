@@ -23,6 +23,8 @@ The ChickenCalculator is a production-ready, multi-tenant restaurant management 
 │  │  • LocationAuthController • ChickenCalculatorController │  │
 │  │  • SalesDataController    • MarinationLogController│  │
 │  │  • LocationSlugController • HealthController      │  │
+│  │  • RootController         • AdminPortalController │  │
+│  │  • TestController                                  │  │
 │  └──────────────────────────────────────────────────┘  │
 ├─────────────────────────────────────────────────────────┤
 │                    Business Layer                        │
@@ -53,9 +55,9 @@ The ChickenCalculator is a production-ready, multi-tenant restaurant management 
 ┌─────────────────────────────────────────────────────────┐
 │              PostgreSQL 16.8 on Railway                  │
 │                   (Flyway Migrations)                    │
-│  • Connection: HikariCP pool (5-10 connections)         │
+│  • Connection: HikariCP pool (10 connections)           │
 │  • SSL/TLS: Enforced for production                     │
-│  • Migrations: V1-V4 applied                            │
+│  • Migrations: V1-V5 applied (Jan 13, 2025)            │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -188,11 +190,30 @@ marination_log (
 - **Performance**: Optimized indexes on common queries
 
 ### Applied Migrations
-1. **V1__initial_schema.sql**: Core tables with PostgreSQL sequences
-2. **V2__add_password_change_required.sql**: Password policy support
-3. **V3__add_marination_defaults.sql**: Default values for marination
+1. **V1__initial_schema.sql**: Core tables and initial structure
+2. **V2__add_indexes_and_constraints.sql**: Performance and data integrity
+3. **V3__postgresql_sequences.sql**: PostgreSQL sequence support for IDs
 4. **V4__reset_admin_password.sql**: Admin recovery mechanism
-5. **V5__add_location_authentication.sql**: Location auth fields and indexes
+5. **V5__add_location_authentication.sql**: Location auth fields and indexes (Jan 12, 2025)
+
+## Controller Architecture Best Practices
+
+### Controller Type Selection
+- **@RestController**: Use for all REST API endpoints returning data
+  - Automatically applies @ResponseBody to all methods
+  - Returns JSON/XML directly without view resolution
+  - Examples: AdminAuthController, ChickenCalculatorController, RootController
+  
+- **@Controller**: Use ONLY for serving static files or view templates
+  - Requires @ResponseBody for data responses (can cause issues)
+  - Used for Spring MVC view resolution
+  - Example: LocationSlugController (serves FileSystemResource)
+
+### Common Pitfalls to Avoid
+1. **Never** use @Controller with Resource return types and @ResponseBody
+2. **Avoid** returning Spring Resource objects in REST endpoints
+3. **Always** use @RestController for JSON/HTML string responses
+4. **Be careful** with GlobalExceptionHandler - can mask real issues
 
 ## API Design
 

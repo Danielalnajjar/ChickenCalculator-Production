@@ -134,6 +134,10 @@ All endpoints use `/api/v1` prefix for versioning.
 - `GET /actuator/prometheus` - Prometheus metrics
 - `GET /actuator/health` - Detailed health status
 
+#### Debug Endpoints (for troubleshooting)
+- `GET /test` - Simple test endpoint
+- `GET /test-html` - HTML test endpoint
+
 [Full API Documentation →](CLAUDE.md#api-documentation-v1)
 
 ## 🛡️ Security Features
@@ -206,7 +210,7 @@ DATABASE_URL=postgresql://...            # Production only
 
 ## 🎯 Production Readiness
 
-### Latest Status (January 12, 2025)
+### Latest Status (January 13, 2025)
 - **Compilation**: ✅ All errors fixed with location auth
 - **Tests**: ✅ All compile successfully
 - **Deployment**: ✅ Running on Railway with V5 migration
@@ -263,3 +267,4 @@ See [CLAUDE.md Troubleshooting Guide](CLAUDE.md#troubleshooting-guide)
 
 *Production Ready since December 2024*
 *Multi-Location Authentication added January 2025*
+*Last Updated: January 13, 2025*

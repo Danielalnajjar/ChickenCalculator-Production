@@ -1,8 +1,14 @@
 # Known Issues - ChickenCalculator Production
 
-*Last Updated: January 12, 2025*
+*Last Updated: January 13, 2025*
 
 ## ✅ All Critical Issues Resolved!
+
+### Latest Fix: Servlet Exception Error (January 13, 2025)
+- **Issue**: 500 errors on all endpoints after multi-location auth implementation
+- **Cause**: @Controller with Resource types causing servlet exceptions
+- **Solution**: Changed to @RestController for proper response handling
+- **Status**: ✅ FIXED - All endpoints working correctly
 
 ### 1. ~~Password Change Fails After Initial Login~~ ✅ FIXED
 

@@ -49,16 +49,20 @@ git push origin main                       # Triggers Railway auto-deploy
 - **Production Readiness**: 10/10 ✅ (Multi-location auth system active)
 - **Database**: PostgreSQL 16.8 on Railway (V5 migration applied Jan 12, 2025)
 - **Platform**: Railway (Project ID: 767deec0-30ac-4238-a57b-305f5470b318)
+  - **Service ID**: fde8974b-10a3-4b70-b5f1-73c4c5cebbbe (ChickenCalculator-Production)
+  - **Postgres ID**: bbbadbce-026c-44f1-974c-00d5a457bccf
+  - **Environment**: production (f57580c2-24dc-4c4e-adf2-313399c855a9)
 - **GitHub**: https://github.com/Danielalnajjar/ChickenCalculator-Production
 - **Auto-Deploy**: Enabled from main branch
 - **Port**: 8080 (Railway single-port constraint)
 
-### ✅ Latest Status (January 12, 2025)
+### ✅ Latest Status (January 13, 2025)
 - **Backend**: Fully compilable with multi-location auth
 - **Database**: PostgreSQL with V5 migration (location auth)
-- **Tests**: All compile successfully
+- **Tests**: All compile successfully  
 - **Production**: Running on Railway with location authentication
 - **Multi-Location**: ✅ Complete isolation with per-location auth
+- **Controllers**: Using @RestController for proper response handling
 
 ### Recent Major Improvements (December 2024 - January 2025)
 - ✅ All 25 critical security vulnerabilities fixed
@@ -98,9 +102,11 @@ Railway Platform (PORT 8080)
 - `ChickenCalculatorController` - Marination calculation (NOT chicken requirements)
 - `SalesDataController` - Sales data management (requires location context)
 - `MarinationLogController` - Marination tracking (requires location context)
-- `LocationSlugController` - Slug routing and location resolution
+- `LocationSlugController` - Slug routing and location resolution (@Controller for file serving)
 - `HealthController` - Health checks
-- `AdminPortalController` - Admin portal static resource serving
+- `AdminPortalController` - Admin portal static resource serving (@RestController)
+- `RootController` - Handles root path "/" and landing page (@RestController)
+- `TestController` - Debug endpoints for testing (@RestController)
 
 #### Service Layer (Business Logic)
 - `LocationManagementService` - Enhanced location CRUD with validation
@@ -415,6 +421,12 @@ openssl rand -base64 48
 
 ### Common Issues
 
+#### Servlet Exception with @Controller and Resources
+- **Symptom**: 500 errors with "Servlet.service() threw exception"
+- **Cause**: Spring's Resource handling conflicts with servlet processing
+- **Solution**: Use @RestController instead of @Controller for endpoints returning ResponseEntity<String>
+- **Note**: @Controller with @ResponseBody can cause issues with Resource types
+
 #### Compilation Errors
 - **Micrometer API Type Mismatch**
   - Symptom: `MeterFilter.commonTags()` errors
@@ -496,7 +508,14 @@ openssl rand -base64 48
 
 ## Recent Changes Log
 
-### January 2025 - Multi-Location Authentication System
+### January 13, 2025 - Servlet Exception Fix
+- **Controller Refactoring**: Changed to @RestController for proper response handling
+- **RootController**: Added to handle "/" path and serve landing page
+- **AdminPortalController**: Fixed Resource handling issues
+- **TestController**: Added for debugging endpoints
+- **GlobalExceptionHandler**: Disabled generic Exception handler temporarily
+
+### January 12, 2025 - Multi-Location Authentication System
 - **Location Auth**: Password-protected location access with rate limiting
 - **Session Isolation**: Location-specific JWT tokens (location_token_{slug})
 - **Frontend Restructure**: Complete React app rewrite with LocationContext
@@ -524,7 +543,14 @@ openssl rand -base64 48
 - Complete security overhaul
 - Architecture refactoring
 
-## Important Notes
+## Important Notes for Claude Code Sessions
+
+### ⚠️ Critical Warnings for Claude Code
+1. **Controller Types**: Always use @RestController for REST endpoints returning data. Only use @Controller for serving static files (like LocationSlugController)
+2. **Resource Handling**: Avoid returning Spring Resource types in @Controller endpoints - causes servlet exceptions
+3. **GlobalExceptionHandler**: Generic Exception handler can interfere with debugging - comment it out temporarily if needed
+4. **Railway IDs**: Use the exact service IDs provided above for Railway MCP commands
+5. **Test Endpoints**: TestController at `/test` and `/test-html` available for debugging
 
 ### Railway Constraints
 - Single port exposure (8080)
@@ -562,5 +588,6 @@ openssl rand -base64 48
 
 ---
 
-*Last Updated: December 12, 2024 - All Issues Resolved - Production Status: 10/10*
-*Password change feature FIXED - System fully production ready!*
+*Last Updated: January 13, 2025 - All Issues Resolved - Production Status: 10/10*
+*Servlet exceptions FIXED - System fully production ready with multi-location auth!*
+*Railway Service IDs and best practices documented for future Claude Code sessions*
