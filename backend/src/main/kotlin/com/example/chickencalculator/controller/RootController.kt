@@ -3,16 +3,15 @@ package com.example.chickencalculator.controller
 import org.slf4j.LoggerFactory
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
-import org.springframework.stereotype.Controller
 import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.ResponseBody
+import org.springframework.web.bind.annotation.RestController
 import java.io.File
 
 /**
  * Controller for handling the root path and serving the main application landing page.
  * Follows Spring Boot best practices for serving static content programmatically.
  */
-@Controller
+@RestController
 class RootController {
     private val logger = LoggerFactory.getLogger(RootController::class.java)
     
@@ -22,7 +21,6 @@ class RootController {
      * Falls back to a simple redirect if the file is not found.
      */
     @GetMapping("/")
-    @ResponseBody
     fun handleRoot(): ResponseEntity<String> {
         logger.info("🏠 Handling root path request")
         
@@ -50,7 +48,6 @@ class RootController {
      * This demonstrates returning HTML as a string with @ResponseBody.
      */
     @GetMapping("/landing")
-    @ResponseBody
     fun serveLandingPage(): ResponseEntity<String> {
         logger.info("📄 Serving landing page")
         

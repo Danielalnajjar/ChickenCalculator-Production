@@ -7,11 +7,10 @@ import org.springframework.core.io.ResourceLoader
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
-import org.springframework.stereotype.Controller
 import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.ResponseBody
+import org.springframework.web.bind.annotation.RestController
 
-@Controller
+@RestController
 class AdminPortalController @Autowired constructor(
     private val resourceLoader: ResourceLoader
 ) {
@@ -21,7 +20,6 @@ class AdminPortalController @Autowired constructor(
     private val adminPortalPath: String? = null
     
     @GetMapping("/admin", "/admin/")
-    @ResponseBody
     fun serveAdminPortal(): ResponseEntity<String> {
         logger.info("🌐 Serving admin portal index.html")
         
@@ -96,7 +94,6 @@ class AdminPortalController @Autowired constructor(
     
     // Handle specific admin portal routes for React Router
     @GetMapping("/admin/login", "/admin/dashboard", "/admin/locations", "/admin/users", "/admin/reports", "/admin/settings")
-    @ResponseBody
     fun serveAdminPortalRoutes(): ResponseEntity<String> {
         logger.info("🌐 Admin portal route requested")
         // For React Router routes, serve the index.html
