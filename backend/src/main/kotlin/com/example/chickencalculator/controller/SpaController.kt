@@ -16,7 +16,7 @@ class SpaController(
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
-    @GetMapping("/admin", "/admin/{*path}", produces = [MediaType.TEXT_HTML_VALUE])
+    @GetMapping("/admin", "/admin/**", produces = [MediaType.TEXT_HTML_VALUE])
     fun serveAdminApp(): ResponseEntity<*> {
         return try {
             val adminIndexResource = resourceLoader.getResource("file:/app/static/admin/index.html")
@@ -37,7 +37,7 @@ class SpaController(
         }
     }
 
-    @GetMapping("/location/{slug}", "/location/{slug}/{*path}", produces = [MediaType.TEXT_HTML_VALUE])
+    @GetMapping("/location/{slug}", "/location/{slug}/**", produces = [MediaType.TEXT_HTML_VALUE])
     fun serveLocationApp(@PathVariable slug: String): ResponseEntity<*> {
         return try {
             val appIndexResource = resourceLoader.getResource("file:/app/static/app/index.html")
