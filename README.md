@@ -1,16 +1,17 @@
 # 🐔 ChickenCalculator - Production-Ready Restaurant Management System
 
-[![Production Ready](https://img.shields.io/badge/Production%20Ready-10%2F10-success)](https://github.com/Danielalnajjar/ChickenCalculator-Production)
-[![Build Status](https://img.shields.io/badge/Build-Passing-brightgreen)](CLAUDE.md#latest-status-january-12-2025)
+[![Production Ready](https://img.shields.io/badge/Production%20Ready-7%2F10-yellow)](https://github.com/Danielalnajjar/ChickenCalculator-Production)
+[![Build Status](https://img.shields.io/badge/Build-Passing-brightgreen)](CLAUDE.md#latest-status-january-13-2025)
 [![Security](https://img.shields.io/badge/Security-Enhanced-green)](CLAUDE.md#location-authentication)
 [![WCAG 2.1](https://img.shields.io/badge/WCAG%202.1-AA%20Compliant-blue)](https://www.w3.org/WAI/WCAG21/quickref/)
-[![Monitoring](https://img.shields.io/badge/Monitoring-Prometheus%20%2B%20Sentry-orange)](METRICS_IMPLEMENTATION.md)
+[![Monitoring](https://img.shields.io/badge/Monitoring-Prometheus-orange)](METRICS_IMPLEMENTATION.md)
+[![Issues](https://img.shields.io/badge/Critical%20Issue-500%20Errors-red)](KNOWN_ISSUES.md)
 
 ## 🎯 Overview
 
 A **production-ready**, multi-tenant restaurant management system for chicken inventory and marination planning. Built with enterprise-grade security, comprehensive monitoring, and full accessibility compliance.
 
-**Production Readiness Score: 10/10** ✅ Multi-location authentication system fully operational!
+**Production Readiness Score: 7/10** ⚠️ Multi-location auth complete, but investigating servlet 500 errors on all endpoints.
 
 ## 🌟 Key Features
 
@@ -44,7 +45,7 @@ A **production-ready**, multi-tenant restaurant management system for chicken in
    ```bash
    JWT_SECRET=your-32-character-minimum-secret-here
    ADMIN_DEFAULT_PASSWORD=SecurePassword123!
-   SENTRY_DSN=your-sentry-dsn-if-available
+   # SENTRY_DSN disabled - causes servlet exceptions
    ```
 6. Railway auto-deploys everything!
 

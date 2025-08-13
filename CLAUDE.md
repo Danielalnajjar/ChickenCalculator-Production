@@ -233,7 +233,7 @@ GET /actuator/metrics                     - JSON metrics
 # CRITICAL - Must be set
 JWT_SECRET=<32+ character secret>         # JWT signing key (min 32 chars)
 ADMIN_DEFAULT_PASSWORD=<secure-password>  # Initial admin password
-SENTRY_DSN=<sentry-project-dsn>          # Error tracking (optional)
+# SENTRY_DSN=<disabled>                   # DISABLED - causes servlet exceptions
 
 # Database (Railway PostgreSQL)
 DATABASE_URL=postgresql://...             # Railway provides this automatically

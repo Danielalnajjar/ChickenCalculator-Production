@@ -1,191 +1,156 @@
 # Known Issues - ChickenCalculator Production
 
-*Last Updated: January 13, 2025*
+## Critical Issues
 
-## ✅ All Critical Issues Resolved!
-
-### Latest Fix: Servlet Exception Error (January 13, 2025)
-- **Issue**: 500 errors on all endpoints after multi-location auth implementation
-- **Cause**: @Controller with Resource types causing servlet exceptions
-- **Solution**: Changed to @RestController for proper response handling
-- **Status**: ✅ FIXED - All endpoints working correctly
-
-### 1. ~~Password Change Fails After Initial Login~~ ✅ FIXED
-
-**Status**: ✅ Resolved (December 12, 2024)  
-**Severity**: ~~High~~ Fixed  
-**Affects**: ~~All admin users~~ Issue resolved  
-**First Reported**: December 12, 2024  
-**Fixed**: December 12, 2024  
-**Railway Environment**: Production
-
-#### Description
-~~Admin users cannot log in after changing their password through the admin portal. The password change endpoint returns a 401 Unauthorized error, preventing the password from being updated in the database.~~
-
-**FIXED**: The password change feature now works correctly. Users can successfully change their passwords and log in with the new credentials.
+### 🔴 CRITICAL: Servlet 500 Errors in Production
+**Status**: UNRESOLVED - Under Active Investigation  
+**Severity**: Critical  
+**Impact**: All endpoints returning 500 errors in production  
+**Last Updated**: January 13, 2025  
 
 #### Symptoms
-- Admin forced to change password on first login (expected)
-- Password change form submits but returns 401 error
-- Admin cannot log in with either old or new password afterward
-- Must use V4 migration to reset admin user
+- ALL endpoints return HTTP 500 Internal Server Error
+- Error message: "Servlet.service() for servlet [dispatcherServlet] threw exception"
+- No stack traces visible in logs
+- ErrorTapFilter captures ERROR dispatch but message is empty
+- Exception occurs twice per request (main request + error page processing)
+- Works locally but fails on Railway production environment
 
-#### Root Cause Analysis (RESOLVED)
+#### Investigation Progress
+✅ **Completed Investigations**:
+- **MVC Converters**: Verified 9 converters present including MappingJackson2HttpMessageConverter
+- **Jackson ObjectMapper**: Confirmed present with Kotlin module loaded
+- **Auto-Configuration**: No @EnableWebMvc or WebMvcConfigurationSupport breaking Spring Boot defaults
+- **Path Patterns**: Fixed all Ant-style patterns (removed **, *, {var} patterns)
+- **Sentry Integration**: Disabled SENTRY_DSN as it was causing some exceptions
+- **Filter Ordering**: Documented via FilterInventory
+- **Dependencies**: Added jackson-datatype-jsr310 for Java time support
 
-~~1. **Frontend Issue**: JWT token not properly sent with password change request~~
-   - ✅ Token properly sent via httpOnly cookie with credentials: 'include'
+❌ **Still Failing Despite**:
+- All compilation errors resolved
+- Filters hardened with error handling
+- Path normalization implemented
+- Controllers using @RestController
+- GlobalExceptionHandler temporarily disabled
 
-~~2. **Backend Issue**: AdminService using private BCryptPasswordEncoder instance~~
-   - ✅ **FIXED**: AdminService now uses injected PasswordEncoder bean from SecurityConfig
-   - ✅ **FIXED**: CSRF exemption added for change-password endpoint
+#### Diagnostic Infrastructure Added
+1. **ErrorTapFilter**: Captures ERROR dispatch at HIGHEST_PRECEDENCE
+2. **TailLogFilter**: Logs request/response details for debugging
+3. **FilterInventory**: Shows filter registration order at startup
+4. **MvcDiagnostics**: Logs HTTP message converters at startup
+5. **DebugMvcController**: Dev-only endpoint to inspect converters
+6. **PathUtil**: Normalizes paths for consistent handling
 
-3. **Resolution Applied**:
-   ```kotlin
-   // AdminService.kt - NOW FIXED
-   @Service
-   class AdminService(
-       private val adminUserRepository: AdminUserRepository,
-       private val passwordEncoder: PasswordEncoder  // Now injected from SecurityConfig
-   )
-   ```
+#### Environment Differences
+- **Local (Working)**: 10 converters, direct execution
+- **Production (Failing)**: 9 converters, Railway containerized environment
+- **Key Difference**: Exception details not being captured in production
 
-#### Reproduction Steps
-1. Deploy fresh instance with PostgreSQL
-2. Log in as admin@yourcompany.com with ADMIN_DEFAULT_PASSWORD
-3. System forces password change (passwordChangeRequired=true)
-4. Enter current password and new password
-5. Submit form → Returns 401 Unauthorized
-6. Cannot log in with any password
-
-#### Temporary Workaround
-Use V4 migration to reset admin users:
-```sql
--- V4__reset_admin_password.sql
-DELETE FROM admin_users;
--- AdminService will recreate on restart
-```
-
-Then set `FORCE_ADMIN_RESET=false` and restart.
-
-#### Fix Applied (December 12, 2024)
-
-✅ **All issues have been resolved with the following changes:**
-
-1. **AdminService.kt**: 
-   - Now uses injected PasswordEncoder bean from SecurityConfig
-   - Ensures consistent password encoding across the application
-
-2. **SecurityConfig.kt**:
-   - Added `/api/v1/admin/auth/change-password` to CSRF exemptions
-   - Matches pattern used for other auth endpoints
-
-3. **AdminAuthController.kt**:
-   - Added comprehensive debug logging for troubleshooting
-   - Better error messages for debugging authentication issues
-
-**Result**: Password change feature now works correctly. Users can change passwords and authenticate with new credentials.
-
-#### Impact
-- Admins locked out after mandatory password change
-- Security risk if admins continue using default password
-- Production deployment blocked until resolved
-
-#### Related Files
-- `backend/src/main/kotlin/com/example/chickencalculator/controller/AdminAuthController.kt`
-- `backend/src/main/kotlin/com/example/chickencalculator/service/AdminService.kt`
-- `backend/src/main/kotlin/com/example/chickencalculator/config/SecurityConfig.kt`
-- `admin-portal/src/components/PasswordChangeModal.tsx`
-- `backend/src/main/resources/db/migration/V4__reset_admin_password.sql`
-
----
-
-## Current Status
-
-### ✅ Multi-Location Authentication (January 12, 2025)
-- **Status**: Successfully deployed and operational
-- **Features**: 
-  - Password-protected location access
-  - Rate limiting (5 attempts, 15-minute lockout)
-  - Session isolation between locations
-  - Location-specific JWT tokens
-- **Migration**: V5 applied successfully
-
-## Minor Issues
-
-### 1. FORCE_ADMIN_RESET Environment Variable Not Working
-
-**Status**: 🟡 Active  
-**Severity**: Low (V4 migration provides alternative)
-
-#### Description
-Setting `FORCE_ADMIN_RESET=true` in Railway doesn't trigger admin deletion. The value appears as 'false' in application logs even when set to 'true' in Railway dashboard.
-
-#### Workaround
-Use V4 migration instead of environment variable.
+#### Next Investigation Steps
+1. Check for classpath/dependency conflicts in production
+2. Investigate filter chain execution differences
+3. Review Spring Security configuration impact
+4. Check for Railway-specific environment issues
+5. Deep dive into dispatcherServlet configuration
 
 ---
 
 ## Resolved Issues
 
-### 2. ~~H2 to PostgreSQL Migration~~ ✅
+### ✅ Admin Password Change Feature
+**Status**: RESOLVED  
+**Fixed**: December 12, 2024  
+**Solution**: AdminService properly uses injected PasswordEncoder bean
 
-**Status**: Resolved (December 12, 2024)  
-**Resolution**: Successfully migrated to PostgreSQL on Railway
-
-Key fixes applied:
-- Fixed "pool is sealed" error in DatabaseConfig
-- Fixed Flyway execution order
-- Added PostgreSQL sequence support
-- Created V4 migration for admin reset
-
-### 3. ~~Compilation Errors~~ ✅
-
-**Status**: Resolved (December 2024)  
-**Resolution**: Fixed all 26 compilation errors
-
-Major fixes:
+### ✅ Compilation Errors
+**Status**: RESOLVED  
+**Fixed**: December 12, 2024  
+**Details**: Fixed 26 compilation errors including:
 - Micrometer API compatibility
 - Sentry 7.0.0 updates
-- Test entity constructors
-- Repository methods
+- Test entity construction
+- MarinationRequest structure
+
+### ✅ PostgreSQL Migration
+**Status**: RESOLVED  
+**Fixed**: December 12, 2024  
+**Details**: Successfully migrated from H2 to PostgreSQL on Railway
+- Custom DatabaseConfig for Railway URLs
+- Flyway migrations V1-V5 applied
+- Sequences configured for PostgreSQL
+
+### ✅ Multi-Location Authentication
+**Status**: RESOLVED  
+**Fixed**: January 12, 2025  
+**Details**: Complete location-based authentication system
+- Password-protected location access
+- Session isolation per location
+- Rate limiting (5 attempts, 15-minute lockout)
 
 ---
 
-## Monitoring
+## Known Limitations
 
-### Error Tracking
-Monitor these log patterns for password change issues:
-```
-"Password change attempt with invalid current password"
-"Authentication attempt for email"
-"Password verification failed"
-"JWT token validation failed"
-```
+### Railway Platform Constraints
+- Single port exposure (8080 only)
+- Memory limits during build process
+- Environment variable requirements before deployment
+- No interactive terminal for debugging
 
-### Metrics to Watch
-- `chicken.calculator.admin.change_password.time`
-- `chicken.calculator.admin.login.time`
-- Auth failure rate by type
+### Development vs Production Differences
+- Different number of HTTP message converters
+- Exception stack traces not visible in production logs
+- Containerized environment may affect classpath resolution
 
 ---
 
-## Prevention Measures
+## Workarounds & Mitigations
 
-1. **Testing Requirements**:
-   - Add integration test for full password change flow
-   - Test with httpOnly cookies enabled
-   - Verify JWT token transmission
+### For Servlet 500 Errors (Temporary)
+1. Use actuator endpoints for basic health checks (also failing currently)
+2. Monitor via Railway dashboard logs
+3. Use correlation IDs to track requests
+4. Check ErrorTapFilter and TailLogFilter output
 
-2. **Code Review Focus**:
-   - Authentication endpoints
-   - Password encoder configuration
-   - CORS and cookie settings
-
-3. **Deployment Checklist Addition**:
-   - Test password change after each deployment
-   - Verify JWT cookie transmission
-   - Check CORS configuration
+### For Development
+1. Use dev profile with verbose logging
+2. Test with `run-dev-test.bat` for consistent environment
+3. Monitor MvcDiagnostics output at startup
+4. Use DebugMvcController at `/debug/converters` (dev only)
 
 ---
 
-*Status as of January 12, 2025: System fully operational with multi-location authentication*
+## Contributing to Issue Resolution
+
+If you're working on the servlet 500 error issue:
+
+1. **Check these files first**:
+   - `ErrorTapFilter.kt` - ERROR dispatch capture
+   - `TailLogFilter.kt` - Request/response logging
+   - `FilterInventory.kt` - Filter order verification
+   - `MvcDiagnostics.kt` - Converter verification
+
+2. **Key Railway IDs**:
+   - Project: `767deec0-30ac-4238-a57b-305f5470b318`
+   - Service: `fde8974b-10a3-4b70-b5f1-73c4c5cebbbe`
+   - Environment: `f57580c2-24dc-4c4e-adf2-313399c855a9`
+
+3. **Testing Commands**:
+   ```bash
+   # Local testing
+   cd backend && mvn spring-boot:run -Dspring.profiles.active=dev
+   
+   # Test endpoints
+   curl http://localhost:8080/minimal
+   curl http://localhost:8080/test-html
+   curl http://localhost:8080/api/health
+   ```
+
+4. **Production Testing**:
+   ```bash
+   curl https://chickencalculator-production-production-2953.up.railway.app/minimal
+   ```
+
+---
+
+*Last Updated: January 13, 2025 - Critical servlet issue under investigation*

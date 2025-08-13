@@ -196,6 +196,62 @@ marination_log (
 4. **V4__reset_admin_password.sql**: Admin recovery mechanism
 5. **V5__add_location_authentication.sql**: Location auth fields and indexes (Jan 12, 2025)
 
+## Diagnostic Infrastructure
+
+### Production Debugging Components
+Added for investigating servlet 500 errors (January 13, 2025):
+
+#### ErrorTapFilter
+- **Purpose**: Captures ERROR dispatch for servlet exceptions
+- **Order**: HIGHEST_PRECEDENCE to catch errors first
+- **Features**: 
+  - Logs ERROR_STATUS_CODE, ERROR_REQUEST_URI, ERROR_EXCEPTION
+  - Only processes ERROR dispatch type
+  - Critical for debugging production issues
+
+#### TailLogFilter
+- **Purpose**: Comprehensive request/response logging
+- **Features**:
+  - Logs request details (method, URI, headers)
+  - Captures response status and timing
+  - Helps trace request flow through filters
+
+#### FilterInventory
+- **Purpose**: Documents filter registration order at startup
+- **Event**: ApplicationReadyEvent
+- **Output**: Ordered list of all OncePerRequestFilter beans
+- **Use**: Verify filter execution order
+
+#### MvcDiagnostics
+- **Purpose**: Logs HTTP message converters at startup
+- **Features**:
+  - Lists all registered HttpMessageConverter instances
+  - Verifies Jackson ObjectMapper presence
+  - Shows ObjectMapper modules (critical for Kotlin)
+- **Key Finding**: Production has 9 converters (vs 10 locally)
+
+#### DebugMvcController (@Profile("dev"))
+- **Endpoint**: GET /debug/converters
+- **Purpose**: Runtime converter inspection
+- **Output**: JSON with converter list and ObjectMapper status
+- **Security**: Only active in dev profile
+
+#### PathUtil
+- **Purpose**: Normalizes request paths
+- **Method**: `normalizedPath(request: HttpServletRequest)`
+- **Use**: Consistent path handling across filters
+- **Critical**: Removes context path for proper matching
+
+### Filter Path Patterns (CRITICAL)
+**WARNING**: Use only simple string checks in filters:
+- ✅ `path.startsWith("/api")`
+- ✅ `path == "/test"`
+- ❌ NO Ant patterns (`**`, `*`)
+- ❌ NO PathMatcher usage
+- ❌ NO complex regex in filter skip logic
+
+Illegal patterns cause: "No more pattern data allowed after {*...} or ** pattern element"
+
 ## Controller Architecture Best Practices
 
 ### Controller Type Selection
@@ -259,9 +315,9 @@ Prometheus Metrics:
 - **Sensitive Data**: Automatic exclusion of passwords/tokens
 
 ### Error Tracking
-- **Sentry Integration**: Real-time error monitoring
-- **User Context**: Error tracking with user information
-- **Performance Monitoring**: Transaction tracing
+- **Sentry Integration**: CURRENTLY DISABLED (causes servlet exceptions)
+- **Alternative**: Using ErrorTapFilter and TailLogFilter for diagnostics
+- **Correlation IDs**: Request tracing for error debugging
 - **Environment Tagging**: dev/staging/production
 
 ## Deployment Architecture
