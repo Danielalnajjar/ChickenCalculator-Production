@@ -4,12 +4,14 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.event.ApplicationReadyEvent
 import org.springframework.context.ApplicationContext
+import org.springframework.context.annotation.Profile
 import org.springframework.context.event.EventListener
 import org.springframework.http.converter.HttpMessageConverter
 import org.springframework.stereotype.Component
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter
 
 @Component
+@Profile("dev")  // Only active in development for debugging
 class MvcDiagnostics(
     private val ctx: ApplicationContext
 ) {

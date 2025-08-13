@@ -3,15 +3,17 @@ package com.example.chickencalculator.controller
 import com.example.chickencalculator.config.ApiVersionConfig
 import com.example.chickencalculator.dto.LocationAuthRequest
 import com.example.chickencalculator.dto.LocationAuthResponse
+import com.example.chickencalculator.security.buildJwtSetCookieHeader
 import com.example.chickencalculator.service.LocationAuthService
 import com.example.chickencalculator.service.MetricsService
 import io.micrometer.core.annotation.Timed
-import jakarta.servlet.http.Cookie
 import jakarta.servlet.http.HttpServletResponse
 import org.slf4j.LoggerFactory
+import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
+import java.time.Duration
 
 @RestController
 @RequestMapping("${ApiVersionConfig.API_VERSION}/location")
@@ -46,14 +48,12 @@ class LocationAuthController(
             // Authenticate location
             val token = locationAuthService.authenticateLocation(slug, request.password)
             
-            // Create location-specific cookie
-            val cookie = Cookie("${LocationAuthService.TOKEN_PREFIX}$slug", token).apply {
-                path = "/$slug"
-                maxAge = COOKIE_MAX_AGE
-                isHttpOnly = true
-                secure = true // Always use secure in production
-            }
-            response.addCookie(cookie)
+            // Create location-specific cookie with SameSite
+            val setCookie = buildJwtSetCookieHeader(
+                "${LocationAuthService.TOKEN_PREFIX}$slug", 
+                token, 
+                Duration.ofSeconds(COOKIE_MAX_AGE.toLong())
+            )
             
             // Record metrics
             val processingTime = System.currentTimeMillis() - startTime
@@ -62,7 +62,9 @@ class LocationAuthController(
             
             logger.info("Successful login for location: $slug")
             
-            ResponseEntity.ok(LocationAuthResponse(
+            ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, setCookie)
+                .body(LocationAuthResponse(
                 success = true,
                 message = "Login successful",
                 slug = slug,
@@ -87,19 +89,19 @@ class LocationAuthController(
         @PathVariable slug: String,
         response: HttpServletResponse
     ): ResponseEntity<Map<String, Any>> {
-        // Clear the location-specific cookie
-        val cookie = Cookie("${LocationAuthService.TOKEN_PREFIX}$slug", "").apply {
-            path = "/$slug"
-            maxAge = 0
-            isHttpOnly = true
-            secure = true
-        }
-        response.addCookie(cookie)
+        // Clear the location-specific cookie with SameSite
+        val expiredCookie = buildJwtSetCookieHeader(
+            "${LocationAuthService.TOKEN_PREFIX}$slug",
+            "",
+            Duration.ZERO
+        )
         
         metricsService.recordLocationAccess(slug, "logout")
         logger.info("Logout for location: $slug")
         
-        return ResponseEntity.ok(mapOf(
+        return ResponseEntity.ok()
+            .header(HttpHeaders.SET_COOKIE, expiredCookie)
+            .body(mapOf(
             "success" to true,
             "message" to "Logged out successfully"
         ))

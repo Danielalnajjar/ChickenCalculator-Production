@@ -5,11 +5,13 @@ import org.springframework.boot.web.error.ErrorAttributeOptions
 import org.springframework.boot.web.servlet.error.DefaultErrorAttributes
 import org.springframework.boot.web.servlet.error.ErrorAttributes
 import org.springframework.context.annotation.Primary
+import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Component
 import org.springframework.web.context.request.WebRequest
 
-// @Primary  // TEMPORARILY DISABLED FOR DEBUGGING
-// @Component  // TEMPORARILY DISABLED FOR DEBUGGING
+@Primary
+@Component
+@Profile("dev")  // Only active in development for debugging
 class TappingErrorAttributes : DefaultErrorAttributes() {
   private val log = LoggerFactory.getLogger(javaClass)
 

@@ -60,16 +60,18 @@ jwt:
   secret: ${JWT_SECRET}
   expiration: ${JWT_EXPIRATION:86400000}
 
-# Actuator for health checks and monitoring
+# Actuator for health checks and monitoring (locked down for production)
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics
+        include: health,info  # Only expose essential endpoints
   endpoint:
     health:
-      show-details: always
-    metrics:
+      show-details: when-authorized  # Only show details to authenticated users
+      probes:
+        enabled: true  # Enable readiness and liveness probes
+    info:
       enabled: true
   metrics:
     export:

@@ -3,12 +3,14 @@ package com.example.chickencalculator.config
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.event.ApplicationReadyEvent
 import org.springframework.context.ApplicationContext
+import org.springframework.context.annotation.Profile
 import org.springframework.context.event.EventListener
 import org.springframework.core.annotation.AnnotationAwareOrderComparator
 import org.springframework.stereotype.Component
 import org.springframework.web.filter.OncePerRequestFilter
 
 @Component
+@Profile("dev")  // Only active in development for debugging
 class FilterInventory(private val ctx: ApplicationContext) {
     private val log = LoggerFactory.getLogger(javaClass)
 

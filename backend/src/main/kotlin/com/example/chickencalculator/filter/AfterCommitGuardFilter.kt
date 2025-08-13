@@ -6,12 +6,14 @@ import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import jakarta.servlet.http.HttpServletResponseWrapper
 import org.slf4j.LoggerFactory
+import org.springframework.context.annotation.Profile
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
 import org.springframework.stereotype.Component
 import org.springframework.web.filter.OncePerRequestFilter
 
-// @Component  // TEMPORARILY DISABLED FOR DEBUGGING
+@Component
+@Profile("dev")  // Only active in development for debugging
 @Order(Ordered.LOWEST_PRECEDENCE - 1) // run just before TailLogFilter
 class AfterCommitGuardFilter : OncePerRequestFilter() {
     private val log = LoggerFactory.getLogger(javaClass)

@@ -2,6 +2,7 @@ package com.example.chickencalculator.controller
 
 import com.example.chickencalculator.config.ApiVersionConfig
 import com.example.chickencalculator.dto.PasswordChangeRequest
+import com.example.chickencalculator.security.buildJwtSetCookieHeader
 import com.example.chickencalculator.service.AdminService
 import com.example.chickencalculator.service.JwtService
 import com.example.chickencalculator.service.MetricsService
@@ -11,7 +12,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import io.swagger.v3.oas.annotations.tags.Tag
-import jakarta.servlet.http.Cookie
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import jakarta.validation.Valid
@@ -19,9 +19,11 @@ import jakarta.validation.constraints.Email
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Size
 import org.slf4j.LoggerFactory
+import org.springframework.http.HttpHeaders
 import org.springframework.http.ResponseEntity
 import org.springframework.security.web.csrf.CsrfToken
 import org.springframework.web.bind.annotation.*
+import java.time.Duration
 
 data class LoginRequest(
     @field:NotBlank(message = "Email is required")
@@ -86,19 +88,15 @@ class AdminAuthController(
                 role = adminUser.role.name
             )
             
-            // Set JWT as httpOnly cookie
-            val cookie = Cookie("jwt_token", token).apply {
-                isHttpOnly = true
-                secure = true // Use HTTPS in production
-                path = "/"
-                maxAge = 24 * 60 * 60 // 24 hours
-            }
-            response.addCookie(cookie)
+            // Set JWT as httpOnly cookie with SameSite
+            val setCookie = buildJwtSetCookieHeader("jwt_token", token, Duration.ofHours(24))
             
             val processingTime = System.currentTimeMillis() - startTime
             metricsService.recordAdminOperation("login", true, processingTime)
             
-            ResponseEntity.ok(LoginResponse(
+            ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, setCookie)
+                .body(LoginResponse(
                 id = adminUser.id.toString(),
                 email = adminUser.email,
                 name = adminUser.name,
@@ -277,19 +275,15 @@ class AdminAuthController(
         val startTime = System.currentTimeMillis()
         
         return try {
-            // Clear the JWT cookie
-            val cookie = Cookie("jwt_token", "").apply {
-                isHttpOnly = true
-                secure = true
-                path = "/"
-                maxAge = 0 // Delete the cookie
-            }
-            response.addCookie(cookie)
+            // Clear the JWT cookie with SameSite
+            val expiredCookie = buildJwtSetCookieHeader("jwt_token", "", Duration.ZERO)
             
             val processingTime = System.currentTimeMillis() - startTime
             metricsService.recordAdminOperation("logout", true, processingTime)
             
-            ResponseEntity.ok(mapOf("message" to "Logged out successfully"))
+            ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, expiredCookie)
+                .body(mapOf("message" to "Logged out successfully"))
         } catch (e: Exception) {
             val processingTime = System.currentTimeMillis() - startTime
             metricsService.recordAdminOperation("logout", false, processingTime)

@@ -2,6 +2,7 @@ package com.example.chickencalculator.controller
 
 import com.example.chickencalculator.service.MetricsService
 import org.slf4j.LoggerFactory
+import org.springframework.context.annotation.Profile
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
@@ -10,8 +11,10 @@ import org.springframework.web.bind.annotation.RestController
 /**
  * Simple test controller to debug servlet exceptions
  * Now with dependency injection to test component scanning
+ * Only available in development profile for security
  */
 @RestController
+@Profile("dev")
 class TestController(
     private val metricsService: MetricsService
 ) {

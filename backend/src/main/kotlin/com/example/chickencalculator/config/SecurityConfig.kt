@@ -29,6 +29,48 @@ class SecurityConfig(
     private val jwtAuthenticationFilter: JwtAuthenticationFilter
 ) {
 
+    companion object {
+        // Centralized path patterns using AntPathRequestMatcher for better maintainability
+        val PUBLIC_API_PATTERNS = arrayOf(
+            "/api/health",
+            "/api/health/**",
+            "/api/v1/admin/auth/**",
+            "/api/v1/location/*/auth/**",
+            "/api/v1/calculator/locations",
+            "/actuator/health",
+            "/actuator/info"
+        )
+        
+        val PUBLIC_STATIC_PATTERNS = arrayOf(
+            "/",
+            "/admin",
+            "/admin/**",
+            "/location/**",
+            "/static/**",
+            "/assets/**",
+            "/favicon.ico",
+            "/manifest.json",
+            "/*.js",
+            "/*.css",
+            "/*.html"
+        )
+        
+        val ADMIN_API_PATTERNS = arrayOf(
+            "/api/v1/admin/locations",
+            "/api/v1/admin/locations/**",
+            "/api/v1/admin/stats",
+            "/api/v1/admin/stats/**"
+        )
+        
+        val CSRF_IGNORE_PATTERNS = arrayOf(
+            "/api/v1/admin/auth/**",
+            "/api/v1/location/*/auth/**",
+            "/api/health",
+            "/api/health/**",
+            "/actuator/**"
+        )
+    }
+
     @Bean
     @Primary
     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
@@ -38,7 +80,6 @@ class SecurityConfig(
                     .csrfTokenRequestHandler(CsrfTokenRequestAttributeHandler())
                     .requireCsrfProtectionMatcher { request ->
                         // Only require CSRF for state-changing operations that aren't in our ignore list
-                        val path = request.servletPath
                         val method = request.method
                         
                         // Skip CSRF for GET, HEAD, TRACE, OPTIONS
@@ -46,82 +87,38 @@ class SecurityConfig(
                             return@requireCsrfProtectionMatcher false
                         }
                         
-                        // Skip CSRF for specific paths
-                        when {
-                            path.startsWith("/api/v1/admin/auth/") -> false
-                            path.startsWith("/api/v1/location/") && path.contains("/auth/") -> false
-                            path.startsWith("/api/v1/calculator/") -> false
-                            path.startsWith("/api/v1/sales-data/") -> false
-                            path.startsWith("/api/v1/marination-log/") -> false
-                            path.startsWith("/api/v1/debug/") -> false
-                            path.startsWith("/api/admin/auth/") -> false
-                            path.startsWith("/api/calculator/") -> false
-                            path.startsWith("/api/sales-data/") -> false
-                            path.startsWith("/api/marination-log/") -> false
-                            path.startsWith("/api/debug/") -> false
-                            path.startsWith("/api/health/") -> false
-                            path.startsWith("/actuator/") -> false
-                            path.startsWith("/static/") -> false
-                            path.startsWith("/admin") -> false
-                            path == "/" -> false
-                            path.endsWith(".js") -> false
-                            path.endsWith(".css") -> false
-                            path.endsWith(".html") -> false
-                            path == "/favicon.ico" -> false
-                            path == "/manifest.json" -> false
-                            else -> true
+                        // Check if path matches any ignore pattern
+                        val path = request.servletPath
+                        !CSRF_IGNORE_PATTERNS.any { pattern ->
+                            if (pattern.contains("*")) {
+                                val regex = pattern.replace("/", "\\/").replace("**", ".*").replace("*", "[^/]*")
+                                path.matches(Regex(regex))
+                            } else {
+                                path == pattern || path.startsWith("$pattern/")
+                            }
                         }
                     }
             }
             .cors { it.configurationSource(corsConfigurationSource()) }
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .authorizeHttpRequests { auth ->
-                // Create a custom matcher for public endpoints
-                val publicMatcher = RequestMatcher { request ->
-                    val path = request.servletPath
-                    when {
-                        path == "/" -> true
-                        path.startsWith("/api/v1/admin/auth/") -> true
-                        path.startsWith("/api/v1/location/") && path.contains("/auth/") -> true
-                        path.startsWith("/api/v1/calculator/") -> true
-                        path.startsWith("/api/v1/sales-data/") -> true
-                        path.startsWith("/api/v1/marination-log/") -> true
-                        path.startsWith("/api/v1/debug/") -> true
-                        path.startsWith("/api/admin/auth/") -> true
-                        path.startsWith("/api/calculator/") -> true
-                        path.startsWith("/api/sales-data/") -> true
-                        path.startsWith("/api/marination-log/") -> true
-                        path.startsWith("/api/debug/") -> true
-                        path.startsWith("/api/health/") -> true
-                        path == "/api/health" -> true
-                        path.startsWith("/actuator/") -> true
-                        path.startsWith("/static/") -> true
-                        path.startsWith("/admin") -> true
-                        path.endsWith(".js") -> true
-                        path.endsWith(".css") -> true
-                        path.endsWith(".html") -> true
-                        path == "/favicon.ico" -> true
-                        path == "/manifest.json" -> true
-                        path.matches(Regex("^/[^/]+$")) -> true  // /{slug} pattern
-                        path.matches(Regex("^/[^/]+/.*$")) -> true  // /{slug}/** pattern
-                        else -> false
-                    }
-                }
+                // Public API endpoints
+                auth.requestMatchers(*PUBLIC_API_PATTERNS).permitAll()
                 
-                // Create a custom matcher for admin endpoints
-                val adminMatcher = RequestMatcher { request ->
-                    val path = request.servletPath
-                    when {
-                        path.startsWith("/api/v1/admin/") && !path.startsWith("/api/v1/admin/auth/") -> true
-                        path.startsWith("/api/admin/") && !path.startsWith("/api/admin/auth/") -> true
-                        path.startsWith("/api/locations/") -> true
-                        else -> false
-                    }
-                }
+                // Public static resources
+                auth.requestMatchers(*PUBLIC_STATIC_PATTERNS).permitAll()
                 
-                // Apply the matchers
-                auth.requestMatchers(publicMatcher).permitAll()
-                auth.requestMatchers(adminMatcher).authenticated()
+                // Location-specific endpoints (handled by LocationAuthFilter)
+                auth.requestMatchers(
+                    "/api/v1/calculator/calculate",
+                    "/api/v1/sales-data",
+                    "/api/v1/sales-data/**",
+                    "/api/v1/marination-log",
+                    "/api/v1/marination-log/**"
+                ).permitAll()  // LocationAuthFilter handles actual auth
+                
+                // Admin API endpoints require authentication
+                auth.requestMatchers(*ADMIN_API_PATTERNS).authenticated()
                 
                 // All other requests require authentication
                 auth.anyRequest().authenticated()
@@ -129,6 +126,23 @@ class SecurityConfig(
             .formLogin { it.disable() }
             .httpBasic { it.disable() }
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)
+            .headers { headers ->
+                headers
+                    .contentTypeOptions { }  // X-Content-Type-Options: nosniff
+                    .xssProtection { }
+                    .frameOptions { it.sameOrigin() }
+                    .contentSecurityPolicy { csp ->
+                        csp.policyDirectives(
+                            "default-src 'self'; " +
+                            "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
+                            "style-src 'self' 'unsafe-inline'; " +
+                            "img-src 'self' data: https:; " +
+                            "font-src 'self' data:; " +
+                            "connect-src 'self' https://*.railway.app; " +
+                            "frame-ancestors 'none'"
+                        )
+                    }
+            }
 
         return http.build()
     }
