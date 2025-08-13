@@ -1,48 +1,63 @@
 package com.example.chickencalculator.controller
 
 import org.slf4j.LoggerFactory
-import org.springframework.core.io.FileSystemResource
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.core.io.Resource
+import org.springframework.core.io.ResourceLoader
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Controller
 import org.springframework.web.bind.annotation.GetMapping
-import java.io.File
 
 /**
  * Controller for serving the main application landing page.
  * Handles the root path "/" which displays the location selection page.
  */
 @Controller
-class MainController {
+class MainController @Autowired constructor(
+    private val resourceLoader: ResourceLoader
+) {
     private val logger = LoggerFactory.getLogger(MainController::class.java)
-    
-    @GetMapping("/test")
-    fun test(): ResponseEntity<String> {
-        return ResponseEntity.ok("Test endpoint works!")
-    }
     
     /**
      * Serve the main application landing page at the root path.
      * This displays the location selection interface for multi-tenant access.
      */
     @GetMapping("/")
-    fun serveLandingPage(): ResponseEntity<Resource> {
+    fun serveLandingPage(): ResponseEntity<*> {
         logger.info("🏠 Serving main application landing page")
         
-        // Check for the main app index.html file (same as LocationSlugController pattern)
-        val fileResource = File("/app/static/app/index.html")
-        if (fileResource.exists()) {
-            logger.info("✅ Found main app at: /app/static/app/index.html")
-            return ResponseEntity.ok()
-                .contentType(MediaType.TEXT_HTML)
-                .body(FileSystemResource(fileResource))
-        } else {
-            logger.warn("⚠️ Main app index.html not found at /app/static/app/index.html")
+        // Try multiple resource locations in order of preference
+        val resourcePaths = listOf(
+            // Production deployment path
+            "file:/app/static/app/index.html",
+            // Alternative production paths
+            "file:static/app/index.html",
+            // Classpath resources (for packaged JAR)
+            "classpath:static/app/index.html",
+            "classpath:/static/app/index.html",
+            // Development paths
+            "file:frontend/build/index.html",
+            "file:../frontend/build/index.html"
+        )
+        
+        for (path in resourcePaths) {
+            try {
+                val resource = resourceLoader.getResource(path)
+                if (resource.exists() && resource.isReadable) {
+                    logger.info("✅ Found main app at: $path")
+                    return ResponseEntity.ok()
+                        .contentType(MediaType.TEXT_HTML)
+                        .body(resource)
+                }
+            } catch (e: Exception) {
+                logger.debug("Could not load resource from path: $path - ${e.message}")
+            }
         }
         
         // If no resource found, return a helpful error page
         logger.error("❌ Main application index.html not found in any expected location")
+        logger.error("Searched paths: $resourcePaths")
         
         val errorHtml = """
             <!DOCTYPE html>
@@ -99,14 +114,20 @@ class MainController {
                         <li><a href="/actuator/health">Actuator Health</a></li>
                     </ul>
                     
-                    <h3>Searched Location:</h3>
-                    <pre>/app/static/app/index.html</pre>
+                    <h3>Searched Locations:</h3>
+                    <pre>${resourcePaths.joinToString("\n")}</pre>
                 </div>
             </body>
             </html>
         """.trimIndent()
         
-        // Return 404 response without body
-        return ResponseEntity.notFound().build()
+        // Use Spring's ByteArrayResource for the error page with proper override
+        val errorResource = object : org.springframework.core.io.ByteArrayResource(errorHtml.toByteArray()) {
+            override fun getFilename() = "error.html"
+        }
+        
+        return ResponseEntity.status(404)
+            .contentType(MediaType.TEXT_HTML)
+            .body(errorResource)
     }
 }
