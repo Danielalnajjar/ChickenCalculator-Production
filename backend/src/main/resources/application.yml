@@ -55,8 +55,10 @@ spring:
 server:
   port: ${PORT:8080}
   error:
-    include-message: never
-    include-stacktrace: never
+    include-exception: true
+    include-message: always
+    include-stacktrace: always
+    include-binding-errors: always
 
 # Actuator for health checks and metrics
 management:
@@ -131,8 +133,11 @@ logging:
     com.example.chickencalculator.interceptor: ${INTERCEPTOR_LOG_LEVEL:DEBUG}
     com.example.chickencalculator.exception: DEBUG
     org.springframework.web: DEBUG
-    org.springframework.web.servlet: DEBUG
+    org.springframework.web.servlet: TRACE
     org.springframework.web.servlet.mvc: DEBUG
+    org.springframework.http.converter: TRACE
+    org.springframework.boot.autoconfigure.web.servlet.error: DEBUG
+    org.springframework.boot.web.servlet: DEBUG
     org.apache.catalina: DEBUG
     org.hibernate.SQL: ${SQL_LOG_LEVEL:WARN}
     io.sentry: ${SENTRY_LOG_LEVEL:WARN}

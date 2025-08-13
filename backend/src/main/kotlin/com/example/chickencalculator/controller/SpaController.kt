@@ -16,13 +16,14 @@ class SpaController(
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
-    @GetMapping("/admin", "/admin/{path:[^\\.]*}")
-    fun serveAdminApp(@PathVariable(required = false) path: String?): ResponseEntity<*> {
+    @GetMapping("/admin", "/admin/{*path}", produces = [MediaType.TEXT_HTML_VALUE])
+    fun serveAdminApp(): ResponseEntity<*> {
         return try {
             val adminIndexResource = resourceLoader.getResource("file:/app/static/admin/index.html")
             if (!adminIndexResource.exists() || !adminIndexResource.isReadable) {
                 logger.error("Admin index.html not found or not readable at /app/static/admin/index.html")
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .contentType(MediaType.TEXT_HTML)
                     .body("Admin portal not found. Please ensure the frontend is built and deployed.")
             }
             ResponseEntity.ok()
@@ -31,20 +32,19 @@ class SpaController(
         } catch (e: Exception) {
             logger.error("Error serving admin app", e)
             ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .contentType(MediaType.TEXT_HTML)
                 .body("Error loading admin portal: ${e.message}")
         }
     }
 
-    @GetMapping("/location/{slug}", "/location/{slug}/{path:[^\\.]*}")
-    fun serveLocationApp(
-        @PathVariable slug: String,
-        @PathVariable(required = false) path: String?
-    ): ResponseEntity<*> {
+    @GetMapping("/location/{slug}", "/location/{slug}/{*path}", produces = [MediaType.TEXT_HTML_VALUE])
+    fun serveLocationApp(@PathVariable slug: String): ResponseEntity<*> {
         return try {
             val appIndexResource = resourceLoader.getResource("file:/app/static/app/index.html")
             if (!appIndexResource.exists() || !appIndexResource.isReadable) {
                 logger.error("App index.html not found or not readable at /app/static/app/index.html")
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .contentType(MediaType.TEXT_HTML)
                     .body("Location app not found. Please ensure the frontend is built and deployed.")
             }
             ResponseEntity.ok()
@@ -53,6 +53,7 @@ class SpaController(
         } catch (e: Exception) {
             logger.error("Error serving location app for slug: $slug", e)
             ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .contentType(MediaType.TEXT_HTML)
                 .body("Error loading location app: ${e.message}")
         }
     }

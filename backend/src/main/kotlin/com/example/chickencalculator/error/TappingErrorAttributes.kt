@@ -8,8 +8,8 @@ import org.springframework.context.annotation.Primary
 import org.springframework.stereotype.Component
 import org.springframework.web.context.request.WebRequest
 
-@Primary
-@Component
+// @Primary  // TEMPORARILY DISABLED FOR DEBUGGING
+// @Component  // TEMPORARILY DISABLED FOR DEBUGGING
 class TappingErrorAttributes : DefaultErrorAttributes() {
   private val log = LoggerFactory.getLogger(javaClass)
 

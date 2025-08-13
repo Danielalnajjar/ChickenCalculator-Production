@@ -16,11 +16,12 @@ class WebConfig(
 ) : WebMvcConfigurer {
     private val logger = LoggerFactory.getLogger(WebConfig::class.java)
     
+    // TEMPORARILY DISABLED FOR DEBUGGING
     override fun addInterceptors(registry: InterceptorRegistry) {
-        logger.info("🔧 Configuring request logging interceptor...")
-        registry.addInterceptor(requestLoggingInterceptor)
-            .addPathPatterns("/**")
-            .order(1)
-        logger.info("✅ Request logging interceptor registered for all paths")
+        logger.info("🔧 Request logging interceptor DISABLED for debugging servlet 500 errors")
+        // registry.addInterceptor(requestLoggingInterceptor)
+        //     .addPathPatterns("/**")
+        //     .order(1)
+        // logger.info("✅ Request logging interceptor registered for all paths")
     }
 }

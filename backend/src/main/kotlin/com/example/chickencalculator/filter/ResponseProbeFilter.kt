@@ -10,7 +10,7 @@ import org.springframework.core.annotation.Order
 import org.springframework.stereotype.Component
 import org.springframework.web.filter.OncePerRequestFilter
 
-@Component
+// @Component  // TEMPORARILY DISABLED FOR DEBUGGING
 @Order(Ordered.HIGHEST_PRECEDENCE + 1) // run early on REQUEST (after ErrorTapFilter on ERROR)
 class ResponseProbeFilter : OncePerRequestFilter() {
   private val log = LoggerFactory.getLogger(javaClass)

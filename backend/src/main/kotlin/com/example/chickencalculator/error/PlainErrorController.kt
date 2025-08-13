@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.context.request.ServletWebRequest
 import jakarta.servlet.http.HttpServletRequest
 
-@RestController
+// @RestController  // TEMPORARILY DISABLED FOR DEBUGGING
 class PlainErrorController(
   private val errorAttributes: ErrorAttributes
 ) : ErrorController {
