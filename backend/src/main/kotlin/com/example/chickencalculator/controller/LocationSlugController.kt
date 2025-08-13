@@ -11,7 +11,8 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import java.io.File
 
-@RestController
+// Temporarily disabled to debug servlet exceptions
+// @RestController
 class LocationSlugController(
     private val locationManagementService: LocationManagementService,
     private val metricsService: MetricsService
