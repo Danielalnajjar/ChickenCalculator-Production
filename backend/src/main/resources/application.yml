@@ -13,9 +13,6 @@ spring:
       # Cache control for static resources
       cache:
         period: 3600
-  mvc:
-    # Pattern for static resources - specific patterns to avoid API conflicts
-    static-path-pattern: /static/**,/resources/**,/admin/static/**,/assets/**
   datasource:
     # Use H2 for local development with PostgreSQL compatibility mode
     url: ${DATABASE_URL:jdbc:h2:file:./data/chicken-calculator-db;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1}

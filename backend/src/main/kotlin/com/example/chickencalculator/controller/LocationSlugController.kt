@@ -4,14 +4,12 @@ import com.example.chickencalculator.service.LocationManagementService
 import com.example.chickencalculator.service.MetricsService
 import io.micrometer.core.annotation.Timed
 import org.slf4j.LoggerFactory
-import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
-import java.io.File
 
-// @RestController  // Temporarily disabled - catching all paths causes servlet exceptions
+@RestController
 class LocationSlugController(
     private val locationManagementService: LocationManagementService,
     private val metricsService: MetricsService
@@ -19,28 +17,16 @@ class LocationSlugController(
     private val logger = LoggerFactory.getLogger(LocationSlugController::class.java)
     
     /**
-     * Handle location-specific routes by slug
-     * This allows accessing calculators via URLs like /fashion-show, /downtown-store, etc.
+     * Get location information by slug for API clients
+     * Returns location metadata without serving HTML files
      */
-    @GetMapping("/{slug}")
-    @Timed(value = "chicken.calculator.location.slug.time", description = "Time taken to serve location by slug")
-    fun serveLocationBySlug(@PathVariable slug: String): ResponseEntity<String> {
+    @GetMapping("/api/v1/location/{slug}/info")
+    @Timed(value = "chicken.calculator.location.slug.time", description = "Time taken to get location info by slug")
+    fun getLocationInfo(@PathVariable slug: String): ResponseEntity<Map<String, Any>> {
         val startTime = System.currentTimeMillis()
-        logger.info("🔍 Checking slug: $slug")
+        logger.info("🔍 Getting location info for slug: $slug")
         
         try {
-            // Skip known system paths
-            val systemPaths = setOf(
-                "api", "admin", "static", "resources", "actuator", 
-                "favicon.ico", "manifest.json", "robots.txt",
-                "calculator", "sales", "history", "settings"
-            )
-            
-            if (systemPaths.contains(slug.lowercase())) {
-                logger.debug("Skipping system path: $slug")
-                return ResponseEntity.notFound().build()
-            }
-            
             // Check if this is a valid location slug
             val lookupStartTime = System.currentTimeMillis()
             val location = locationManagementService.getLocationBySlug(slug)
@@ -51,33 +37,27 @@ class LocationSlugController(
                 
                 // Record successful location access
                 metricsService.recordLocationLookup(slug, lookupTime, true)
-                metricsService.recordLocationAccess(slug, "view")
+                metricsService.recordLocationAccess(slug, "info")
                 
-                // Serve the main app's index.html for this location
-                val fileResource = File("/app/static/app/index.html")
-                if (fileResource.exists()) {
-                    val totalTime = System.currentTimeMillis() - startTime
-                    metricsService.recordDatabaseOperation("location_slug_lookup", totalTime)
-                    
-                    val content = fileResource.readText()
-                    return ResponseEntity.ok()
-                        .contentType(MediaType.TEXT_HTML)
-                        .header("X-Location-Slug", slug)
-                        .header("X-Location-Name", location.name)
-                        .header("X-Location-Id", location.id.toString())
-                        .body(content)
-                } else {
-                    logger.error("❌ Index.html not found at /app/static/app/index.html")
-                    metricsService.recordError("location_slug_file_not_found", "FileNotFoundException", slug)
-                }
+                val totalTime = System.currentTimeMillis() - startTime
+                metricsService.recordDatabaseOperation("location_slug_lookup", totalTime)
+                
+                val locationInfo = mapOf(
+                    "id" to location.id,
+                    "slug" to location.slug,
+                    "name" to location.name,
+                    "managerName" to location.managerName,
+                    "managerEmail" to location.managerEmail,
+                    "createdAt" to location.createdAt
+                )
+                
+                return ResponseEntity.ok(locationInfo)
             } else {
                 logger.warn("⚠️ No location found for slug: $slug")
                 metricsService.recordLocationLookup(slug, lookupTime, false)
                 metricsService.recordError("location_slug_not_found", "LocationNotFoundException", slug)
+                return ResponseEntity.notFound().build()
             }
-            
-            // Return 404 for invalid slugs
-            return ResponseEntity.notFound().build()
         } catch (e: Exception) {
             val totalTime = System.currentTimeMillis() - startTime
             metricsService.recordError("location_slug_lookup", e.javaClass.simpleName, slug)
@@ -86,61 +66,47 @@ class LocationSlugController(
     }
     
     /**
-     * Handle sub-routes for location slugs (e.g., /fashion-show/calculator)
+     * Validate that a location slug exists (lightweight endpoint)
      */
-    @GetMapping("/{slug}/{path}")
-    @Timed(value = "chicken.calculator.location.subroute.time", description = "Time taken to serve location sub-route")
-    fun serveLocationSubRoute(
-        @PathVariable slug: String, 
-        @PathVariable path: String
-    ): ResponseEntity<String> {
+    @GetMapping("/api/v1/location/{slug}/validate")
+    @Timed(value = "chicken.calculator.location.validate.time", description = "Time taken to validate location slug")
+    fun validateLocationSlug(@PathVariable slug: String): ResponseEntity<Map<String, Any>> {
         val startTime = System.currentTimeMillis()
-        logger.info("🔍 Checking location sub-route: $slug/$path")
-        
-        // Skip admin routes - let AdminPortalController handle them
-        if (slug.lowercase() == "admin") {
-            logger.debug("Skipping admin route: $slug/$path")
-            return ResponseEntity.notFound().build()
-        }
+        logger.info("🔍 Validating location slug: $slug")
         
         try {
-            // Check if this is a valid location slug
             val lookupStartTime = System.currentTimeMillis()
             val location = locationManagementService.getLocationBySlug(slug)
             val lookupTime = System.currentTimeMillis() - lookupStartTime
             
             if (location != null) {
-                logger.info("✅ Found location for slug: $slug -> ${location.name}, serving path: $path")
-                
-                // Record successful location access with path
+                logger.info("✅ Validated location slug: $slug")
                 metricsService.recordLocationLookup(slug, lookupTime, true)
-                metricsService.recordLocationAccess(slug, "subroute")
                 
-                // Serve the main app's index.html for React Router to handle
-                val fileResource = File("/app/static/app/index.html")
-                if (fileResource.exists()) {
-                    val totalTime = System.currentTimeMillis() - startTime
-                    metricsService.recordDatabaseOperation("location_subroute_lookup", totalTime)
-                    
-                    val content = fileResource.readText()
-                    return ResponseEntity.ok()
-                        .contentType(MediaType.TEXT_HTML)
-                        .header("X-Location-Slug", slug)
-                        .header("X-Location-Name", location.name)
-                        .header("X-Location-Id", location.id.toString())
-                        .body(content)
-                } else {
-                    metricsService.recordError("location_subroute_file_not_found", "FileNotFoundException", slug)
-                }
+                val totalTime = System.currentTimeMillis() - startTime
+                metricsService.recordDatabaseOperation("location_slug_validate", totalTime)
+                
+                val response = mapOf(
+                    "valid" to true,
+                    "slug" to slug,
+                    "name" to location.name
+                )
+                
+                return ResponseEntity.ok(response)
             } else {
+                logger.warn("⚠️ Invalid location slug: $slug")
                 metricsService.recordLocationLookup(slug, lookupTime, false)
-                metricsService.recordError("location_subroute_not_found", "LocationNotFoundException", slug)
+                
+                val response = mapOf(
+                    "valid" to false,
+                    "slug" to slug
+                )
+                
+                return ResponseEntity.ok(response)
             }
-            
-            return ResponseEntity.notFound().build()
         } catch (e: Exception) {
             val totalTime = System.currentTimeMillis() - startTime
-            metricsService.recordError("location_subroute_lookup", e.javaClass.simpleName, slug)
+            metricsService.recordError("location_slug_validate", e.javaClass.simpleName, slug)
             throw e
         }
     }

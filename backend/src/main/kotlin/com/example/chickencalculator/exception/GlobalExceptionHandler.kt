@@ -410,35 +410,9 @@ class GlobalExceptionHandler {
     
     // ===== Generic Exception Handler =====
     
-    // Generic exception handler - catches any unhandled exceptions
-    // TEMPORARILY ENABLED FOR DEBUGGING SERVLET EXCEPTIONS
-    @ExceptionHandler(Exception::class)
-    fun handleGenericException(
-        ex: Exception,
-        request: WebRequest
-    ): ResponseEntity<ErrorResponse> {
-        val correlationId = getCorrelationId()
-        
-        // Always log full error details for debugging
-        logger.error("❌ Unhandled exception caught - Type: ${ex::class.simpleName}, Message: ${ex.message}", ex)
-        logException("Unexpected error occurred", ex, correlationId, "ERROR")
-        
-        // Temporarily expose error details for debugging (TODO: Remove after fixing)
-        val message = "Error: ${ex.message ?: "Unknown error"} (${ex::class.simpleName})"
-        
-        return buildErrorResponse(
-            status = HttpStatus.INTERNAL_SERVER_ERROR,
-            error = "Internal Server Error",
-            message = message,
-            path = getPath(request),
-            correlationId = correlationId,
-            details = mapOf(
-                "exceptionType" to (ex::class.simpleName ?: "Unknown"),
-                "message" to (ex.message ?: "No message"),
-                "debug" to "Temporary debug mode enabled"
-            )
-        )
-    }
+    // REMOVED: Generic @ExceptionHandler(Exception::class) to allow real exceptions to surface
+    // This was masking the true servlet 500 error causes - let Spring handle unexpected exceptions
+    // with their natural stack traces so we can diagnose the real issues
     
     // ===== Utility Methods =====
     
