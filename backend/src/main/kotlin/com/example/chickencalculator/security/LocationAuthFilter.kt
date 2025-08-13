@@ -1,6 +1,7 @@
 package com.example.chickencalculator.security
 
 import com.example.chickencalculator.service.LocationAuthService
+import com.example.chickencalculator.util.PathUtil
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -42,7 +43,7 @@ class LocationAuthFilter(
     override fun shouldNotFilterErrorDispatch(): Boolean = true
     
     override fun shouldNotFilter(request: HttpServletRequest): Boolean {
-        val path = request.requestURI
+        val path = PathUtil.normalizedPath(request)
         return path.startsWith("/actuator") ||
                path.startsWith("/debug") ||
                path == "/minimal" ||
@@ -61,7 +62,7 @@ class LocationAuthFilter(
         filterChain: FilterChain
     ) {
         try {
-            val path = request.requestURI
+            val path = PathUtil.normalizedPath(request)
             
             // Skip if path is excluded
             if (isExcludedPath(path)) {

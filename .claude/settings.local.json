@@ -179,7 +179,8 @@
       "Bash(set \"JWT_SECRET=test-secret-key-for-testing-purposes-only-1234567890\")",
       "Bash(set \"ADMIN_DEFAULT_PASSWORD=Admin123!\")",
       "Bash(timeout:*)",
-      "Bash(git merge:*)"
+      "Bash(git merge:*)",
+      "Bash(find:*)"
     ],
     "deny": []
   }

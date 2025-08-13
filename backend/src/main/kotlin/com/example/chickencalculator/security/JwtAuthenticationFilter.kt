@@ -1,6 +1,7 @@
 package com.example.chickencalculator.security
 
 import com.example.chickencalculator.service.JwtService
+import com.example.chickencalculator.util.PathUtil
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -25,7 +26,7 @@ class JwtAuthenticationFilter(
      * Skip certain paths that don't need JWT authentication
      */
     override fun shouldNotFilter(request: HttpServletRequest): Boolean {
-        val path = request.requestURI
+        val path = PathUtil.normalizedPath(request)
         return path.startsWith("/actuator") ||
                path.startsWith("/debug") ||
                path == "/minimal" ||
@@ -44,7 +45,7 @@ class JwtAuthenticationFilter(
         filterChain: FilterChain
     ) {
         try {
-            val requestPath = request.requestURI
+            val requestPath = PathUtil.normalizedPath(request)
             
             // Clear any existing authentication context to start fresh
             SecurityContextHolder.clearContext()
@@ -95,7 +96,7 @@ class JwtAuthenticationFilter(
             }
             
         } catch (filterException: Exception) {
-            logger.error("Filter processing failed for request: ${request.requestURI} - ${filterException.message}", filterException)
+            logger.error("Filter processing failed for request: ${PathUtil.normalizedPath(request)} - ${filterException.message}", filterException)
             // Clear context on any filter error to ensure clean state
             SecurityContextHolder.clearContext()
         } finally {
