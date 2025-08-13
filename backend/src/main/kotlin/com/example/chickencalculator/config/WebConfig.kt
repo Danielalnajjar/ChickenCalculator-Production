@@ -11,7 +11,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 import org.springframework.web.servlet.resource.PathResourceResolver
 import java.io.File
 
-@Configuration
+// @Configuration  // Disabled - resource handlers causing servlet exceptions
 class WebConfig(
     private val requestLoggingInterceptor: RequestLoggingInterceptor
 ) : WebMvcConfigurer {
