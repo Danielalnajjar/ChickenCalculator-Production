@@ -24,22 +24,31 @@ class RootController {
     fun handleRoot(): ResponseEntity<String> {
         logger.info("🏠 Handling root path request")
         
-        // Try to read the index.html file, but catch any exceptions
-        try {
-            val indexFile = File("/app/static/app/index.html")
-            if (indexFile.exists() && indexFile.canRead()) {
-                logger.info("✅ Found index.html at: ${indexFile.absolutePath}")
-                val content = indexFile.readText()
-                return ResponseEntity.ok()
-                    .contentType(MediaType.TEXT_HTML)
-                    .body(content)
+        // Try to read the index.html file from various possible locations
+        val possiblePaths = listOf(
+            "/app/static/app/index.html",
+            "/app/static/index.html",
+            "/static/app/index.html",
+            "./static/app/index.html"
+        )
+        
+        for (path in possiblePaths) {
+            try {
+                val indexFile = File(path)
+                if (indexFile.exists() && indexFile.canRead()) {
+                    logger.info("✅ Found index.html at: ${indexFile.absolutePath}")
+                    val content = indexFile.readText()
+                    return ResponseEntity.ok()
+                        .contentType(MediaType.TEXT_HTML)
+                        .body(content)
+                }
+                logger.debug("File not found at: $path")
+            } catch (e: Exception) {
+                logger.debug("Error checking path $path: ${e.message}")
             }
-        } catch (e: Exception) {
-            logger.error("❌ Error reading index.html: ${e.message}", e)
         }
         
-        // Always fall back to the simple landing page
-        logger.info("📄 Serving fallback landing page")
+        logger.info("📄 Index.html not found in any location, serving fallback landing page")
         return serveLandingPage()
     }
     

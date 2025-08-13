@@ -168,7 +168,8 @@
       "Bash(timeout 20 mvn spring-boot:run)",
       "Bash(git reset:*)",
       "Bash(claude mcp add:*)",
-      "Bash(dir backendsrcmainkotlincomexamplechickencalculatorcontroller*.kt)"
+      "Bash(dir backendsrcmainkotlincomexamplechickencalculatorcontroller*.kt)",
+      "Bash(git commit:*)"
     ],
     "deny": []
   }

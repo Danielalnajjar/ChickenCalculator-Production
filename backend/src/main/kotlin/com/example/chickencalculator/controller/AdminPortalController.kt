@@ -27,8 +27,9 @@ class AdminPortalController @Autowired constructor(
         val resourcePaths = listOfNotNull(
             // Custom path from environment variable if set
             adminPortalPath?.let { "$it/index.html" },
-            // Production deployment paths
+            // Production deployment paths (Docker copies to /app/static/admin)
             "file:/app/static/admin/index.html",
+            "file:/app/static/index.html",
             "file:static/admin/index.html",
             // Classpath resources (for packaged JAR)
             "classpath:static/admin/index.html",
