@@ -411,8 +411,7 @@ class GlobalExceptionHandler {
     // ===== Generic Exception Handler =====
     
     // Generic exception handler - catches any unhandled exceptions
-    // TEMPORARILY DISABLED to debug servlet exceptions
-    // @ExceptionHandler(Exception::class)
+    @ExceptionHandler(Exception::class)
     fun handleGenericException(
         ex: Exception,
         request: WebRequest
