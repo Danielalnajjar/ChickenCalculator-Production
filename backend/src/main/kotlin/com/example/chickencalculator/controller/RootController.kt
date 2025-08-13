@@ -11,7 +11,7 @@ import java.io.File
  * Controller for handling the root path and serving the main application landing page.
  * Follows Spring Boot best practices for serving static content programmatically.
  */
-// @RestController  // Temporarily disabled to debug servlet exceptions
+@RestController
 class RootController {
     private val logger = LoggerFactory.getLogger(RootController::class.java)
     

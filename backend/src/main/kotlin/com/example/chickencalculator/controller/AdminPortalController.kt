@@ -10,7 +10,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RestController
 
-// @RestController  // Temporarily disabled to debug servlet exceptions
+@RestController
 class AdminPortalController @Autowired constructor(
     private val resourceLoader: ResourceLoader
 ) {
