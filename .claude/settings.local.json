@@ -162,7 +162,13 @@
       "mcp__railway__deployment_trigger",
       "Bash(mvn clean:*)",
       "Bash(mvn test-compile:*)",
-      "Bash(mvn:*)"
+      "Bash(mvn:*)",
+      "Bash(curl:*)",
+      "Bash(set ADMIN_DEFAULT_PASSWORD=Admin123!)",
+      "Bash(timeout 20 mvn spring-boot:run)",
+      "Bash(git reset:*)",
+      "Bash(claude mcp add:*)",
+      "Bash(dir backendsrcmainkotlincomexamplechickencalculatorcontroller*.kt)"
     ],
     "deny": []
   }

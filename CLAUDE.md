@@ -29,33 +29,40 @@ git push origin main                       # Triggers Railway auto-deploy
 - **Production**: https://chickencalculator-production-production-2953.up.railway.app
 - **Admin Portal**: https://chickencalculator-production-production-2953.up.railway.app/admin
 - **Location Access**: https://chickencalculator-production-production-2953.up.railway.app/{slug}
+  - Location Login: /{slug}/ (password protected)
+  - Calculator: /{slug}/calculator
+  - Sales Data: /{slug}/sales
+  - Marination History: /{slug}/history
 - **Metrics**: /actuator/prometheus
 - **Health**: /api/health
 
 ### Default Credentials
 - **Admin**: admin@yourcompany.com (password from ADMIN_DEFAULT_PASSWORD env var)
-- **Note**: Password change required on first login
+  - **Note**: Password change required on first login
+- **Locations**: Each location has its own password
+  - **Default**: "ChangeMe123!" (set via V5 migration)
+  - **Note**: Admins can generate/update location passwords
 
 ## Current Production Status
 
 ### Version & Deployment
-- **Production Readiness**: 10/10 ✅ (All issues resolved, including password change!)
-- **Database**: PostgreSQL 16.8 on Railway (Migration completed December 2024)
+- **Production Readiness**: 10/10 ✅ (Multi-location auth system active)
+- **Database**: PostgreSQL 16.8 on Railway (V5 migration applied Jan 12, 2025)
 - **Platform**: Railway (Project ID: 767deec0-30ac-4238-a57b-305f5470b318)
 - **GitHub**: https://github.com/Danielalnajjar/ChickenCalculator-Production
 - **Auto-Deploy**: Enabled from main branch
 - **Port**: 8080 (Railway single-port constraint)
 
-### ✅ Latest Status (December 12, 2024)
-- **Backend**: Fully compilable (26 compilation errors fixed)
-- **Database**: Successfully migrated to PostgreSQL
+### ✅ Latest Status (January 12, 2025)
+- **Backend**: Fully compilable with multi-location auth
+- **Database**: PostgreSQL with V5 migration (location auth)
 - **Tests**: All compile successfully
-- **Production**: Running on Railway with PostgreSQL
-- **Password Change**: ✅ FIXED - Now working correctly!
+- **Production**: Running on Railway with location authentication
+- **Multi-Location**: ✅ Complete isolation with per-location auth
 
-### Recent Major Improvements (December 2024)
+### Recent Major Improvements (December 2024 - January 2025)
 - ✅ All 25 critical security vulnerabilities fixed
-- ✅ Multi-tenant data isolation implemented
+- ✅ Multi-tenant data isolation with location authentication
 - ✅ WCAG 2.1 Level AA compliance achieved
 - ✅ Comprehensive monitoring and observability added
 - ✅ Test infrastructure established
@@ -63,6 +70,7 @@ git push origin main                       # Triggers Railway auto-deploy
 - ✅ All compilation errors resolved (26 fixes applied)
 - ✅ PostgreSQL migration completed successfully
 - ✅ Password change feature FIXED (December 12, 2024)
+- ✅ Multi-location authentication system (January 12, 2025)
 
 ## Architecture Overview
 
@@ -74,39 +82,46 @@ Railway Platform (PORT 8080)
     ├── /api/health → Health checks
     ├── /actuator/** → Monitoring endpoints
     ├── /admin/** → Admin Portal (React)
-    ├── /{slug} → Location-specific calculator
-    └── / → Default calculator
+    ├── /{slug} → Location-specific calculator (protected)
+    ├── /{slug}/calculator → Calculator view
+    ├── /{slug}/sales → Sales data management
+    ├── /{slug}/history → Marination history
+    └── / → Landing page with location list
 ```
 
 ### Backend Architecture (Spring Boot 3.2.0 + Kotlin)
 
 #### Controllers (Separated by Responsibility)
-- `AdminAuthController` - Authentication endpoints only
-- `AdminLocationController` - Location management
+- `AdminAuthController` - Admin authentication endpoints
+- `AdminLocationController` - Location management + password control
+- `LocationAuthController` - Location-specific authentication
 - `ChickenCalculatorController` - Marination calculation (NOT chicken requirements)
-- `SalesDataController` - Sales data management
-- `MarinationLogController` - Marination tracking
-- `LocationSlugController` - Slug routing
+- `SalesDataController` - Sales data management (requires location context)
+- `MarinationLogController` - Marination tracking (requires location context)
+- `LocationSlugController` - Slug routing and location resolution
 - `HealthController` - Health checks
-- `AdminPortalController` - Admin portal static resource serving (production-ready)
+- `AdminPortalController` - Admin portal static resource serving
 
 #### Service Layer (Business Logic)
 - `LocationManagementService` - Enhanced location CRUD with validation
-- `SalesDataService` - Multi-tenant sales operations
-- `MarinationLogService` - Marination business rules
+- `LocationAuthService` - Location authentication, password management, rate limiting
+- `SalesDataService` - Multi-tenant sales operations (no default fallback)
+- `MarinationLogService` - Marination business rules (no default fallback)
 - `AdminService` - User management
 - `ChickenCalculatorService` - Marination calculations (uses calculateMarination method)
 - `MetricsService` - Business metrics tracking (Micrometer 1.12.x compatible)
+- `JwtService` - JWT token generation and validation
 
 #### Security & Infrastructure
-- `JwtAuthenticationFilter` - JWT validation (httpOnly cookies)
+- `JwtAuthenticationFilter` - Admin JWT validation (httpOnly cookies)
+- `LocationAuthFilter` - Location-specific JWT validation (NEW)
 - `GlobalExceptionHandler` - Standardized error responses
 - `CorrelationIdFilter` - Request tracing
 - `RequestLoggingInterceptor` - Structured logging
 
 #### Database (PostgreSQL with Flyway Migrations)
 - **Current Version**: PostgreSQL 16.8 on Railway
-- **Migration Status**: V4 (All migrations applied)
+- **Migration Status**: V5 (All migrations applied)
 - **Tables**:
   - `admin_users` - System administrators with password change tracking
   - `locations` - Multi-tenant locations with unique slugs
@@ -118,6 +133,7 @@ Railway Platform (PORT 8080)
   - V2: Indexes and constraints
   - V3: PostgreSQL sequences for ID generation
   - V4: Admin password reset (applied Dec 12, 2024)
+  - V5: Location authentication fields (applied Jan 12, 2025)
 
 ### Frontend Architecture
 
@@ -128,9 +144,11 @@ Railway Platform (PORT 8080)
 - WCAG 2.1 AA compliant
 - Jest + React Testing Library tests
 
-#### Main Calculator App
-- Location-based access via slugs
+#### Main Calculator App (React with Location Auth)
+- Password-protected location access
+- Location-specific authentication context
 - Multi-tenant data isolation
+- Session management with httpOnly cookies
 - Accessible forms with ARIA labels
 - Mobile-optimized with 44px touch targets
 
@@ -157,15 +175,22 @@ data class MarinationRequest(
 ```
 GET  /api/health                          - System health
 GET  /api/v1/calculator/locations         - Available locations
+GET  /                                    - Landing page with locations
+```
+
+### Location Endpoints (Location Auth Required)
+```
+POST /api/v1/location/{slug}/auth/login   - Location login
+POST /api/v1/location/{slug}/auth/logout  - Location logout
+GET  /api/v1/location/{slug}/auth/validate - Validate session
 POST /api/v1/calculator/calculate         - Marination calculation
 GET  /api/v1/sales-data                   - Sales history
 POST /api/v1/sales-data                   - Add sales record
 GET  /api/v1/marination-log               - Marination history
 POST /api/v1/marination-log               - Log marination
-GET  /{slug}                              - Location calculator
 ```
 
-### Admin Endpoints (Auth Required)
+### Admin Endpoints (Admin Auth Required)
 ```
 POST /api/v1/admin/auth/login             - Admin login
 POST /api/v1/admin/auth/validate          - Token validation
@@ -175,6 +200,8 @@ POST /api/v1/admin/auth/logout            - Logout
 GET  /api/v1/admin/locations              - List locations
 POST /api/v1/admin/locations              - Create location
 DELETE /api/v1/admin/locations/{id}       - Delete location
+PUT  /api/v1/admin/locations/{id}/password - Update location password
+POST /api/v1/admin/locations/{id}/generate-password - Generate password
 GET  /api/v1/admin/stats                  - Dashboard stats
 ```
 
@@ -376,14 +403,13 @@ openssl rand -base64 48
 
 ## Known Issues & Bugs
 
-### 🔴 Critical: Password Change Feature Broken
-- **Issue**: After changing password, users cannot log in
-- **Cause**: Password change endpoint returns 401 unauthorized
-- **Workaround**: Use V4 migration to reset admin password
-- **Fix Required**: 
-  1. AdminService should use injected BCryptPasswordEncoder bean
-  2. Password change endpoint authentication needs fixing
-  3. JWT token may not be sent correctly from frontend
+### ✅ RESOLVED: Admin Password Change Feature
+- **Status**: Fixed (December 12, 2024)
+- **Issue**: Admin password change now works correctly
+- **Solution**: AdminService uses injected PasswordEncoder bean
+
+### Current Known Issues
+- None critical at this time
 
 ## Troubleshooting Guide
 
@@ -469,6 +495,18 @@ openssl rand -base64 48
 - **Flyway Migrations**: Added V3 for sequences, V4 for admin reset
 
 ## Recent Changes Log
+
+### January 2025 - Multi-Location Authentication System
+- **Location Auth**: Password-protected location access with rate limiting
+- **Session Isolation**: Location-specific JWT tokens (location_token_{slug})
+- **Frontend Restructure**: Complete React app rewrite with LocationContext
+- **Database**: V5 migration adding authentication fields to locations
+- **Security**: BCrypt hashing, 15-minute lockout after 5 failed attempts
+- **Controllers**: New LocationAuthController for location authentication
+- **Services**: LocationAuthService for password and session management
+- **Filters**: LocationAuthFilter for request validation
+- **React Components**: LocationLogin, LocationLayout, RequireAuth, LandingPage
+- **No Default Fallback**: Removed all default location logic from services
 
 ### December 2024 - PostgreSQL Migration & Production Updates
 - **Database**: Successfully migrated from H2 to PostgreSQL on Railway

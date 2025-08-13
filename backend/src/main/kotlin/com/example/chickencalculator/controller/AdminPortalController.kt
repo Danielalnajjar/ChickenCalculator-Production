@@ -3,8 +3,6 @@ package com.example.chickencalculator.controller
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.core.io.InputStreamResource
-import org.springframework.core.io.Resource
 import org.springframework.core.io.ResourceLoader
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -23,7 +21,8 @@ class AdminPortalController @Autowired constructor(
     private val adminPortalPath: String? = null
     
     @GetMapping("/admin", "/admin/")
-    fun serveAdminPortal(): ResponseEntity<Resource> {
+    @ResponseBody
+    fun serveAdminPortal(): ResponseEntity<String> {
         logger.info("🌐 Serving admin portal index.html")
         
         // Try multiple resource locations in order of preference
@@ -46,9 +45,10 @@ class AdminPortalController @Autowired constructor(
                 val resource = resourceLoader.getResource(path)
                 if (resource.exists() && resource.isReadable) {
                     logger.info("✅ Found admin portal at: $path")
+                    val content = resource.inputStream.bufferedReader().use { it.readText() }
                     return ResponseEntity.ok()
                         .contentType(MediaType.TEXT_HTML)
-                        .body(resource)
+                        .body(content)
                 }
             } catch (e: Exception) {
                 logger.debug("Could not load resource from path: $path - ${e.message}")
@@ -85,18 +85,15 @@ class AdminPortalController @Autowired constructor(
             </html>
         """.trimIndent()
         
-        // Use InputStreamResource which doesn't require URL/URI implementation
-        val errorResource = InputStreamResource(errorHtml.byteInputStream())
-        
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
             .contentType(MediaType.TEXT_HTML)
-            .contentLength(errorHtml.length.toLong())
-            .body(errorResource)
+            .body(errorHtml)
     }
     
     // Handle specific admin portal routes for React Router
     @GetMapping("/admin/login", "/admin/dashboard", "/admin/locations", "/admin/users", "/admin/reports", "/admin/settings")
-    fun serveAdminPortalRoutes(): ResponseEntity<Resource> {
+    @ResponseBody
+    fun serveAdminPortalRoutes(): ResponseEntity<String> {
         logger.info("🌐 Admin portal route requested")
         // For React Router routes, serve the index.html
         return serveAdminPortal()

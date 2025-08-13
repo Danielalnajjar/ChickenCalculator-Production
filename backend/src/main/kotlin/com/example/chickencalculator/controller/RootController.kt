@@ -1,8 +1,6 @@
 package com.example.chickencalculator.controller
 
 import org.slf4j.LoggerFactory
-import org.springframework.core.io.FileSystemResource
-import org.springframework.core.io.Resource
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Controller
@@ -24,7 +22,8 @@ class RootController {
      * Falls back to a simple redirect if the file is not found.
      */
     @GetMapping("/")
-    fun handleRoot(): ResponseEntity<Resource> {
+    @ResponseBody
+    fun handleRoot(): ResponseEntity<String> {
         logger.info("🏠 Handling root path request")
         
         // Check if index.html exists in the expected location
@@ -32,16 +31,17 @@ class RootController {
         
         if (indexFile.exists()) {
             logger.info("✅ Found index.html at: ${indexFile.absolutePath}")
+            val content = indexFile.readText()
             return ResponseEntity.ok()
                 .contentType(MediaType.TEXT_HTML)
-                .body(FileSystemResource(indexFile))
+                .body(content)
         }
         
-        // If file doesn't exist, log warning and return simple landing page
+        // If file doesn't exist, serve the landing page
         logger.warn("⚠️ index.html not found at expected location: ${indexFile.absolutePath}")
+        logger.info("📄 Serving fallback landing page")
         
-        // Return a simple redirect response
-        return ResponseEntity.notFound().build()
+        return serveLandingPage()
     }
     
     /**

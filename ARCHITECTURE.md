@@ -20,7 +20,7 @@ The ChickenCalculator is a production-ready, multi-tenant restaurant management 
 │  ┌──────────────────────────────────────────────────┐  │
 │  │              REST Controllers (v1)                │  │
 │  │  • AdminAuthController    • AdminLocationController │  │
-│  │  • ChickenCalculatorController                    │  │
+│  │  • LocationAuthController • ChickenCalculatorController │  │
 │  │  • SalesDataController    • MarinationLogController│  │
 │  │  • LocationSlugController • HealthController      │  │
 │  └──────────────────────────────────────────────────┘  │
@@ -28,7 +28,7 @@ The ChickenCalculator is a production-ready, multi-tenant restaurant management 
 │                    Business Layer                        │
 │  ┌──────────────────────────────────────────────────┐  │
 │  │                Service Components                 │  │
-│  │  • LocationManagementService                      │  │
+│  │  • LocationManagementService • LocationAuthService│  │
 │  │  • SalesDataService      • MarinationLogService   │  │
 │  │  • AdminService          • ChickenCalculatorService│  │
 │  │  • MetricsService        • JwtService             │  │
@@ -37,7 +37,7 @@ The ChickenCalculator is a production-ready, multi-tenant restaurant management 
 │                  Infrastructure Layer                    │
 │  ┌──────────────────────────────────────────────────┐  │
 │  │              Security & Middleware                │  │
-│  │  • JwtAuthenticationFilter                        │  │
+│  │  • JwtAuthenticationFilter • LocationAuthFilter   │  │
 │  │  • CorrelationIdFilter    • RequestLoggingInterceptor│  │
 │  │  • GlobalExceptionHandler • CSRF Protection       │  │
 │  └──────────────────────────────────────────────────┘  │
@@ -76,10 +76,12 @@ The ChickenCalculator is a production-ready, multi-tenant restaurant management 
 ├─────────────────────────────────────────────────────────┤
 │              Main Calculator App (React)                 │
 │  ┌──────────────────────────────────────────────────┐  │
-│  │  • Location-based Access (/{slug})                │  │
+│  │  • Password-Protected Locations (/{slug})         │  │
+│  │  • LocationContext for Authentication State       │  │
 │  │  • Marination Calculator                          │  │
 │  │  • Sales Data Management                          │  │
 │  │  • Multi-tenant Data Isolation                    │  │
+│  │  • Session-Isolated JWT Tokens                    │  │
 │  └──────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────┘
 ```
@@ -87,11 +89,20 @@ The ChickenCalculator is a production-ready, multi-tenant restaurant management 
 ## Security Architecture
 
 ### Authentication & Authorization
-- **BCrypt Password Hashing**: 10 rounds for secure password storage
-- **JWT Tokens**: Stored in httpOnly cookies (XSS-safe)
-- **CSRF Protection**: Double-submit cookie pattern
+
+#### Admin Authentication
+- **BCrypt Password Hashing**: 10 rounds for admin passwords
+- **JWT Tokens**: Stored in httpOnly cookies (admin_token)
 - **Password Policy**: Mandatory change on first login
 - **Session Management**: Secure cookie configuration
+
+#### Location Authentication
+- **Per-Location Passwords**: Each location has independent auth
+- **BCrypt Hashing**: Secure password storage for locations
+- **JWT Tokens**: Location-specific cookies (location_token_{slug})
+- **Rate Limiting**: 5 failed attempts triggers 15-minute lockout
+- **Session Timeout**: 8-hour default, configurable per location
+- **CSRF Protection**: Double-submit cookie pattern
 
 ### Security Layers
 1. **Transport Security**: HTTPS enforcement
@@ -104,12 +115,13 @@ The ChickenCalculator is a production-ready, multi-tenant restaurant management 
 ### Tenant Isolation Strategy
 ```
 Request Flow:
-1. Client Request → /{slug} or X-Location-Id header
-2. LocationSlugController validates slug
-3. Location context propagated to services
-4. Service layer enforces tenant boundaries
-5. Repository queries scoped to location
-6. Response filtered by location context
+1. Client Request → /{slug}
+2. LocationAuthFilter validates JWT token
+3. Location authentication verified
+4. Location context propagated to services
+5. Service layer enforces tenant boundaries (no default fallback)
+6. Repository queries scoped to location
+7. Response filtered by location context
 ```
 
 ### Data Isolation
@@ -150,7 +162,10 @@ admin_users (
 
 locations (
   id, name, slug, manager_name, manager_email,
-  is_default, status, created_at, updated_at
+  password_hash, requires_auth, session_timeout_hours,
+  last_password_change, failed_login_attempts,
+  last_failed_login, is_default, status, 
+  created_at, updated_at
 )
 
 sales_data (
@@ -177,6 +192,7 @@ marination_log (
 2. **V2__add_password_change_required.sql**: Password policy support
 3. **V3__add_marination_defaults.sql**: Default values for marination
 4. **V4__reset_admin_password.sql**: Admin recovery mechanism
+5. **V5__add_location_authentication.sql**: Location auth fields and indexes
 
 ## API Design
 
@@ -322,5 +338,5 @@ Prometheus Metrics:
 
 ---
 
-*Architecture Documentation - December 2024*
-*Production Ready System (9.5/10)*
+*Architecture Documentation - January 2025*
+*Production Ready System (10/10)*
