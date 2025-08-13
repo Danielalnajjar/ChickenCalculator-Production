@@ -417,14 +417,13 @@ class GlobalExceptionHandler {
         request: WebRequest
     ): ResponseEntity<ErrorResponse> {
         val correlationId = getCorrelationId()
+        
+        // Always log full error details for debugging
+        logger.error("❌ Unhandled exception caught - Type: ${ex::class.simpleName}, Message: ${ex.message}", ex)
         logException("Unexpected error occurred", ex, correlationId, "ERROR")
         
-        // Don't expose internal error details in production
-        val message = if (isProduction()) {
-            GENERIC_ERROR_MESSAGE
-        } else {
-            ex.message ?: "Unknown error"
-        }
+        // Temporarily expose error details for debugging (TODO: Remove after fixing)
+        val message = "Error: ${ex.message ?: "Unknown error"} (${ex::class.simpleName})"
         
         return buildErrorResponse(
             status = HttpStatus.INTERNAL_SERVER_ERROR,
@@ -432,7 +431,11 @@ class GlobalExceptionHandler {
             message = message,
             path = getPath(request),
             correlationId = correlationId,
-            details = if (!isProduction()) mapOf("exceptionType" to (ex::class.simpleName ?: "Unknown")) else null
+            details = mapOf(
+                "exceptionType" to (ex::class.simpleName ?: "Unknown"),
+                "message" to (ex.message ?: "No message"),
+                "debug" to "Temporary debug mode enabled"
+            )
         )
     }
     
