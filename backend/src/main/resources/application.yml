@@ -108,7 +108,6 @@ sentry:
   traces-sample-rate: ${SENTRY_TRACES_SAMPLE_RATE:0.10}    # 10% APM sampling
   profiles-sample-rate: ${SENTRY_PROFILES_SAMPLE_RATE:0.01} # 1% profiling
   # Additional Sentry configuration
-  send-default-pii: false
   attach-stacktrace: true
   attach-threads: true
   enable-shutdown-hook: true
