@@ -66,61 +66,51 @@ class JwtAuthenticationFilter(
             // Try to get JWT token from cookie first, then Authorization header
             val jwt = getTokenFromRequest(request)
             
-            if (jwt == null) {
-                logger.debug("No JWT token found for request: $requestPath")
-                filterChain.doFilter(request, response)
-                return
-            }
-
-            logger.debug("JWT token found for request: $requestPath")
-            
-            try {
-                if (jwtService.validateToken(jwt)) {
-                    val email = jwtService.getEmailFromToken(jwt)
-                    val role = jwtService.getRoleFromToken(jwt)
-                    
-                    logger.debug("JWT validated successfully - Email: $email, Role: $role, Path: $requestPath")
-                    
-                    if (email != null) {
-                        val authorities = if (role != null) {
-                            listOf(SimpleGrantedAuthority("ROLE_$role"))
-                        } else {
-                            emptyList()
-                        }
+            if (jwt != null) {
+                logger.debug("JWT token found for request: $requestPath")
+                
+                try {
+                    if (jwtService.validateToken(jwt)) {
+                        val email = jwtService.getEmailFromToken(jwt)
+                        val role = jwtService.getRoleFromToken(jwt)
                         
-                        val authToken = UsernamePasswordAuthenticationToken(
-                            email,
-                            null,
-                            authorities
-                        )
-                        authToken.details = WebAuthenticationDetailsSource().buildDetails(request)
-                        SecurityContextHolder.getContext().authentication = authToken
-                        logger.debug("Authentication set in SecurityContext for: $email")
+                        logger.debug("JWT validated successfully - Email: $email, Role: $role, Path: $requestPath")
+                        
+                        if (email != null) {
+                            val authorities = if (role != null) {
+                                listOf(SimpleGrantedAuthority("ROLE_$role"))
+                            } else {
+                                emptyList()
+                            }
+                            
+                            val authToken = UsernamePasswordAuthenticationToken(
+                                email,
+                                null,
+                                authorities
+                            )
+                            authToken.details = WebAuthenticationDetailsSource().buildDetails(request)
+                            SecurityContextHolder.getContext().authentication = authToken
+                            logger.debug("Authentication set in SecurityContext for: $email")
+                        }
+                    } else {
+                        logger.warn("JWT validation failed for request: $requestPath")
+                        SecurityContextHolder.clearContext()
                     }
-                } else {
-                    logger.warn("JWT validation failed for request: $requestPath")
-                    // Clear context on validation failure
+                } catch (jwtException: Exception) {
+                    logger.error("JWT processing failed for request: $requestPath - ${jwtException.message}")
                     SecurityContextHolder.clearContext()
                 }
-            } catch (jwtException: Exception) {
-                logger.error("JWT processing failed for request: $requestPath - ${jwtException.message}")
-                // Clear context on any JWT processing error
-                SecurityContextHolder.clearContext()
+            } else {
+                logger.debug("No JWT token found for request: $requestPath")
             }
             
         } catch (filterException: Exception) {
             logger.error("Filter processing failed for request: ${PathUtil.normalizedPath(request)} - ${filterException.message}", filterException)
-            // Clear context on any filter error to ensure clean state
             SecurityContextHolder.clearContext()
-        } finally {
-            // Always continue the filter chain, never block the request
-            try {
-                filterChain.doFilter(request, response)
-            } catch (chainException: Exception) {
-                logger.error("Filter chain execution failed: ${chainException.message}", chainException)
-                // Don't re-throw - let the request continue to avoid 500 errors
-            }
         }
+        
+        // Call filter chain exactly ONCE at the end
+        filterChain.doFilter(request, response)
     }
     
     /**
