@@ -54,6 +54,7 @@ class SecurityConfig(
                         "/api/sales-data/**",
                         "/api/marination-log/**",
                         "/api/debug/**",
+                        "/debug/**",
                         // Health endpoints (unversioned)
                         "/api/health/**",
                         "/actuator/health",
@@ -102,6 +103,7 @@ class SecurityConfig(
                     "/api/sales-data/**",
                     "/api/marination-log/**",
                     "/api/debug/**",
+                    "/debug/**",
                     // Health endpoints (unversioned)
                     "/api/health/**",
                     "/actuator/health",
