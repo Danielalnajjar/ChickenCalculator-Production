@@ -16,8 +16,17 @@ class SpaController(
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
-    @GetMapping("/admin", "/admin/**", produces = [MediaType.TEXT_HTML_VALUE])
+    @GetMapping("/admin", produces = [MediaType.TEXT_HTML_VALUE])
+    fun serveAdminRoot(): ResponseEntity<*> {
+        return serveAdminIndex()
+    }
+    
+    @GetMapping("/admin/**", produces = [MediaType.TEXT_HTML_VALUE])
     fun serveAdminApp(): ResponseEntity<*> {
+        return serveAdminIndex()
+    }
+    
+    private fun serveAdminIndex(): ResponseEntity<*> {
         return try {
             val adminIndexResource = resourceLoader.getResource("file:/app/static/admin/index.html")
             if (!adminIndexResource.exists() || !adminIndexResource.isReadable) {
@@ -37,8 +46,17 @@ class SpaController(
         }
     }
 
-    @GetMapping("/location/{slug}", "/location/{slug}/**", produces = [MediaType.TEXT_HTML_VALUE])
+    @GetMapping("/location/{slug}", produces = [MediaType.TEXT_HTML_VALUE])
+    fun serveLocationRoot(@PathVariable slug: String): ResponseEntity<*> {
+        return serveLocationIndex(slug)
+    }
+    
+    @GetMapping("/location/{slug}/**", produces = [MediaType.TEXT_HTML_VALUE])
     fun serveLocationApp(@PathVariable slug: String): ResponseEntity<*> {
+        return serveLocationIndex(slug)
+    }
+    
+    private fun serveLocationIndex(slug: String): ResponseEntity<*> {
         return try {
             val appIndexResource = resourceLoader.getResource("file:/app/static/app/index.html")
             if (!appIndexResource.exists() || !appIndexResource.isReadable) {
