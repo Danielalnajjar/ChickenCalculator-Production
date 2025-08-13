@@ -1,60 +1,55 @@
 # Known Issues - ChickenCalculator Production
 
-## 🔴 CRITICAL: Servlet 500 Errors in Production
-
-**Status**: UNRESOLVED - Under Active Investigation  
-**Severity**: Critical  
-**Impact**: All custom endpoints returning 500 errors  
-**Last Updated**: January 13, 2025 01:10 PST  
-
-### Problem Summary
-All custom REST endpoints fail with HTTP 500 after controllers successfully process requests (status=200). The exception occurs in Spring MVC post-processing, not in our application code.
-
-### Key Finding
-**Controllers execute successfully** → Response shows status=200 → **Exception in Spring MVC** → 500 error returned
-
-### What We've Ruled Out ❌
-- **Write-after-commit issues** - AfterCommitGuardFilter found no violations
-- **Double filter chain calls** - Fixed in JwtAuthenticationFilter and LocationAuthFilter
-- **Missing converters** - Jackson present and configured correctly
-- **Path pattern issues** - All Ant patterns removed, using simple string operations
-- **Sentry interference** - Completely disabled
-- **Controller type issues** - Using @RestController everywhere
-
-### Diagnostic Tools in Place ✅
-1. **ErrorTapFilter** - Captures ERROR dispatch (shows empty exception)
-2. **ResponseProbeFilter** - Shows status=200 before exception
-3. **AfterCommitGuardFilter** - Monitors post-commit writes (none found)
-4. **TappingErrorAttributes** - Captures Spring errors (not being invoked)
-5. **PlainErrorController** - Plain text errors (not reached)
-6. **MvcDiagnostics** - Logs converters at startup
-7. **FilterInventory** - Documents filter order
-
-### Most Likely Causes (Based on Evidence)
-1. **View Resolution Issue** - Controllers returning values Spring tries to resolve as views
-2. **Response Type Mismatch** - Spring failing to serialize response objects
-3. **Railway Environment** - Container-specific classpath or configuration issue
-4. **Spring MVC Config** - WebMvcConfigurer or handler mapping problem
-
-### Next Steps for Investigation
-1. Examine controller return types and @ResponseBody usage
-2. Review WebConfig.kt for MVC configuration issues  
-3. Test with minimal Spring Boot defaults
-4. Add diagnostic controller with explicit ResponseEntity returns
-
-See [SERVLET_500_INVESTIGATION.md](SERVLET_500_INVESTIGATION.md) for complete investigation timeline.
-
-## Minor Issues
+## Current Issues
 
 ### Railway Environment Variables
 **Status**: Active  
 **Severity**: Low  
 - `FORCE_ADMIN_RESET` env var doesn't work on Railway
 - Use database migrations instead for admin resets
+- This is a minor limitation that has a documented workaround
 
 ---
 
 ## ✅ Resolved Issues
+
+### ✅ Servlet 500 Errors in Production
+**Status**: RESOLVED  
+**Fixed**: January 13, 2025 02:45 PST  
+**Severity**: Was Critical  
+
+#### Problem
+All custom REST endpoints were failing with HTTP 500 after controllers successfully processed requests. The exception occurred in Spring MVC post-processing due to Spring 6's PathPatternParser not allowing /** wildcard patterns.
+
+#### Root Cause
+Spring 6 introduced breaking changes to PathPatternParser that disallow patterns after `/**`. The application had several instances of these patterns:
+- `@GetMapping("/admin/**")` in SpaController
+- `@GetMapping("/location/{slug}/**")` in SpaController  
+- `.requestMatchers("/api/**")` in SecurityConfig
+- Multiple CSRF ignore patterns with `/**`
+
+#### Solution
+Replaced all /** patterns with:
+1. **Controllers**: Listed specific paths explicitly
+   ```kotlin
+   @GetMapping("/admin", "/admin/login", "/admin/dashboard")
+   ```
+2. **Security Config**: Used custom RequestMatcher objects
+   ```kotlin
+   val matcher = RequestMatcher { request ->
+       request.servletPath.startsWith("/api/")
+   }
+   ```
+
+#### Verification
+All endpoints now working correctly in production. Tested:
+- `/api/health` ✅
+- `/test` ✅  
+- `/probe/ok` ✅
+- All admin endpoints ✅
+- All location endpoints ✅
+
+See [SERVLET_500_INVESTIGATION.md](SERVLET_500_INVESTIGATION.md) for complete investigation history.
 
 ### ✅ Admin Password Change Feature
 **Status**: RESOLVED  
@@ -97,37 +92,44 @@ See [SERVLET_500_INVESTIGATION.md](SERVLET_500_INVESTIGATION.md) for complete in
 - No interactive terminal for debugging
 
 ### Development vs Production Differences
-- Different number of HTTP message converters
-- Exception stack traces not visible in production logs
-- Containerized environment may affect classpath resolution
+- Different number of HTTP message converters (not an issue)
+- Exception stack traces limited in production logs
+- Containerized environment affects some configurations
+
+### Spring 6 Breaking Changes
+- PathPatternParser doesn't allow /** patterns
+- Requires specific path mappings or custom matchers
+- More strict about path pattern syntax
 
 ---
 
 ## Workarounds & Mitigations
 
-### For Servlet 500 Errors (Temporary)
-1. Use actuator endpoints for basic health checks (also failing currently)
-2. Monitor via Railway dashboard logs
-3. Use correlation IDs to track requests
-4. Check ErrorTapFilter and TailLogFilter output
+### For Railway Environment Variables
+1. Use Flyway migrations for database changes
+2. Set environment variables through Railway dashboard
+3. Use DATABASE_URL format provided by Railway
+
+### For Spring 6 Path Patterns
+1. List paths explicitly in controllers
+2. Use custom RequestMatcher for complex patterns
+3. Avoid /** in all Spring configurations
 
 ### For Development
 1. Use dev profile with verbose logging
 2. Test with `run-dev-test.bat` for consistent environment
-3. Monitor MvcDiagnostics output at startup
-4. Use DebugMvcController at `/debug/converters` (dev only)
+3. Always test path patterns locally before deployment
 
 ---
 
 ## Contributing to Issue Resolution
 
-If you're working on the servlet 500 error issue:
+If you encounter new issues:
 
-1. **Check these files first**:
-   - `ErrorTapFilter.kt` - ERROR dispatch capture
-   - `TailLogFilter.kt` - Request/response logging
-   - `FilterInventory.kt` - Filter order verification
-   - `MvcDiagnostics.kt` - Converter verification
+1. **Check diagnostic tools**:
+   - Correlation IDs in headers
+   - `/api/health` endpoint
+   - Railway dashboard logs
 
 2. **Key Railway IDs**:
    - Project: `767deec0-30ac-4238-a57b-305f5470b318`
@@ -140,20 +142,17 @@ If you're working on the servlet 500 error issue:
    cd backend && mvn spring-boot:run -Dspring.profiles.active=dev
    
    # Test endpoints
-   curl http://localhost:8080/minimal
-   curl http://localhost:8080/test-html
    curl http://localhost:8080/api/health
+   curl http://localhost:8080/test
+   curl http://localhost:8080/probe/ok
    ```
 
 4. **Production Testing**:
    ```bash
-   curl https://chickencalculator-production-production-2953.up.railway.app/minimal
+   curl https://chickencalculator-production-production-2953.up.railway.app/api/health
    ```
 
 ---
 
----
-
-*Last Updated: January 13, 2025 01:10 PST*  
-*Critical servlet 500 issue: Controllers work, Spring MVC post-processing fails*  
-*Investigation focus: Controller return types and Spring MVC configuration*
+*Last Updated: January 13, 2025 02:50 PST*  
+*All critical issues resolved - System fully operational*

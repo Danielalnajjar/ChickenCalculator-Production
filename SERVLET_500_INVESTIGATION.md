@@ -1,9 +1,59 @@
 # Servlet 500 Error Investigation
 
-## Current Status: CRITICAL - UNRESOLVED
-**Last Updated**: January 13, 2025 01:05 PST  
-**Latest Investigation**: Write-after-commit hypothesis RULED OUT  
-**Production Impact**: ALL custom endpoints returning 500 errors  
+## Current Status: ✅ RESOLVED
+**Resolution Date**: January 13, 2025 02:45 PST  
+**Root Cause**: Spring 6's PathPatternParser doesn't allow /** patterns  
+**Solution**: Replaced all /** patterns with specific paths and custom RequestMatchers  
+**Production Impact**: NONE - All endpoints now working correctly
+
+## RESOLUTION
+
+### Root Cause Identified
+Spring 6 introduced breaking changes to PathPatternParser that strictly disallow patterns after `/**`. The application had multiple instances of these patterns causing `PatternParseException` during Spring Security's MvcRequestMatcher initialization.
+
+### Solution Implemented
+
+#### 1. SpaController Fix
+Replaced wildcard patterns with specific path lists:
+```kotlin
+// Before (FAILED)
+@GetMapping("/admin/**")
+@GetMapping("/location/{slug}/**")
+
+// After (WORKING)
+@GetMapping("/admin", "/admin/login", "/admin/dashboard", ...)
+@GetMapping("/location/{slug}", "/location/{slug}/calculator", ...)
+```
+
+#### 2. SecurityConfig Fix
+Replaced string patterns with custom RequestMatchers:
+```kotlin
+// Before (FAILED)
+.requestMatchers("/api/**").permitAll()
+.ignoringRequestMatchers("/admin/**")
+
+// After (WORKING)
+val publicMatcher = RequestMatcher { request ->
+    request.servletPath.startsWith("/api/")
+}
+.requestMatchers(publicMatcher).permitAll()
+```
+
+### Verification
+- All endpoints tested and working in production
+- No more PatternParseException errors
+- Spring Security properly evaluating all paths
+- Both admin and location authentication functioning
+
+### Lessons Learned
+1. Spring 6 has stricter path pattern requirements than Spring 5
+2. PathPatternParser doesn't support /** at the end of patterns
+3. Custom RequestMatchers provide more flexibility for complex patterns
+4. Always test Spring version upgrades thoroughly
+
+---
+
+## Original Investigation (Historical Reference)  
 
 ## Problem Summary
 
@@ -288,10 +338,15 @@ curl https://chickencalculator-production-production-2953.up.railway.app/actuato
 - `backend/src/main/kotlin/com/example/chickencalculator/controller/MinimalController.kt`
 - `backend/src/main/kotlin/com/example/chickencalculator/controller/RootController.kt`
 
-## Summary for Next Session
+## Summary
 
-The servlet 500 errors occur AFTER controllers successfully process requests but BEFORE responses are sent. We've ruled out filter issues, converter problems, and write-after-commit violations. The issue appears to be in Spring MVC's post-processing of controller responses, possibly related to view resolution or response type handling. Focus investigation on what controllers are returning and how Spring is trying to process those return values.
+**ISSUE RESOLVED**: The servlet 500 errors were caused by Spring 6's PathPatternParser not allowing /** wildcard patterns. The solution was to replace all /** patterns with either:
+1. Explicit path lists in controllers
+2. Custom RequestMatcher objects in security configuration
+3. Simple string operations in filters
+
+The diagnostic infrastructure created during the investigation (ErrorTapFilter, ResponseProbeFilter, etc.) can be disabled but kept for future debugging needs.
 
 ---
 
-*For future Claude Code sessions: Start by examining controller return types and Spring MVC configuration. The diagnostic infrastructure is in place and working.*
+*Investigation completed successfully. All endpoints operational as of January 13, 2025 02:45 PST.*

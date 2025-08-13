@@ -272,17 +272,24 @@ marination_log (
 
 ### Filter Implementation Requirements
 
-#### Path Pattern Rules
-**CRITICAL**: Use only simple string operations in filters:
+#### Path Pattern Rules (Spring 6 Breaking Change)
+**CRITICAL**: Spring 6's PathPatternParser doesn't allow /** patterns:
 ```kotlin
-// CORRECT
-if (path.startsWith("/api")) { ... }
-if (path == "/test") { ... }
+// CORRECT - Use specific paths or custom matchers
+@GetMapping("/admin", "/admin/login", "/admin/dashboard")
+val matcher = RequestMatcher { request -> 
+    request.servletPath.startsWith("/api/")
+}
 
-// WRONG - Causes "No more pattern data allowed" error
-if (pathMatcher.match("/**", path)) { ... }
-if (path.matches(Regex(".*")) { ... }
+// WRONG - Causes PatternParseException in Spring 6
+@GetMapping("/admin/**")  // PatternParseException!
+.requestMatchers("/api/**")  // PatternParseException!
 ```
+
+**Solution**: Replace all /** patterns with:
+1. Specific path lists for controllers
+2. Custom RequestMatcher objects for security config
+3. Simple string operations in filters
 
 #### Filter Chain Rules
 **CRITICAL**: Each filter must call chain.doFilter() exactly ONCE:
