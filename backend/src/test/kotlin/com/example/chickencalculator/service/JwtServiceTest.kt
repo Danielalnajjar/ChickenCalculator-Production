@@ -15,8 +15,8 @@ class JwtServiceTest {
 
     @BeforeEach
     fun setup() {
-        // Set JWT_SECRET for testing
-        System.setProperty("jwt.secret", "TestSecretKeyThatIsAtLeast256BitsLongForHS256Algorithm")
+        // Set JWT_SECRET environment variable for testing
+        System.setProperty("JWT_SECRET", "TestSecretKeyThatIsAtLeast256BitsLongForHS256Algorithm")
         jwtService = JwtService()
     }
 
@@ -227,7 +227,7 @@ class JwtServiceTest {
             val token = jwtService.generateToken("test@test.com", 1L, "USER")
             
             // Create new service with different key
-            System.setProperty("jwt.secret", "DifferentSecretKeyForTestingPurposesOnly12345678")
+            System.setProperty("JWT_SECRET", "DifferentSecretKeyForTestingPurposesOnly12345678")
             val differentKeyService = JwtService()
             
             // Should not validate token signed with different key

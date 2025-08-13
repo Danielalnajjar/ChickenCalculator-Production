@@ -1,5 +1,6 @@
 package com.example.chickencalculator.config
 
+import com.example.chickencalculator.config.ApiVersionConfig
 import com.example.chickencalculator.security.JwtAuthenticationFilter
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -54,19 +55,11 @@ class SecurityConfig(
                         "/api/sales-data/**",
                         "/api/marination-log/**",
                         "/api/debug/**",
-                        "/debug/**",
                         // Health endpoints (unversioned)
                         "/api/health/**",
                         "/actuator/health",
                         "/actuator/prometheus",
                         "/actuator/metrics/**",
-                        "/minimal",
-                        "/minimal-string",
-                        "/test",
-                        "/test-html",
-                        "/debug",
-                        "/debug-json",
-                        "/debug-response",
                         "/",
                         "/static/**",
                         "/admin/**",
@@ -103,19 +96,11 @@ class SecurityConfig(
                     "/api/sales-data/**",
                     "/api/marination-log/**",
                     "/api/debug/**",
-                    "/debug/**",
                     // Health endpoints (unversioned)
                     "/api/health/**",
                     "/actuator/health",
                     "/actuator/prometheus",
                     "/actuator/metrics/**",
-                    "/minimal",
-                    "/minimal-string",
-                    "/test",
-                    "/test-html",
-                    "/debug",
-                    "/debug-json",
-                    "/debug-response",
                     "/",
                     "/static/**",
                     "/admin/**",  // Admin portal static files

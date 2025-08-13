@@ -39,55 +39,93 @@ class LocationAuthFilter(
         )
     }
     
+    override fun shouldNotFilterErrorDispatch(): Boolean = true
+    
+    override fun shouldNotFilter(request: HttpServletRequest): Boolean {
+        val path = request.requestURI
+        return path.startsWith("/actuator") ||
+               path.startsWith("/debug") ||
+               path == "/minimal" ||
+               path == "/test" ||
+               path == "/" ||
+               path.startsWith("/static") ||
+               path.startsWith("/assets") ||
+               path.startsWith("/favicon") ||
+               path.startsWith("/api/health") ||
+               path.startsWith("/api/v1/admin")  // Admin paths use different auth
+    }
+    
     override fun doFilterInternal(
         request: HttpServletRequest,
         response: HttpServletResponse,
         filterChain: FilterChain
     ) {
-        val path = request.requestURI
-        
-        // Skip if path is excluded
-        if (isExcludedPath(path)) {
-            filterChain.doFilter(request, response)
-            return
-        }
-        
-        // Check if path requires location authentication
-        val locationSlug = extractLocationSlug(path)
-        if (locationSlug != null && requiresLocationAuth(path)) {
-            // Get the location-specific cookie
-            val cookieName = "${LocationAuthService.TOKEN_PREFIX}$locationSlug"
-            val token = request.cookies?.find { it.name == cookieName }?.value
+        try {
+            val path = request.requestURI
             
-            if (token == null) {
-                logger.debug("No authentication token found for location: $locationSlug")
-                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Authentication required")
+            // Skip if path is excluded
+            if (isExcludedPath(path)) {
+                filterChain.doFilter(request, response)
                 return
             }
             
-            // Validate the token
-            val claims = locationAuthService.validateLocationToken(token)
-            if (claims == null || claims.subject != locationSlug) {
-                logger.warn("Invalid token for location: $locationSlug")
-                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid or expired session")
-                return
+            // Check if path requires location authentication
+            val locationSlug = extractLocationSlug(path)
+            if (locationSlug != null && requiresLocationAuth(path)) {
+                // Get the location-specific cookie
+                val cookieName = "${LocationAuthService.TOKEN_PREFIX}$locationSlug"
+                val token = request.cookies?.find { it.name == cookieName }?.value
+                
+                if (token == null) {
+                    logger.debug("No authentication token found for location: $locationSlug")
+                    // Don't throw exception - continue chain and let controller handle
+                    filterChain.doFilter(request, response)
+                    return
+                }
+                
+                // Validate the token
+                val claims = try {
+                    locationAuthService.validateLocationToken(token)
+                } catch (e: Exception) {
+                    logger.warn("Token validation failed for location: $locationSlug", e)
+                    // Don't throw exception - continue chain and let controller handle
+                    filterChain.doFilter(request, response)
+                    return
+                }
+                
+                if (claims == null || claims.subject != locationSlug) {
+                    logger.warn("Invalid token for location: $locationSlug")
+                    // Don't throw exception - continue chain and let controller handle
+                    filterChain.doFilter(request, response)
+                    return
+                }
+                
+                // Add location context to request attributes
+                request.setAttribute("locationSlug", locationSlug)
+                request.setAttribute("locationId", claims["locationId"])
+                request.setAttribute("locationName", claims["locationName"])
+                
+                // Add headers for downstream services only on successful auth
+                try {
+                    val wrapper = HeaderModifiableHttpServletRequest(request)
+                    wrapper.addHeader("X-Location-Id", claims["locationId"].toString())
+                    wrapper.addHeader("X-Location-Slug", locationSlug)
+                    wrapper.addHeader("X-Location-Name", claims["locationName"].toString())
+                    
+                    logger.debug("Authenticated request for location: $locationSlug")
+                    filterChain.doFilter(wrapper, response)
+                } catch (e: Exception) {
+                    logger.warn("Failed to add headers for location: $locationSlug", e)
+                    // Continue without headers if they fail
+                    filterChain.doFilter(request, response)
+                }
+            } else {
+                // No location authentication required
+                filterChain.doFilter(request, response)
             }
-            
-            // Add location context to request attributes
-            request.setAttribute("locationSlug", locationSlug)
-            request.setAttribute("locationId", claims["locationId"])
-            request.setAttribute("locationName", claims["locationName"])
-            
-            // Add headers for downstream services
-            val wrapper = HeaderModifiableHttpServletRequest(request)
-            wrapper.addHeader("X-Location-Id", claims["locationId"].toString())
-            wrapper.addHeader("X-Location-Slug", locationSlug)
-            wrapper.addHeader("X-Location-Name", claims["locationName"].toString())
-            
-            logger.debug("Authenticated request for location: $locationSlug")
-            filterChain.doFilter(wrapper, response)
-        } else {
-            // No location authentication required
+        } catch (e: Exception) {
+            logger.error("Unexpected error in LocationAuthFilter", e)
+            // Never throw from filter - always continue the chain
             filterChain.doFilter(request, response)
         }
     }

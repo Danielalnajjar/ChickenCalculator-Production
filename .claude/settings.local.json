@@ -171,7 +171,14 @@
       "Bash(dir backendsrcmainkotlincomexamplechickencalculatorcontroller*.kt)",
       "Bash(git commit:*)",
       "Bash(timeout 20 curl -s https://chickencalculator-production-production-2953.up.railway.app/)",
-      "Bash(timeout 30 sleep 30)"
+      "Bash(timeout 30 sleep 30)",
+      "Bash(git checkout:*)",
+      "Bash(run-dev.bat)",
+      "Bash(taskkill:*)",
+      "Bash(wmic process where:*)",
+      "Bash(set \"JWT_SECRET=test-secret-key-for-testing-purposes-only-1234567890\")",
+      "Bash(set \"ADMIN_DEFAULT_PASSWORD=Admin123!\")",
+      "Bash(timeout:*)"
     ],
     "deny": []
   }

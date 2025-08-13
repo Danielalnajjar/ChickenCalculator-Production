@@ -19,9 +19,6 @@ class JwtService {
     // Use persistent key from environment or generate a secure default for development
     private val key: Key = initializeKey()
     
-    @Value("\${jwt.secret:}")
-    private val jwtSecret: String? = null
-    
     @Value("\${jwt.expiration:86400000}") // Default 24 hours
     private val jwtExpiration: Long = 86400000
     

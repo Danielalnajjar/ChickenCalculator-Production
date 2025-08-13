@@ -142,3 +142,23 @@ logging:
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{correlationId:-NO_CORRELATION_ID}] %logger{36} - %msg%n"
   config: ${LOGGING_CONFIG:classpath:logback-spring.xml}
+
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+server:
+  error:
+    include-exception: true
+    include-message: ALWAYS
+    include-stacktrace: ALWAYS
+
+logging:
+  level:
+    org.springframework.security: TRACE
+    org.springframework.web: TRACE
+    org.springframework.web.filter: TRACE
+    org.springframework.boot.web.servlet.error: TRACE
+    com.example.chickencalculator: TRACE
