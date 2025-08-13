@@ -16,13 +16,17 @@ class SpaController(
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
-    @GetMapping("/admin", produces = [MediaType.TEXT_HTML_VALUE])
-    fun serveAdminRoot(): ResponseEntity<*> {
-        return serveAdminIndex()
-    }
-    
-    @GetMapping("/admin/**", produces = [MediaType.TEXT_HTML_VALUE])
-    fun serveAdminApp(): ResponseEntity<*> {
+    // Admin portal routes - handle specific paths without wildcards
+    @GetMapping(value = [
+        "/admin",
+        "/admin/login",
+        "/admin/dashboard", 
+        "/admin/locations",
+        "/admin/settings",
+        "/admin/profile",
+        "/admin/password"
+    ], produces = [MediaType.TEXT_HTML_VALUE])
+    fun serveAdmin(): ResponseEntity<*> {
         return serveAdminIndex()
     }
     
@@ -46,13 +50,16 @@ class SpaController(
         }
     }
 
-    @GetMapping("/location/{slug}", produces = [MediaType.TEXT_HTML_VALUE])
-    fun serveLocationRoot(@PathVariable slug: String): ResponseEntity<*> {
-        return serveLocationIndex(slug)
-    }
-    
-    @GetMapping("/location/{slug}/**", produces = [MediaType.TEXT_HTML_VALUE])
-    fun serveLocationApp(@PathVariable slug: String): ResponseEntity<*> {
+    // Location app routes - handle specific paths without wildcards
+    @GetMapping(value = [
+        "/location/{slug}",
+        "/location/{slug}/calculator",
+        "/location/{slug}/sales",
+        "/location/{slug}/history",
+        "/location/{slug}/profile",
+        "/location/{slug}/settings"
+    ], produces = [MediaType.TEXT_HTML_VALUE])
+    fun serveLocation(@PathVariable slug: String): ResponseEntity<*> {
         return serveLocationIndex(slug)
     }
     
