@@ -1,6 +1,7 @@
 package com.example.chickencalculator.controller
 
 import org.slf4j.LoggerFactory
+import org.springframework.context.annotation.Profile
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController
  */
 @RestController
 @RequestMapping("/probe")
+@Profile("dev")
 class ProbeController {
 
     private val logger = LoggerFactory.getLogger(ProbeController::class.java)

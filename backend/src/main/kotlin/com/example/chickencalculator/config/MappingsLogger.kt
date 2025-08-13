@@ -4,6 +4,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.boot.ApplicationRunner
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.Profile
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping
 
 /**
@@ -17,6 +18,7 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
  * Logs all registered request mappings at application startup.
  */
 @Configuration
+@Profile("dev")
 class MappingsLogger {
 
     private val logger = LoggerFactory.getLogger(MappingsLogger::class.java)
