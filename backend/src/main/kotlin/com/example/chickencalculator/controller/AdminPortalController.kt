@@ -45,7 +45,11 @@ class AdminPortalController @Autowired constructor(
                 val resource = resourceLoader.getResource(path)
                 if (resource.exists() && resource.isReadable) {
                     logger.info("✅ Found admin portal at: $path")
-                    val content = resource.inputStream.bufferedReader().use { it.readText() }
+                    val content = resource.inputStream.use { inputStream ->
+                        inputStream.bufferedReader().use { reader ->
+                            reader.readText()
+                        }
+                    }
                     return ResponseEntity.ok()
                         .contentType(MediaType.TEXT_HTML)
                         .body(content)
