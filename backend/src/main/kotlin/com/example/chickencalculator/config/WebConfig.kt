@@ -11,7 +11,8 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 import org.springframework.web.servlet.resource.PathResourceResolver
 import java.io.File
 
-@Configuration
+// Temporarily disabled to debug servlet exceptions
+// @Configuration
 class WebConfig(
     private val requestLoggingInterceptor: RequestLoggingInterceptor
 ) : WebMvcConfigurer {
