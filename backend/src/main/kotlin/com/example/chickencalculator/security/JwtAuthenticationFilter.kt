@@ -24,19 +24,32 @@ class JwtAuthenticationFilter(
     
     /**
      * Skip certain paths that don't need JWT authentication
+     * Uses only simple string checks - NO AntPathMatcher, NO **, NO *, NO regex
      */
     override fun shouldNotFilter(request: HttpServletRequest): Boolean {
         val path = PathUtil.normalizedPath(request)
+        
+        // Exact path matches
+        if (path == "/" || 
+            path == "/minimal" || 
+            path == "/minimal-string" || 
+            path == "/test" || 
+            path == "/test-html" || 
+            path == "/favicon.ico" || 
+            path == "/manifest.json") {
+            return true
+        }
+        
+        // Prefix matches - use simple startsWith() only
         return path.startsWith("/actuator") ||
                path.startsWith("/debug") ||
-               path == "/minimal" ||
-               path == "/test" ||
-               path == "/" ||
                path.startsWith("/static") ||
                path.startsWith("/assets") ||
-               path.startsWith("/favicon") ||
+               path.startsWith("/admin") ||
                path.startsWith("/api/health") ||
-               path.startsWith("/api/v1/location")  // Location paths use different auth
+               path.startsWith("/api/v1/admin/auth") ||
+               path.startsWith("/api/v1/location") ||
+               path.startsWith("/api/v1/calculator")
     }
 
     override fun doFilterInternal(

@@ -133,15 +133,29 @@ class LocationAuthFilter(
     
     /**
      * Check if path is excluded from location authentication
+     * Using simple path checks with startsWith() for prefixes and == for exact matches
      */
     private fun isExcludedPath(path: String): Boolean {
-        return EXCLUDED_PATTERNS.any { it.matches(path) }
+        // Path is already normalized when passed in
+        
+        // Check exact matches first
+        if (path == "/") return true
+        
+        // Check prefix matches
+        return path.startsWith("/admin") ||
+               path.startsWith("/api/v1/admin") ||
+               path.startsWith("/api/health") ||
+               path.startsWith("/actuator") ||
+               path.startsWith("/static") ||
+               path.startsWith("/api/v1/location/") && path.contains("/auth")
     }
     
     /**
      * Check if path requires location authentication
+     * Keep existing Regex patterns as they are (they're not Ant patterns)
      */
     private fun requiresLocationAuth(path: String): Boolean {
+        // Path is already normalized when passed in
         return PROTECTED_PATTERNS.any { it.matches(path) }
     }
     

@@ -180,7 +180,8 @@
       "Bash(set \"ADMIN_DEFAULT_PASSWORD=Admin123!\")",
       "Bash(timeout:*)",
       "Bash(git merge:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(run-dev-test.bat)"
     ],
     "deny": []
   }
