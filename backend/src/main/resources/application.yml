@@ -101,12 +101,12 @@ management:
 
 # Sentry Error Tracking Configuration
 sentry:
-  dsn: ${SENTRY_DSN:}
-  environment: ${SPRING_PROFILES_ACTIVE:development}
-  release: ${SENTRY_RELEASE:chicken-calculator@1.0.0}
-  traces-sample-rate: ${SENTRY_TRACES_SAMPLE_RATE:1.0}
-  enable-tracing: ${SENTRY_ENABLE_TRACING:true}
-  server-name: ${SENTRY_SERVER_NAME:chicken-calculator-backend}
+  dsn: ${SENTRY_DSN:}                           # empty => no-op locally
+  environment: ${SENTRY_ENVIRONMENT:production}
+  release: ${SENTRY_RELEASE:unknown}
+  send-default-pii: false                       # don't ship PII by default
+  traces-sample-rate: ${SENTRY_TRACES_SAMPLE_RATE:0.10}    # 10% APM sampling
+  profiles-sample-rate: ${SENTRY_PROFILES_SAMPLE_RATE:0.01} # 1% profiling
   # Additional Sentry configuration
   send-default-pii: false
   attach-stacktrace: true

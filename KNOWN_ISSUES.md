@@ -1,8 +1,53 @@
 # Known Issues - ChickenCalculator Production
 
+**Last Updated**: January 13, 2025  
+**Production Status**: Fully Operational ✅  
+**Test Status**: Configuration Issues ⚠️
+
 ## Current Issues
 
-### Railway Environment Variables
+### 1. Backend Test Configuration Broken
+**Status**: Active  
+**Severity**: High (for development)  
+**File**: `backend/src/test/resources/application-test.yml:3`  
+**Issue**: Invalid `spring.profiles.active: test` in profile-specific resource  
+**Error**: `Property 'spring.profiles.active' imported from location 'class path resource [application-test.yml]' is invalid in a profile specific resource`  
+**Solution**: 
+```yaml
+# Remove line 3 from application-test.yml
+# Use @ActiveProfiles("test") annotation in test classes instead
+```
+**Impact**: All Spring Boot tests fail to start
+
+### 2. AdminService Test Dependency Injection Failing
+**Status**: Active  
+**Severity**: Medium  
+**File**: `AdminServiceTest.kt`  
+**Issue**: `@InjectMocks` cannot instantiate AdminService due to missing PasswordEncoder mock  
+**Solution**: 
+```kotlin
+// Add to AdminServiceTest.kt
+@Mock
+private lateinit var passwordEncoder: PasswordEncoder
+```
+**Impact**: 5 test methods failing
+
+### 3. Frontend Test Environment Missing
+**Status**: Active  
+**Severity**: Medium  
+**Location**: `admin-portal/jest.config.js`  
+**Issues**:
+- `jest-environment-jsdom` package not installed (required for Jest 28+)
+- Invalid `moduleNameMapping` configuration option (should be `moduleNameMapper`)  
+**Solution**: 
+```bash
+cd admin-portal
+npm install --save-dev jest-environment-jsdom
+# Then fix jest.config.js: rename moduleNameMapping to moduleNameMapper
+```
+**Impact**: Frontend tests cannot run
+
+### 4. Railway Environment Variables
 **Status**: Active  
 **Severity**: Low  
 - `FORCE_ADMIN_RESET` env var doesn't work on Railway
@@ -154,5 +199,7 @@ If you encounter new issues:
 
 ---
 
-*Last Updated: January 13, 2025 02:50 PST*  
-*All critical issues resolved - System fully operational*
+*Last Updated: January 13, 2025 11:00 PST*  
+*Production: Fully operational ✅*  
+*Development: Test configuration needs fixes ⚠️*  
+*See [CLAUDE.md](CLAUDE.md#testing-infrastructure) for comprehensive testing information*

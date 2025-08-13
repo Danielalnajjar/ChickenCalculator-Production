@@ -182,7 +182,9 @@
       "Bash(git merge:*)",
       "Bash(find:*)",
       "Bash(run-dev-test.bat)",
-      "Bash(echo:*)"
+      "Bash(echo:*)",
+      "Bash(npm test:*)",
+      "Bash(npx jest:*)"
     ],
     "deny": []
   }

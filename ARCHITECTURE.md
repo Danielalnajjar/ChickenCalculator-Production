@@ -1,8 +1,12 @@
 # ChickenCalculator System Architecture
 
+**Last Updated**: January 13, 2025  
+**Version**: 1.0.0  
+**Status**: Production Ready (10/10) ✅
+
 ## Overview
 
-The ChickenCalculator is a production-ready, multi-tenant restaurant management system built with modern architecture principles, comprehensive security, and enterprise-grade monitoring.
+The ChickenCalculator is a production-ready, multi-tenant restaurant management system built with modern architecture principles, comprehensive security, and enterprise-grade monitoring. The system uses Spring Boot 3.2.0 (Spring 6) with Kotlin 1.9.20 for the backend and React 18.2.0 with TypeScript for dual frontend applications.
 
 ## System Architecture
 
@@ -196,10 +200,10 @@ marination_log (
 4. **V4__reset_admin_password.sql**: Admin recovery mechanism
 5. **V5__add_location_authentication.sql**: Location auth fields and indexes (Jan 12, 2025)
 
-## Diagnostic Infrastructure (January 13, 2025)
+## Diagnostic Infrastructure (Dev Profile Only)
 
-### Current Production Issue
-**Status**: All custom endpoints return 500 errors AFTER controllers successfully process requests. Controllers return status=200, then Spring MVC post-processing fails.
+### Purpose
+Comprehensive diagnostic tools added during servlet 500 investigation, now restricted to development profile only for debugging future issues.
 
 ### Filter Execution Order (Production)
 ```
@@ -214,61 +218,30 @@ marination_log (
 9. tailLogFilter            - Request/response logging
 ```
 
-### Diagnostic Components
+### Diagnostic Components (All @Profile("dev"))
 
 #### Error Detection Filters
-
-**ErrorTapFilter**
-- **Order**: HIGHEST_PRECEDENCE
-- **Purpose**: Captures ERROR dispatch for servlet exceptions
-- **Key Finding**: ERROR_EXCEPTION attribute is empty (no exception attached)
-- **Implication**: Exception occurs but Spring doesn't capture it properly
-
-**AfterCommitGuardFilter** 
-- **Order**: LOWEST_PRECEDENCE - 1
-- **Purpose**: Detects any response modifications after commit
-- **Key Finding**: NO violations detected in production
-- **Implication**: NOT a write-after-commit issue
-
-**ResponseProbeFilter**
-- **Order**: Early (position 3)
-- **Purpose**: Monitors all response lifecycle methods
-- **Key Finding**: Shows status=200 before servlet exception
-- **Implication**: Controllers complete successfully
+- **ErrorTapFilter** - Captures ERROR dispatch at HIGHEST_PRECEDENCE
+- **AfterCommitGuardFilter** - Detects write-after-commit violations (LOWEST_PRECEDENCE - 1)
+- **ResponseProbeFilter** - Monitors response lifecycle (position 3)
+- **TailLogFilter** - Comprehensive request/response logging (LOWEST_PRECEDENCE)
 
 #### Error Handling Components
-
-**TappingErrorAttributes** (@Primary)
-- **Purpose**: Captures actual Throwable Spring uses for /error
-- **Key Finding**: NOT logging any exceptions
-- **Implication**: Spring has no exception to attach
-
-**PlainErrorController**
-- **Purpose**: Returns plain text errors to bypass JSON conversion
-- **Key Finding**: NOT being invoked
-- **Implication**: Error handling fails before reaching controller
+- **TappingErrorAttributes** - Captures Spring error attributes (@Primary)
+- **PlainErrorController** - Plain text error responses
 
 #### Diagnostic Utilities
+- **FilterInventory** - Documents filter registration order at startup
+- **MvcDiagnostics** - Logs HTTP message converters at startup
+- **MappingsLogger** - Logs all registered request mappings
+- **PathUtil** - Normalizes request paths (production utility)
 
-**FilterInventory**
-- **Trigger**: ApplicationReadyEvent
-- **Output**: Ordered list of all OncePerRequestFilter beans
-- **Use**: Verify filter registration and execution order
-
-**MvcDiagnostics**
-- **Trigger**: ApplicationReadyEvent  
-- **Output**: List of HTTP message converters
-- **Finding**: Production has 9 converters (vs 10 locally), Jackson present
-
-**PathUtil**
-- **Purpose**: Normalizes request paths for consistent handling
-- **Critical**: Removes context path, handles null/empty paths
-- **Use**: All filters use this for path checking
-
-**DebugMvcController** (@Profile("dev"))
-- **Endpoint**: GET /debug/converters
-- **Purpose**: Runtime converter inspection
-- **Note**: Dev profile only for security
+#### Debug Controllers
+- **TestController** - Testing endpoints (/test, /test-html)
+- **MinimalController** - Basic functionality (/minimal)
+- **DebugController** - Spring mapping inspection (/debug/mappings)
+- **DebugMvcController** - HTTP converter debugging (/debug/converters)
+- **ProbeController** - Health probing (/probe/ok, /probe/boom)
 
 ### Filter Implementation Requirements
 
@@ -372,14 +345,13 @@ Prometheus Metrics:
 - **Sensitive Data**: Automatic exclusion of passwords/tokens
 
 ### Error Tracking
-- **Sentry Integration**: DISABLED (was causing servlet exceptions)
+- **Sentry Integration**: Version 7.0.0 (DISABLED in production - causes servlet exceptions)
 - **Current Approach**: 
-  - ErrorTapFilter captures ERROR dispatch
-  - ResponseProbeFilter monitors response lifecycle
-  - AfterCommitGuardFilter detects write violations
-  - TappingErrorAttributes captures Spring errors
-- **Correlation IDs**: Request tracing across all components
-- **Key Finding**: Exception occurs in Spring MVC after controller returns
+  - GlobalExceptionHandler handles 18 exception types
+  - Correlation IDs for request tracing
+  - Structured JSON logging with logstash encoder
+  - Business metrics tracking via Micrometer
+- **Debug Tools**: Comprehensive diagnostic filters available in dev profile
 
 ## Deployment Architecture
 
@@ -468,11 +440,36 @@ Prometheus Metrics:
 4. **Event Sourcing**: Audit trail enhancement
 5. **GraphQL API**: Alternative API interface
 
-### Technology Roadmap
-- **Kubernetes Migration**: Container orchestration
-- **Distributed Tracing**: OpenTelemetry integration
-- **API Gateway**: Centralized API management
-- **Message Queue**: Asynchronous processing
+### Technology Stack Details
+
+### Backend Stack
+- **Spring Boot**: 3.2.0 (Spring 6, Jakarta EE)
+- **Kotlin**: 1.9.20 with Spring/JPA plugins
+- **Java**: 17+ required
+- **JWT**: jjwt 0.11.5 (consider upgrading to 0.12.x)
+- **Database**: PostgreSQL 16.8 + Flyway 10.4.0
+- **Monitoring**: Micrometer + Prometheus + Sentry 7.0.0
+- **Testing**: JUnit 5 + Mockito-Kotlin 5.1.0 + TestContainers 1.19.0
+
+### Frontend Stack
+- **React**: 18.2.0 + React DOM
+- **TypeScript**: 4.9.5 (consider upgrading to 5.x)
+- **Routing**: React Router 6.18.0
+- **HTTP**: Axios 1.6.0
+- **UI**: TailwindCSS 3.3.5 + Heroicons 2.0.18
+- **Build**: Webpack 5.89.0 (custom configuration)
+- **Testing**: Jest 29.7.0 + React Testing Library 13.4.0
+
+## Technology Roadmap
+- **Immediate**: Fix test configuration issues
+- **Short-term**: Upgrade TypeScript to 5.x, JJWT to 0.12.x
+- **Medium-term**: Expand test coverage to 80%
+- **Long-term**: 
+  - Kubernetes Migration: Container orchestration
+  - Distributed Tracing: OpenTelemetry integration
+  - API Gateway: Centralized API management
+  - Message Queue: Asynchronous processing
+  - Redis Caching: Performance optimization
 
 ---
 
