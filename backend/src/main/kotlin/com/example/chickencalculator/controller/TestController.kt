@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RestController
 /**
  * Simple test controller to debug servlet exceptions
  */
-@RestController
+// @RestController  // Temporarily disabled to debug servlet exceptions
 class TestController {
     private val logger = LoggerFactory.getLogger(TestController::class.java)
     
