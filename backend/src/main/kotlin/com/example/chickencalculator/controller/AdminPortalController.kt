@@ -3,8 +3,7 @@ package com.example.chickencalculator.controller
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.core.io.ClassPathResource
-import org.springframework.core.io.FileSystemResource
+import org.springframework.core.io.InputStreamResource
 import org.springframework.core.io.Resource
 import org.springframework.core.io.ResourceLoader
 import org.springframework.http.HttpStatus
@@ -12,10 +11,7 @@ import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Controller
 import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
-import java.io.File
-import java.net.URI
-import java.net.URL
+import org.springframework.web.bind.annotation.ResponseBody
 
 @Controller
 class AdminPortalController @Autowired constructor(
@@ -89,32 +85,12 @@ class AdminPortalController @Autowired constructor(
             </html>
         """.trimIndent()
         
-        val errorResource = object : Resource {
-            override fun exists() = true
-            override fun getDescription() = "Admin Portal Error Page"
-            override fun getInputStream() = errorHtml.byteInputStream()
-            
-            override fun getURL(): URL {
-                // Create a data URL for the error page content
-                val encodedContent = java.util.Base64.getEncoder().encodeToString(errorHtml.toByteArray())
-                return URL("data:text/html;base64,$encodedContent")
-            }
-            
-            override fun getURI(): URI {
-                // Create a data URI for the error page content
-                val encodedContent = java.util.Base64.getEncoder().encodeToString(errorHtml.toByteArray())
-                return URI("data:text/html;base64,$encodedContent")
-            }
-            
-            override fun getFile() = throw UnsupportedOperationException("Error page is not backed by a file")
-            override fun contentLength() = errorHtml.toByteArray().size.toLong()
-            override fun lastModified() = -1L
-            override fun createRelative(relativePath: String) = throw UnsupportedOperationException("Error page does not support relative resources")
-            override fun getFilename() = "admin-portal-error.html"
-        }
+        // Use InputStreamResource which doesn't require URL/URI implementation
+        val errorResource = InputStreamResource(errorHtml.byteInputStream())
         
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
             .contentType(MediaType.TEXT_HTML)
+            .contentLength(errorHtml.length.toLong())
             .body(errorResource)
     }
     
