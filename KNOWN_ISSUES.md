@@ -1,8 +1,9 @@
 # Known Issues - ChickenCalculator Production
 
-**Last Updated**: January 13, 2025  
-**Production Status**: Fully Operational ✅  
-**Test Status**: Configuration Issues ⚠️
+**Last Updated**: January 14, 2025  
+**Production Status**: Fully Operational & Monitored ✅  
+**Test Status**: Configuration Issues ⚠️  
+**Error Monitoring**: Sentry 7.14.0 Active ✅
 
 ## Current Issues
 
@@ -95,6 +96,32 @@ All endpoints now working correctly in production. Tested:
 - All location endpoints ✅
 
 See [SERVLET_500_INVESTIGATION.md](SERVLET_500_INVESTIGATION.md) for complete investigation history.
+
+### ✅ Sentry Error Monitoring Re-enabled
+**Status**: RESOLVED  
+**Fixed**: January 14, 2025  
+**Severity**: Was incorrectly disabled  
+
+#### Problem
+Sentry was disabled in production thinking it contributed to servlet 500 errors. This left the application without proper error monitoring and observability.
+
+#### Root Cause Analysis
+Sentry was NOT the cause of the servlet errors. The real issue was Spring 6's PathPatternParser not allowing /** patterns. Sentry was incorrectly blamed and disabled.
+
+#### Solution
+Re-enabled Sentry with production-safe configuration:
+- Updated to Sentry 7.14.0 with Spring Boot 3 compatibility
+- Added comprehensive noise filtering (health/actuator/static excluded)
+- Configured conservative sampling (10% traces, 1% profiles)
+- Implemented resilient error handling with timeouts
+- Added multi-tenant location context tracking
+
+#### Verification
+Sentry is now active and properly filtering noise while providing:
+- Real-time error monitoring
+- Performance tracking
+- Application logging integration
+- Full observability without impacting stability
 
 ### ✅ Admin Password Change Feature
 **Status**: RESOLVED  
@@ -199,7 +226,8 @@ If you encounter new issues:
 
 ---
 
-*Last Updated: January 13, 2025 11:00 PST*  
-*Production: Fully operational ✅*  
+*Last Updated: January 14, 2025 05:00 PST*  
+*Production: Fully operational with active monitoring ✅*  
 *Development: Test configuration needs fixes ⚠️*  
+*Monitoring: Sentry 7.14.0 active with production-safe configuration ✅*  
 *See [CLAUDE.md](CLAUDE.md#testing-infrastructure) for comprehensive testing information*

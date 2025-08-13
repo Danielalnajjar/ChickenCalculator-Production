@@ -345,8 +345,13 @@ Prometheus Metrics:
 - **Sensitive Data**: Automatic exclusion of passwords/tokens
 
 ### Error Tracking
-- **Sentry Integration**: Version 7.0.0 (DISABLED in production - causes servlet exceptions)
-- **Current Approach**: 
+- **Sentry Integration**: Version 7.14.0 (ACTIVE in production as of January 14, 2025)
+  - **Configuration**: Production-safe with comprehensive filtering
+  - **Noise Filtering**: Health checks, actuator, and static resources excluded
+  - **Sampling**: 10% traces, 1% profiles for cost-effective monitoring
+  - **Context**: Multi-tenant location tracking (non-PII)
+  - **Integration**: sentry-spring-boot-starter-jakarta + sentry-logback
+- **Complementary Approaches**: 
   - GlobalExceptionHandler handles 18 exception types
   - Correlation IDs for request tracing
   - Structured JSON logging with logstash encoder
@@ -448,7 +453,7 @@ Prometheus Metrics:
 - **Java**: 17+ required
 - **JWT**: jjwt 0.11.5 (consider upgrading to 0.12.x)
 - **Database**: PostgreSQL 16.8 + Flyway 10.4.0
-- **Monitoring**: Micrometer + Prometheus + Sentry 7.0.0
+- **Monitoring**: Micrometer + Prometheus + Sentry 7.14.0 (Active)
 - **Testing**: JUnit 5 + Mockito-Kotlin 5.1.0 + TestContainers 1.19.0
 
 ### Frontend Stack

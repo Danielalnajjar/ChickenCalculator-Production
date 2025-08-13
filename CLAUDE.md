@@ -2,9 +2,10 @@
 
 This file provides comprehensive guidance to Claude Code (claude.ai/code) when working with the Chicken Calculator production system.
 
-**Last Updated**: January 13, 2025
+**Last Updated**: January 14, 2025
 **System Version**: 1.0.0 (Spring Boot 3.2.0 + Kotlin 1.9.20 + React 18.2.0)
 **Production Status**: ✅ Fully Operational (10/10)
+**Error Monitoring**: ✅ Sentry 7.14.0 Active (Re-enabled January 14, 2025)
 **Test Coverage**: ⚠️ ~30% Backend (config broken), ~20% Frontend
 
 ## Quick Reference
@@ -80,6 +81,19 @@ git push origin main                       # Triggers Railway auto-deploy
   - Created Cookies.kt utility for centralized JWT cookie management
 - **Status**: ✅ All endpoints working correctly with enhanced security
 
+### ✅ Sentry Error Monitoring Re-enabled (January 14, 2025)
+- **Previous Issue**: Sentry was disabled thinking it caused servlet errors (it didn't)
+- **Root Cause Analysis**: The real issue was Spring 6 /** patterns, not Sentry
+- **Solution**: Re-enabled Sentry 7.14.0 with production-safe configuration
+- **Configuration**:
+  - Comprehensive noise filtering (health/actuator/static excluded)
+  - Conservative sampling (10% traces, 1% profiles)
+  - Multi-tenant location context tracking (non-PII)
+  - No PII collection (send-default-pii: false)
+  - Resilient error handling with 5-second timeouts
+- **DSN**: Connected to wok-to-walk/java-spring-boot project
+- **Status**: ✅ Full observability restored with active error monitoring
+
 ### Version & Deployment
 - **Production Readiness**: 10/10 ✅ (Fully operational)
 - **Database**: PostgreSQL 16.8 on Railway (V5 migration applied Jan 12, 2025)
@@ -92,7 +106,7 @@ git push origin main                       # Triggers Railway auto-deploy
 - **Auto-Deploy**: Enabled from main branch
 - **Port**: 8080 (Railway single-port constraint)
 
-### Latest Status (January 13, 2025)
+### Latest Status (January 14, 2025)
 - **Backend**: ✅ Fully compilable and operational
 - **Database**: ✅ PostgreSQL with V5 migration (location auth)
 - **Tests**: ✅ All compile successfully with new regression tests
@@ -101,7 +115,8 @@ git push origin main                       # Triggers Railway auto-deploy
 - **Controllers**: ✅ Using @RestController with Spring 6 compatible patterns
 - **Security**: ✅ ResponseCookie with SameSite support implemented
 - **Hardening**: ✅ Security headers (CSP, X-Content-Type-Options) added
-- **Monitoring**: ✅ Diagnostic filters available (dev profile only)
+- **Monitoring**: ✅ Sentry 7.14.0 active with comprehensive filtering
+- **Observability**: ✅ Error tracking, logging, and performance monitoring enabled
 
 ### Recent Changes (December 2024 - January 2025)
 - ✅ All 25 critical security vulnerabilities fixed
@@ -118,6 +133,7 @@ git push origin main                       # Triggers Railway auto-deploy
 - ✅ Security hardening: ResponseCookie, CSP headers, actuator restrictions (January 13, 2025)
 - ✅ Spring 6 compatibility: All /** patterns removed, custom RequestMatchers implemented (January 13, 2025)
 - ✅ Test coverage expansion: SpaControllerTest, SecurityConfigTest added (January 13, 2025)
+- ✅ Sentry error monitoring RE-ENABLED with production-safe config (January 14, 2025)
 
 ## Dependencies & Technology Stack
 
@@ -127,7 +143,7 @@ git push origin main                       # Triggers Railway auto-deploy
 - **Java**: 17+ required
 - **JWT**: jjwt 0.11.5 (consider upgrading to 0.12.x)
 - **Database**: PostgreSQL 16.8 + Flyway 10.4.0
-- **Monitoring**: Micrometer + Prometheus + Sentry 7.0.0
+- **Monitoring**: Micrometer + Prometheus + Sentry 7.14.0 (Active)
 - **Testing**: JUnit 5 + Mockito-Kotlin 5.1.0 + TestContainers 1.19.0
 - **Documentation**: SpringDoc OpenAPI 2.2.0
 
@@ -331,7 +347,7 @@ GET /actuator/metrics                     - JSON metrics
 # CRITICAL - Must be set
 JWT_SECRET=<32+ character secret>         # JWT signing key (min 32 chars)
 ADMIN_DEFAULT_PASSWORD=<secure-password>  # Initial admin password
-# SENTRY_DSN=<disabled>                   # DISABLED - causes servlet exceptions
+SENTRY_DSN=<configured>                  # Active - Connected to wok-to-walk/java-spring-boot
 
 # Database (Railway PostgreSQL)
 DATABASE_URL=postgresql://...             # Railway provides this automatically
@@ -715,6 +731,13 @@ grep "ResponseProbe" logs
 
 ## Recent Changes Log
 
+### January 14, 2025 - Sentry Re-enabled
+- **Analysis**: Sentry wasn't the cause of servlet errors (Spring 6 patterns were)
+- **Upgrade**: Updated to Sentry 7.14.0 with Spring Boot 3 compatibility
+- **Configuration**: Production-safe with noise filtering and conservative sampling
+- **Features**: Error tracking, logging integration, performance monitoring
+- **Result**: Full observability restored without impacting stability
+
 ### January 13, 2025 - Servlet 500 Errors RESOLVED
 - **Root Cause**: Spring 6's PathPatternParser doesn't allow /** patterns
 - **SpaController**: Replaced /** patterns with specific path mappings
@@ -888,8 +911,9 @@ Postgres ID: bbbadbce-026c-44f1-974c-00d5a457bccf
 
 ---
 
-*Last Updated: January 13, 2025 10:45 PST*  
-*Production Status: 10/10 - FULLY OPERATIONAL & HARDENED ✅*  
+*Last Updated: January 14, 2025 05:00 PST*  
+*Production Status: 10/10 - FULLY OPERATIONAL & MONITORED ✅*  
 *Servlet 500 Errors: RESOLVED with comprehensive hardening*  
-*All endpoints working with enhanced security in production*  
+*Sentry Monitoring: ACTIVE with production-safe configuration*  
+*All endpoints working with enhanced security and observability*  
 *Railway Service IDs documented above for MCP commands*

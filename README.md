@@ -1,20 +1,21 @@
 # 🐔 ChickenCalculator - Production-Ready Restaurant Management System
 
 [![Production Ready](https://img.shields.io/badge/Production%20Status-Fully%20Operational-brightgreen)](CLAUDE.md#current-production-status)
-[![Build Status](https://img.shields.io/badge/Build-Passing-brightgreen)](CLAUDE.md#latest-status-january-13-2025)
+[![Build Status](https://img.shields.io/badge/Build-Passing-brightgreen)](CLAUDE.md#latest-status-january-14-2025)
 [![Security](https://img.shields.io/badge/Security-Enhanced-green)](CLAUDE.md#location-authentication)
 [![WCAG 2.1](https://img.shields.io/badge/WCAG%202.1-AA%20Compliant-blue)](https://www.w3.org/WAI/WCAG21/quickref/)
-[![Monitoring](https://img.shields.io/badge/Monitoring-Prometheus-orange)](METRICS_IMPLEMENTATION.md)
+[![Monitoring](https://img.shields.io/badge/Monitoring-Sentry%20%2B%20Prometheus-orange)](CLAUDE.md#sentry-error-monitoring-re-enabled-january-14-2025)
 [![Issues](https://img.shields.io/badge/Issues-All%20Resolved-brightgreen)](KNOWN_ISSUES.md#resolved-issues)
 
-## ✅ Production Status: Fully Operational & Hardened
+## ✅ Production Status: Fully Operational, Hardened & Monitored
 
-**All systems operational with enhanced security.** The servlet 500 errors have been resolved and the system has been hardened with:
+**All systems operational with enhanced security and full observability.** The servlet 500 errors have been resolved and the system has been hardened with:
 - ResponseCookie implementation for proper SameSite support
 - Security headers (CSP, X-Content-Type-Options)
 - Spring 6 compatible path patterns (no /** wildcards)
 - Production-only diagnostic tools (@Profile("dev"))
 - Regression tests to prevent future issues
+- **Sentry 7.14.0 active** for error monitoring and performance tracking
 
 See [resolution details](SERVLET_500_INVESTIGATION.md#resolution) for more information.
 
@@ -35,7 +36,7 @@ A **production-ready**, multi-tenant restaurant management system for chicken in
 
 ### Enterprise Features
 - **🔒 Security** - httpOnly JWT cookies, CSRF protection, password policies
-- **📊 Monitoring** - Prometheus metrics, Sentry error tracking, correlation IDs
+- **📊 Monitoring** - Prometheus metrics, Sentry 7.14.0 error tracking (active), correlation IDs
 - **♿ Accessibility** - WCAG 2.1 Level AA compliant
 - **🧪 Testing** - Comprehensive test infrastructure (Jest, JUnit 5)
 - **📱 Mobile Ready** - Responsive design with proper touch targets
@@ -56,7 +57,7 @@ A **production-ready**, multi-tenant restaurant management system for chicken in
    ```bash
    JWT_SECRET=your-32-character-minimum-secret-here
    ADMIN_DEFAULT_PASSWORD=SecurePassword123!
-   # SENTRY_DSN=<disabled> # DO NOT SET - causes servlet exceptions
+   SENTRY_DSN=<your-sentry-dsn> # Optional but recommended for error tracking
    ```
 6. Railway auto-deploys everything!
 
@@ -72,7 +73,7 @@ A **production-ready**, multi-tenant restaurant management system for chicken in
 - **Framework**: Spring Boot 3.2.0 (Spring 6) + Kotlin 1.9.20
 - **Database**: PostgreSQL 16.8 with Flyway 10.4.0 migrations
 - **Security**: Spring Security 6, BCrypt, JWT 0.11.5 (httpOnly cookies)
-- **Monitoring**: Micrometer 1.12.x, Prometheus, Sentry 7.0.0 (disabled)
+- **Monitoring**: Micrometer 1.12.x, Prometheus, Sentry 7.14.0 (active)
 - **Build**: Maven 3.8+, Java 17+
 - **Testing**: JUnit 5, Mockito-Kotlin 5.1.0, TestContainers 1.19.0
 
