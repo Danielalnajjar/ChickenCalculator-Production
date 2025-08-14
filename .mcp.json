@@ -1,8 +1,8 @@
 {
   "mcpServers": {
     "railway": {
-      "command": "cmd",
-      "args": ["/c", "npx", "-y", "@jasontanswe/railway-mcp"],
+      "command": "npx",
+      "args": ["-y", "@railway/mcp-server"],
       "env": {
         "RAILWAY_API_TOKEN": "fee0f3ae-26c2-4111-8436-64d27c174c0c"
       }
