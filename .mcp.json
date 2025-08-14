@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "railway": {
+      "command": "cmd",
+      "args": ["/c", "npx", "-y", "@jasontanswe/railway-mcp"],
+      "env": {
+        "RAILWAY_TOKEN": "${RAILWAY_TOKEN}"
+      }
+    },
+    "sentry": {
+      "url": "https://mcp.sentry.dev/mcp"
+    },
+    "context7": {
+      "url": "https://mcp.context7.com/mcp"
+    }
+  }
+}

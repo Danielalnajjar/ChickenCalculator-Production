@@ -107,8 +107,10 @@ class SecurityConfig(
                 // Public API endpoints
                 auth.requestMatchers(*PUBLIC_API_PATTERNS).permitAll()
                 
-                // Public static resources
+                // Public static resources - be explicit about static file paths
                 auth.requestMatchers(*PUBLIC_STATIC_PATTERNS).permitAll()
+                auth.requestMatchers("/admin/static/**").permitAll()
+                auth.requestMatchers("/location/*/static/**").permitAll()
                 
                 // Location-specific endpoints (handled by LocationAuthFilter)
                 auth.requestMatchers(

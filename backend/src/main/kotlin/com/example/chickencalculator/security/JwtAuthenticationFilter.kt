@@ -36,7 +36,13 @@ class JwtAuthenticationFilter(
             path == "/test" || 
             path == "/test-html" || 
             path == "/favicon.ico" || 
-            path == "/manifest.json") {
+            path == "/manifest.json" ||
+            path == "/admin" ||
+            path == "/admin/" ||
+            path == "/admin/login" ||
+            path == "/admin/dashboard" ||
+            path == "/admin/locations" ||
+            path == "/admin/settings") {
             return true
         }
         
@@ -45,7 +51,8 @@ class JwtAuthenticationFilter(
                path.startsWith("/debug") ||
                path.startsWith("/static") ||
                path.startsWith("/assets") ||
-               path.startsWith("/admin") ||
+               path.startsWith("/admin/static") ||  // Only skip admin static resources
+               path.startsWith("/location") && path.contains("/static") ||  // Skip location static resources
                path.startsWith("/api/health") ||
                path.startsWith("/api/v1/admin/auth") ||
                path.startsWith("/api/v1/location") ||
