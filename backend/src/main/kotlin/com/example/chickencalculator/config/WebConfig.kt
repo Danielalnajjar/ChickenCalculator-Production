@@ -19,15 +19,21 @@ class WebConfig(
     private val logger = LoggerFactory.getLogger(WebConfig::class.java)
     
     override fun addResourceHandlers(registry: ResourceHandlerRegistry) {
-        // Admin portal static assets
+        // Admin portal static assets - the URL pattern /admin/static/** maps to files in /app/static/admin/static/**
         registry.addResourceHandler("/admin/static/**")
+            .addResourceLocations("file:/app/static/admin/static/")
+            .setCacheControl(CacheControl.maxAge(365, TimeUnit.DAYS))
+            .resourceChain(true)
+        
+        // Admin portal root files (favicon, manifest, etc)
+        registry.addResourceHandler("/admin/**")
             .addResourceLocations("file:/app/static/admin/")
             .setCacheControl(CacheControl.maxAge(365, TimeUnit.DAYS))
             .resourceChain(true)
         
         // Location app static assets
         registry.addResourceHandler("/location/*/static/**")
-            .addResourceLocations("file:/app/static/app/")
+            .addResourceLocations("file:/app/static/app/static/")
             .setCacheControl(CacheControl.maxAge(365, TimeUnit.DAYS))
             .resourceChain(true)
             
@@ -37,7 +43,14 @@ class WebConfig(
     override fun addInterceptors(registry: InterceptorRegistry) {
         registry.addInterceptor(requestLoggingInterceptor)
             .addPathPatterns("/**")
-            .excludePathPatterns("/admin/static/**", "/location/*/static/**", "/static/**", "/assets/**")
+            .excludePathPatterns(
+                "/admin/static/**", 
+                "/admin/favicon.ico",
+                "/admin/manifest.json",
+                "/location/*/static/**", 
+                "/static/**", 
+                "/assets/**"
+            )
             .order(1)
         logger.info("✅ Request logging interceptor registered with static resource exclusions")
     }
