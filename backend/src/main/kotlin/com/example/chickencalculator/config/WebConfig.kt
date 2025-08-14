@@ -3,12 +3,14 @@ package com.example.chickencalculator.config
 import com.example.chickencalculator.interceptor.RequestLoggingInterceptor
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Configuration
+import org.springframework.http.CacheControl
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
+import java.util.concurrent.TimeUnit
 
 /**
- * Minimal WebConfig - All custom resource handlers removed to fix servlet 500 errors.
- * Spring Boot's default static resource handling will be used instead.
+ * WebConfig - Handles static resource mapping and request interceptors
  */
 @Configuration
 class WebConfig(
@@ -16,12 +18,27 @@ class WebConfig(
 ) : WebMvcConfigurer {
     private val logger = LoggerFactory.getLogger(WebConfig::class.java)
     
-    // TEMPORARILY DISABLED FOR DEBUGGING
+    override fun addResourceHandlers(registry: ResourceHandlerRegistry) {
+        // Admin portal static assets
+        registry.addResourceHandler("/admin/static/**")
+            .addResourceLocations("file:/app/static/admin/static/")
+            .setCacheControl(CacheControl.maxAge(365, TimeUnit.DAYS))
+            .resourceChain(true)
+        
+        // Location app static assets
+        registry.addResourceHandler("/location/*/static/**")
+            .addResourceLocations("file:/app/static/app/static/")
+            .setCacheControl(CacheControl.maxAge(365, TimeUnit.DAYS))
+            .resourceChain(true)
+            
+        logger.info("✅ Static resource handlers configured for admin and location apps")
+    }
+    
     override fun addInterceptors(registry: InterceptorRegistry) {
-        logger.info("🔧 Request logging interceptor DISABLED for debugging servlet 500 errors")
-        // registry.addInterceptor(requestLoggingInterceptor)
-        //     .addPathPatterns("/**")
-        //     .order(1)
-        // logger.info("✅ Request logging interceptor registered for all paths")
+        registry.addInterceptor(requestLoggingInterceptor)
+            .addPathPatterns("/**")
+            .excludePathPatterns("/admin/static/**", "/location/*/static/**", "/static/**", "/assets/**")
+            .order(1)
+        logger.info("✅ Request logging interceptor registered with static resource exclusions")
     }
 }

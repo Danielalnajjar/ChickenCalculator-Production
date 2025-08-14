@@ -8,11 +8,13 @@ spring:
       # Define static resource locations
       static-locations:
         - file:/app/static/
+        - file:/app/static/admin/
+        - file:/app/static/app/
         - classpath:/static/
         - classpath:/public/
-      # Cache control for static resources
+      # Cache control for static resources (1 year for better caching)
       cache:
-        period: 3600
+        period: 31536000
   datasource:
     # Use H2 for local development with PostgreSQL compatibility mode
     url: ${DATABASE_URL:jdbc:h2:file:./data/chicken-calculator-db;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1}
