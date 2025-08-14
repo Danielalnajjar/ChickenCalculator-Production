@@ -87,3 +87,96 @@ pids/
 
 # Maven
 .m2/
+
+# Claude Code local settings
+.claude/settings.local.json
+.claude/settings.local.md
+
+# Windows batch test scripts
+run-dev.bat
+run-dev-test.bat
+test-profile-isolation.bat
+test-local-prod.bat
+
+# Local development files
+*.local
+*.local.*
+
+# IntelliJ IDEA additional files
+out/
+*.ipr
+*.iws
+.idea_modules/
+
+# VS Code additional files
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# Spring Boot
+application-local.yml
+application-*.local.yml
+
+# Logs
+logs/
+*.log.gz
+*.log.*.gz
+
+# H2 Database files (if using for local dev)
+*.h2.db
+*.lock.db
+
+# MacOS
+.AppleDouble
+.LSOverride
+
+# Windows
+Desktop.ini
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+
+# Python (if any scripts)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+
+# Backup files
+*.bak
+*.backup
+*~
+.*.swp
+.*.swo
+
+# Jest
+jest-cache/
+jest-results/
+
+# Cypress
+cypress/videos/
+cypress/screenshots/
+
+# SonarQube
+.sonar/
+.scannerwork/
+
+# ESLint cache
+.eslintcache
+
+# Stylelint cache  
+.stylelintcache
+
+# Jacoco
+jacoco.exec
+jacoco-ut.exec
+jacoco-it.exec
