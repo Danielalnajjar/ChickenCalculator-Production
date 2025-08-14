@@ -45,16 +45,26 @@ class SecurityConfig(
             "/",
             "/admin",
             "/admin/**",
-            "/admin/static/**",
             "/location/**",
-            "/location/*/static/**",
             "/static/**",
             "/assets/**",
             "/favicon.ico",
             "/manifest.json",
             "/*.js",
             "/*.css",
-            "/*.html"
+            "/*.html",
+            "/**/*.js",
+            "/**/*.css",
+            "/**/*.png",
+            "/**/*.jpg",
+            "/**/*.gif",
+            "/**/*.ico",
+            "/**/*.woff",
+            "/**/*.woff2",
+            "/**/*.ttf",
+            "/**/*.eot",
+            "/**/*.svg",
+            "/**/*.map"
         )
         
         val ADMIN_API_PATTERNS = arrayOf(
@@ -104,13 +114,23 @@ class SecurityConfig(
             .cors { it.configurationSource(corsConfigurationSource()) }
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .authorizeHttpRequests { auth ->
-                // Public API endpoints
+                // Public API endpoints - highest priority
                 auth.requestMatchers(*PUBLIC_API_PATTERNS).permitAll()
                 
-                // Public static resources - be explicit about static file paths
+                // Static resources - explicit patterns for all static content
                 auth.requestMatchers(*PUBLIC_STATIC_PATTERNS).permitAll()
                 auth.requestMatchers("/admin/static/**").permitAll()
                 auth.requestMatchers("/location/*/static/**").permitAll()
+                
+                // Additional specific static file patterns for admin portal
+                auth.requestMatchers("/admin/static/js/**").permitAll()
+                auth.requestMatchers("/admin/static/css/**").permitAll()
+                auth.requestMatchers("/admin/static/media/**").permitAll()
+                
+                // Location app static file patterns  
+                auth.requestMatchers("/location/*/static/js/**").permitAll()
+                auth.requestMatchers("/location/*/static/css/**").permitAll()
+                auth.requestMatchers("/location/*/static/media/**").permitAll()
                 
                 // Location-specific endpoints (handled by LocationAuthFilter)
                 auth.requestMatchers(

@@ -2,7 +2,14 @@
 
 ## Critical Issues to Fix
 
-### 1. Test Configuration Broken ⚠️
+### 1. Admin Portal Static Files Blocked (403) 🔧
+- **Issue**: Admin portal loads HTML but JS/CSS files return 403 Forbidden
+- **Cause**: JwtAuthenticationFilter skips paths but SecurityConfig blocks unauthenticated requests
+- **Fix**: Update SecurityConfig with explicit permitAll() for static resources (in progress)
+- **Impact**: Admin portal shows white screen
+- **Status**: Fix deployed, verification pending
+
+### 2. Test Configuration Broken ⚠️
 - **File**: `backend/src/test/resources/application-test.yml:3`
 - **Issue**: Invalid `spring.profiles.active: test` in profile-specific resource
 - **Fix**: Remove line 3 from application-test.yml
