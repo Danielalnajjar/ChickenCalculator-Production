@@ -16,13 +16,18 @@ class SpaController(
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
-    // Admin portal routes - use multiple specific patterns to avoid issues
+    // Admin portal routes - specific patterns only, no wildcards that could catch static resources
     @GetMapping(value = [
         "/admin",
         "/admin/",
-        "/admin/{path1}",
-        "/admin/{path1}/{path2}",
-        "/admin/{path1}/{path2}/{path3}"
+        "/admin/login",
+        "/admin/dashboard",
+        "/admin/locations",
+        "/admin/locations/{id}",
+        "/admin/locations/{id}/edit",
+        "/admin/settings",
+        "/admin/settings/profile",
+        "/admin/settings/security"
     ], produces = [MediaType.TEXT_HTML_VALUE])
     fun serveAdmin(): ResponseEntity<*> {
         return serveAdminIndex()

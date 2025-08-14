@@ -21,13 +21,13 @@ class WebConfig(
     override fun addResourceHandlers(registry: ResourceHandlerRegistry) {
         // Admin portal static assets
         registry.addResourceHandler("/admin/static/**")
-            .addResourceLocations("file:/app/static/admin/static/")
+            .addResourceLocations("file:/app/static/admin/")
             .setCacheControl(CacheControl.maxAge(365, TimeUnit.DAYS))
             .resourceChain(true)
         
         // Location app static assets
         registry.addResourceHandler("/location/*/static/**")
-            .addResourceLocations("file:/app/static/app/static/")
+            .addResourceLocations("file:/app/static/app/")
             .setCacheControl(CacheControl.maxAge(365, TimeUnit.DAYS))
             .resourceChain(true)
             
