@@ -143,33 +143,14 @@ mcp__railway__list_service_variables(projectId: "767deec0-30ac-4238-a57b-305f547
 - **API Calls Failing**: Ensure API_BASE_URL points to correct backend
 - **Build Memory Error**: Increase Node memory with NODE_OPTIONS=--max-old-space-size=4096
 
-## MCP Server Configuration for Sub-Agents
+## MCP Server Configuration
 
-### Project-Level Configuration
-The project includes a `.mcp.json` file that configures MCP servers for all agents:
-- **Railway**: Deployment management using `@railway/mcp-server` (with API token)
+All MCP servers are configured globally at user level for consistent access:
 - **Sentry**: Error monitoring and debugging
-- **Context7**: Documentation and library references
+- **Context7**: Documentation and library references  
+- **Railway**: Deployment management
 
-### User-Level Configuration
-MCP servers are also configured globally in user settings for consistent access across projects.
-
-### Railway MCP Server (Updated Jan 14, 2025)
-- Now using official Railway MCP server: `@railway/mcp-server`
-- Configured at both user and project levels
-- Installation: `npx -y @railway/mcp-server`
-- Requires Railway CLI to be installed
-
-### Testing MCP Access
-Sub-agents launched via the Task tool will automatically inherit MCP configurations from:
-1. Project-level `.mcp.json` (shared team configuration)
-2. User-level settings (personal global configuration)
-
-### Troubleshooting
-- If MCP servers are not accessible, run `claude mcp list` to verify configuration
-- For Railway access issues, ensure RAILWAY_API_TOKEN is set in `.env` or `.mcp.json`
-- Reset project MCP choices with `claude mcp reset-project-choices` if needed
-- Railway MCP may require Railway CLI authentication
+Sub-agents launched via the Task tool automatically inherit all MCP configurations from your user-level settings.
 
 ## Important Notes
 - Password change required on first admin login
