@@ -68,9 +68,7 @@ class SecurityConfig(
         )
         
         val ADMIN_API_PATTERNS = arrayOf(
-            "/api/v1/admin/locations",
             "/api/v1/admin/locations/**",
-            "/api/v1/admin/stats",
             "/api/v1/admin/stats/**"
         )
         
@@ -141,8 +139,8 @@ class SecurityConfig(
                     "/api/v1/marination-log/**"
                 ).permitAll()  // LocationAuthFilter handles actual auth
                 
-                // Admin API endpoints require authentication
-                auth.requestMatchers(*ADMIN_API_PATTERNS).authenticated()
+                // Admin API endpoints require ADMIN role
+                auth.requestMatchers(*ADMIN_API_PATTERNS).hasRole("ADMIN")
                 
                 // All other requests require authentication
                 auth.anyRequest().authenticated()
