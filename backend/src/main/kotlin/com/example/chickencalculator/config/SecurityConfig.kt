@@ -136,14 +136,14 @@ class SecurityConfig(
                 auth.requestMatchers("/location/*/static/css/**").permitAll()
                 auth.requestMatchers("/location/*/static/media/**").permitAll()
                 
-                // Location-specific endpoints (handled by LocationAuthFilter)
+                // Location-specific endpoints require LOCATION_USER authority
                 auth.requestMatchers(
                     "/api/v1/calculator/calculate",
                     "/api/v1/sales-data",
                     "/api/v1/sales-data/**",
                     "/api/v1/marination-log",
                     "/api/v1/marination-log/**"
-                ).permitAll()  // LocationAuthFilter handles actual auth
+                ).hasAuthority("LOCATION_USER")
                 
                 // Admin API endpoints require ADMIN role
                 auth.requestMatchers(*ADMIN_API_PATTERNS).hasRole("ADMIN")
