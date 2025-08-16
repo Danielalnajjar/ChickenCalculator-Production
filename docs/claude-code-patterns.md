@@ -1,5 +1,30 @@
 # Claude Code Patterns
 
+<!-- BROKER_MODE_PATTERNS_START -->
+# MCP Broker Mode Patterns
+
+## Router Macros (orchestration)
+- `SENTRY_ERRORS(org, nlq)` → Broker runs `mcp__sentry__search_events`, saves `/ops/mcp/sentry/events.$TS.json` → `dev-logs` analyzes.
+- `RAILWAY_LOGS(service, minutes)` → Broker exports logs to `/ops/mcp/railway/logs.{service}.$TS.ndjson` → `dev-logs` analyzes.
+- `DOCS(libraryNameOrId, goal)` → Broker fetches docs to `/ops/mcp/docs/<slug>.$TS.json` → `dev-architect` proposes diffs; `test-generator` adds tests.
+
+## Manual Broker Workflow
+1) MCP Broker:
+   ```bash
+   mcp__sentry__search_events organizationSlug="wok-to-walk" naturalLanguageQuery="errors last 60 minutes"
+   # writes: /ops/mcp/sentry/events.$TS.json
+   ```
+2) Specialist:
+   ```text
+   dev-logs → "Analyze: /ops/mcp/sentry/events.$TS.json"
+   ```
+3) Repeat similarly for Railway logs and Context7 docs.
+
+**Conventions**
+- `$TS` = UTC ISO-8601 compact timestamp.
+- Artifacts live under `/ops/mcp/` (git-ignored).
+<!-- BROKER_MODE_PATTERNS_END -->
+
 ## Common Workflows for ChickenCalculator
 
 ### 1. Debug Production Error

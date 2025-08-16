@@ -1,6 +1,7 @@
 # ChickenCalculator Production Guide
 
-**Version**: 1.0.0 | **Status**: ✅ Fully Operational | **Updated**: January 14, 2025
+**Version**: 1.0.0 | **Status**: ✅ Fully Operational | **Updated**: January 16, 2025
+**Last Session**: 2025-08-16 — Enabled MCP **Broker Mode**; validated SENTRY_ERRORS, RAILWAY_LOGS, DOCS pipelines; generated security diffs (SecurityConfig.kt, application.yml) and 3 actuator security tests.
 
 ## Personal Developer Settings (Optional)
 - @~/.claude/chicken-calculator-preferences.md
@@ -9,7 +10,7 @@
 
 ### 🚨 ALWAYS Check Sentry First for Debugging
 When debugging ANY issue, use Sentry MCP before investigating code:
-- @docs/sentry-integration.md
+- See @docs/sentry-integration.md for detailed guide
 
 ## Quick Access
 - **Production**: https://chickencalculator-production-production-2953.up.railway.app
@@ -54,6 +55,9 @@ curl https://chickencalculator-production-production-2953.up.railway.app/api/hea
 curl -s https://chickencalculator-production-production-2953.up.railway.app/api/health | jq
 mcp__sentry__search_events "error count last 15 minutes"
 mcp__railway__deployment_status "[latest deployment id]"
+
+# Documentation Verification
+/ud                                      # Verify docs follow best practices (uses ultrathink + opus)
 ```
 
 ## Project Context
@@ -69,13 +73,22 @@ mcp__railway__deployment_status "[latest deployment id]"
 - @docs/development-workflow.md - Commands & setup
 - @docs/deployment-guide.md - Railway deployment
 - @docs/testing-guide.md - Test setup & issues
+- @docs/architecture/overview.md - System architecture
+- @docs/claude-code-patterns.md - Project-specific workflows
+- @docs/location-auth-guide.md - Multi-tenant authentication
+- @docs/troubleshooting.md - Common problems & solutions
+- @docs/sentry-integration.md - Error monitoring guide
 - @KNOWN_ISSUES.md - Active bugs & solutions
 - @README.md - Project overview
 
+<!-- BROKER_MODE_SPRINT_START -->
 ## Current Sprint Focus
-1. Fix test configuration (application-test.yml line 3)
-2. Improve test coverage to 80%
-3. Monitor Sentry for production issues
+1. ✅ MCP Broker Mode configured; pipelines validated (Aug 16, 2025)
+2. WP-A: Apply security diffs (SecurityConfig.kt, application.yml); enforce ADMIN on `/actuator/prometheus`; remove CSRF ignore
+3. WP-B/C: Harden `/location/**` routes; authoritative location auth (no client `X-Location-Id`)
+4. WP-D/E/F: Rate-limit logins; set prod logging defaults; expose `/actuator/prometheus` (ADMIN only)
+5. WP-G/H: Tighten CSP (nonces; no `unsafe-eval`); fix test profile & centralize CORS
+<!-- BROKER_MODE_SPRINT_END -->
 
 ## Common MCP Commands
 ```bash
@@ -85,7 +98,7 @@ mcp__sentry__search_events(organizationSlug: "wok-to-walk", naturalLanguageQuery
 mcp__sentry__get_issue_details(organizationSlug: "wok-to-walk", issueId: "[from search]")
 mcp__sentry__analyze_issue_with_seer(organizationSlug: "wok-to-walk", issueId: "[from search]")
 
-# Railway Deployment
+# Railway Deployment (Note: Requires Railway CLI authentication or use in Cursor)
 mcp__railway__deployment_status(deploymentId: "[from deployment_list]")
 mcp__railway__deployment_logs(deploymentId: "[from deployment_list]")
 mcp__railway__service_restart(serviceId: "fde8974b-10a3-4b70-b5f1-73c4c5cebbbe", environmentId: "f57580c2-24dc-4c4e-adf2-313399c855a9")
@@ -143,14 +156,38 @@ mcp__railway__list_service_variables(projectId: "767deec0-30ac-4238-a57b-305f547
 - **API Calls Failing**: Ensure API_BASE_URL points to correct backend
 - **Build Memory Error**: Increase Node memory with NODE_OPTIONS=--max-old-space-size=4096
 
+<!-- BROKER_MODE_MCP_START -->
 ## MCP Server Configuration
 
-All MCP servers are configured globally at user level for consistent access:
-- **Sentry**: Error monitoring and debugging
-- **Context7**: Documentation and library references  
-- **Railway**: Deployment management
+### Project-Scoped MCP Servers (via `.mcp.json`)
+- **Sentry** — error monitoring and debugging
+- **Context7** — documentation and library references
+- **Railway** — deployment management
 
-Sub-agents launched via the Task tool automatically inherit all MCP configurations from your user-level settings.
+### ⚠️ IMPORTANT MCP LIMITATIONS
+- ✅ Main CLI & general-purpose agents: full MCP access
+- ❌ Specialized agents (`dev-logs`, `dev-architect`, `config-doctor`, `test-generator`): **no direct MCP access**
+- **Broker Mode**: main thread runs MCP and writes artifacts; specialists analyze artifacts only.
+
+### New Workflow Pattern
+```bash
+# Main (MCP Broker) → writes artifacts under /ops/mcp/
+# Router (macros) → orchestrates
+# Specialists → analyze/edit/tests using artifacts
+
+# Examples:
+# Router:
+SENTRY_ERRORS "wok-to-walk" "errors OR exceptions last 60 minutes"
+RAILWAY_LOGS "<service-id>" 30
+DOCS "spring boot" "Require ADMIN for /actuator/prometheus; remove CSRF ignore for /actuator/**"
+```
+
+**File References**
+- `@.mcp.json` — project MCP configuration
+- `@.env.example` — environment variable template
+- `@.claude/agents/` — agent configurations and router macros
+- `@ops/mcp/` — MCP artifacts (git-ignored)
+<!-- BROKER_MODE_MCP_END -->
 
 ## Important Notes
 - Password change required on first admin login

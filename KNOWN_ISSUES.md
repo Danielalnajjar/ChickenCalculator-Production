@@ -19,6 +19,14 @@
 - **Target**: 80% coverage
 - **Priority**: High
 
+<!-- BROKER_MODE_KNOWN_ISSUE_START -->
+### 4. Specialized Agents Cannot Access MCP
+- **Issue**: Specialized agents (`dev-logs`, `dev-architect`, `config-doctor`, `test-generator`) cannot call MCP tools directly.
+- **Root cause**: Current Claude Code sub-agent sandboxing; MCP servers not inherited in sub-agent context.
+- **Workaround**: Use MCP Broker (main thread/general-purpose) to fetch data → save to `/ops/mcp/*` → pass file paths to specialists.
+- **Status**: Broker Mode configured and validated (Aug 16, 2025).
+<!-- BROKER_MODE_KNOWN_ISSUE_END -->
+
 ## Non-Critical Issues
 
 ### Environment Variables
