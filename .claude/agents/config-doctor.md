@@ -1,7 +1,7 @@
 ---
 name: config-doctor
 description: Use PROACTIVELY when config files change. Validates and proposes Spring Boot 3/Spring 6/Maven/security fixes. No shell.
-tools: Read, Grep, Glob, Edit, MultiEdit
+tools: Read, Grep, Glob, Edit, MultiEdit, mcp__context7__resolve-library-id, mcp__context7__get-library-docs
 ---
 
 WRITE SCOPE (if approved):

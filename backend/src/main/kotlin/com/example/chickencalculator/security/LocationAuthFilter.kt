@@ -1,11 +1,15 @@
 package com.example.chickencalculator.security
 
 import com.example.chickencalculator.service.LocationAuthService
+import com.example.chickencalculator.service.LocationManagementService
+import com.example.chickencalculator.security.LocationAuthenticationToken
+import com.example.chickencalculator.security.LocationPrincipal
 import com.example.chickencalculator.util.PathUtil
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.slf4j.LoggerFactory
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Component
 import org.springframework.web.filter.OncePerRequestFilter
 
@@ -14,7 +18,8 @@ import org.springframework.web.filter.OncePerRequestFilter
  */
 @Component
 class LocationAuthFilter(
-    private val locationAuthService: LocationAuthService
+    private val locationAuthService: LocationAuthService,
+    private val locationManagementService: LocationManagementService
 ) : OncePerRequestFilter() {
     
     private val logger = LoggerFactory.getLogger(LocationAuthFilter::class.java)
@@ -61,56 +66,84 @@ class LocationAuthFilter(
         response: HttpServletResponse,
         filterChain: FilterChain
     ) {
-        var wrappedRequest: HttpServletRequest = request
-        
         try {
             val path = PathUtil.normalizedPath(request)
             
-            // Skip if excluded or doesn't require auth
+            // Skip if excluded from location auth
             if (!isExcludedPath(path)) {
                 val locationSlug = extractLocationSlug(path)
                 if (locationSlug != null && requiresLocationAuth(path)) {
-                    val cookieName = "${LocationAuthService.TOKEN_PREFIX}$locationSlug"
-                    val token = request.cookies?.find { it.name == cookieName }?.value
                     
-                    if (token != null) {
-                        try {
-                            val claims = locationAuthService.validateLocationToken(token)
-                            if (claims != null && claims.subject == locationSlug) {
-                                // Set attributes on successful auth
-                                request.setAttribute("locationSlug", locationSlug)
-                                request.setAttribute("locationId", claims["locationId"])
-                                request.setAttribute("locationName", claims["locationName"])
-                                
-                                // Try to wrap request with headers
-                                try {
-                                    val wrapper = HeaderModifiableHttpServletRequest(request)
-                                    wrapper.addHeader("X-Location-Id", claims["locationId"].toString())
-                                    wrapper.addHeader("X-Location-Slug", locationSlug)
-                                    wrapper.addHeader("X-Location-Name", claims["locationName"].toString())
-                                    wrappedRequest = wrapper
-                                    logger.debug("Authenticated request for location: $locationSlug")
-                                } catch (e: Exception) {
-                                    logger.warn("Failed to add headers for location: $locationSlug", e)
-                                    // Continue with original request
+                    // Check if location requires authentication
+                    val location = locationManagementService.getLocationBySlug(locationSlug)
+                    if (location != null && location.requiresAuth) {
+                        val cookieName = "${LocationAuthService.TOKEN_PREFIX}$locationSlug"
+                        val token = request.cookies?.find { it.name == cookieName }?.value
+                        
+                        if (token != null) {
+                            try {
+                                val claims = locationAuthService.validateLocationToken(token)
+                                if (claims != null && claims.subject == locationSlug) {
+                                    // Create location authentication and set in SecurityContext
+                                    val principal = LocationPrincipal.fromClaims(
+                                        locationId = claims["locationId"],
+                                        locationSlug = locationSlug,
+                                        locationName = claims["locationName"]
+                                    )
+                                    val authentication = LocationAuthenticationToken(principal)
+                                    SecurityContextHolder.getContext().authentication = authentication
+                                    
+                                    logger.debug("Location authentication successful for: $locationSlug")
+                                } else {
+                                    logger.warn("Invalid token for location: $locationSlug")
+                                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid location token")
+                                    return
                                 }
-                            } else {
-                                logger.warn("Invalid token for location: $locationSlug")
+                            } catch (e: Exception) {
+                                logger.warn("Token validation failed for location: $locationSlug", e)
+                                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token validation failed")
+                                return
                             }
-                        } catch (e: Exception) {
-                            logger.warn("Token validation failed for location: $locationSlug", e)
+                        } else {
+                            logger.debug("No authentication token found for location requiring auth: $locationSlug")
+                            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Location authentication required")
+                            return
+                        }
+                    } else if (location != null) {
+                        // Location exists but doesn't require auth - set minimal context if token present
+                        val cookieName = "${LocationAuthService.TOKEN_PREFIX}$locationSlug"
+                        val token = request.cookies?.find { it.name == cookieName }?.value
+                        if (token != null) {
+                            try {
+                                val claims = locationAuthService.validateLocationToken(token)
+                                if (claims != null && claims.subject == locationSlug) {
+                                    val principal = LocationPrincipal.fromClaims(
+                                        locationId = claims["locationId"],
+                                        locationSlug = locationSlug,
+                                        locationName = claims["locationName"]
+                                    )
+                                    val authentication = LocationAuthenticationToken(principal)
+                                    SecurityContextHolder.getContext().authentication = authentication
+                                }
+                            } catch (e: Exception) {
+                                logger.debug("Optional token validation failed for $locationSlug: ${e.message}")
+                            }
                         }
                     } else {
-                        logger.debug("No authentication token found for location: $locationSlug")
+                        logger.warn("Location not found: $locationSlug")
+                        response.sendError(HttpServletResponse.SC_NOT_FOUND, "Location not found")
+                        return
                     }
                 }
             }
         } catch (e: Exception) {
             logger.error("Unexpected error in LocationAuthFilter", e)
+            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Authentication error")
+            return
         }
         
-        // Single chain call at the end
-        filterChain.doFilter(wrappedRequest, response)
+        // Continue with the filter chain
+        filterChain.doFilter(request, response)
     }
     
     /**
@@ -171,29 +204,5 @@ class LocationAuthFilter(
             "favicon.ico", "manifest.json", "robots.txt"
         )
         return systemPaths.contains(segment.lowercase())
-    }
-}
-
-/**
- * Wrapper to allow adding headers to the request
- */
-class HeaderModifiableHttpServletRequest(request: HttpServletRequest) : 
-    jakarta.servlet.http.HttpServletRequestWrapper(request) {
-    
-    private val customHeaders = mutableMapOf<String, String>()
-    
-    fun addHeader(name: String, value: String) {
-        customHeaders[name] = value
-    }
-    
-    override fun getHeader(name: String): String? {
-        return customHeaders[name] ?: super.getHeader(name)
-    }
-    
-    override fun getHeaderNames(): java.util.Enumeration<String> {
-        val headerNames = mutableListOf<String>()
-        super.getHeaderNames().asIterator().forEach { headerNames.add(it) }
-        headerNames.addAll(customHeaders.keys)
-        return java.util.Collections.enumeration(headerNames)
     }
 }

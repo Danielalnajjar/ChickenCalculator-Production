@@ -17,6 +17,12 @@ import java.time.LocalDate
  */
 abstract class TestBase {
 
+    object TestConstants {
+        const val DEFAULT_ADMIN_EMAIL = "admin@test.com"
+        const val DEFAULT_ADMIN_PASSWORD = "TestPassword123!"
+        const val DEFAULT_ADMIN_NAME = "Test Admin"
+    }
+
     companion object {
         // Test Admin Users
         fun createTestAdmin(

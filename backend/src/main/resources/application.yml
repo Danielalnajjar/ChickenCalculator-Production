@@ -65,7 +65,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,loggers
+        include: health,info,prometheus
       base-path: /actuator
   endpoint:
     health:
@@ -127,9 +127,9 @@ sentry:
 
 logging:
   level:
-    com.example.chickencalculator: ${LOG_LEVEL:DEBUG}
-    com.example.chickencalculator.filter: ${FILTER_LOG_LEVEL:DEBUG}
-    com.example.chickencalculator.interceptor: ${INTERCEPTOR_LOG_LEVEL:DEBUG}
+    com.example.chickencalculator: ${LOG_LEVEL:INFO}
+    com.example.chickencalculator.filter: ${FILTER_LOG_LEVEL:INFO}
+    com.example.chickencalculator.interceptor: ${INTERCEPTOR_LOG_LEVEL:INFO}
     com.example.chickencalculator.exception: ${EXCEPTION_LOG_LEVEL:WARN}
     org.hibernate.SQL: ${SQL_LOG_LEVEL:WARN}
     io.sentry: ${SENTRY_LOG_LEVEL:WARN}

@@ -57,6 +57,10 @@ mcp__railway__deployment_status(deploymentId: "[latest]")
 # Wait 2-3 minutes
 mcp__sentry__search_issues(organizationSlug: "wok-to-walk", naturalLanguageQuery: "new errors last 5 minutes")
 
+# Security Hardening Verification (Aug 16, 2025)
+# Check PatternParseException resolved
+mcp__sentry__search_events(organizationSlug: "wok-to-walk", naturalLanguageQuery: "PatternParseException last 2 hours")
+
 # Environment Update Pattern
 mcp__railway__list_service_variables(projectId: "767deec0-30ac-4238-a57b-305f5470b318", environmentId: "f57580c2-24dc-4c4e-adf2-313399c855a9")
 mcp__railway__variable_set(projectId: "767deec0-30ac-4238-a57b-305f5470b318", environmentId: "f57580c2-24dc-4c4e-adf2-313399c855a9", name: "VAR", value: "value")

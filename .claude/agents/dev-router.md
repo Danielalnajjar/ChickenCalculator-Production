@@ -56,3 +56,35 @@ Then forward a focused, safe instruction to the chosen agent, e.g.:
 6) Reminders to user:
 - Apply code changes with: `APPROVE <plan-id>`
 - Execute dev deploys with: `EXECUTE <plan-id>`
+
+PLAYBOOK: BROKER PIPELINES
+
+Notation:
+- $TS = ISO8601 compact timestamp (UTC, e.g., 20250816T193045Z). The Broker generates it.
+- The Router's job is orchestration only.
+
+MACRO SENTRY_ERRORS(org, nlq):
+  Step A — Ask the MCP Broker to run:
+    mcp__sentry__search_events(organizationSlug: org, naturalLanguageQuery: nlq)
+    Save to /ops/mcp/sentry/events.$TS.json
+  Step B — Call dev-logs with:
+    "Analyze: /ops/mcp/sentry/events.$TS.json"
+  Return: artifact path + dev-logs summary + Top-10 table.
+
+MACRO RAILWAY_LOGS(service, minutes):
+  Step A — Ask the MCP Broker to export last {minutes} minutes logs for {service} via Railway MCP
+    Save NDJSON to /ops/mcp/railway/logs.{service}.$TS.ndjson
+  Step B — Call dev-logs with:
+    "Analyze: /ops/mcp/railway/logs.{service}.$TS.ndjson"
+  Return: artifact path + dev-logs summary + HTTP histogram.
+
+MACRO DOCS(libraryNameOrId, goal):
+  Step A — Ask the MCP Broker:
+    If a name: mcp__context7__resolve-library-id(libraryName: libraryNameOrId)
+    Then: mcp__context7__get-library-docs(context7CompatibleLibraryID: <resolved or provided>)
+    Save to /ops/mcp/docs/<slug>.$TS.json
+  Step B1 — Call dev-architect:
+    "Using /ops/mcp/docs/<slug>.$TS.json, propose unified diffs to implement: {goal}. Diff only; cite doc sections inline."
+  Step B2 — Call test-generator:
+    "From /ops/mcp/docs/<slug>.$TS.json, generate JUnit/MockMvc tests that pin security/behavior for: {goal}."
+  Return: artifact path + diffs + test files added.

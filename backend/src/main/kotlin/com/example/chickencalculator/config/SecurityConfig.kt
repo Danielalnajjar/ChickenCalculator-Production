@@ -30,10 +30,26 @@ class SecurityConfig(
 ) {
 
     companion object {
+        // Spring 6-safe pattern constants - no '**' in middle, no '{*...}'
+        private val PUBLIC_GET_PATTERNS = arrayOf(
+            "/actuator/health",
+            "/actuator/info",
+            "/location/*",              // single-segment slug
+            "/location/*/static/**"     // assets under a slug
+        )
+
+        private val ADMIN_ONLY_PATTERNS = arrayOf(
+            "/actuator/prometheus"      // secure metrics
+        )
+
+        private val LOCATION_DATA_PROTECTED = arrayOf(
+            "/api/v1/sales-data/**",
+            "/api/v1/marination-log/**"
+        )
+        
         // Centralized path patterns using AntPathRequestMatcher for better maintainability
         val PUBLIC_API_PATTERNS = arrayOf(
             "/api/health",
-            "/api/health/**",
             "/api/v1/admin/auth/**",
             "/api/v1/location/*/auth/**",
             "/api/v1/calculator/locations",
@@ -45,39 +61,32 @@ class SecurityConfig(
             "/",
             "/admin",
             "/admin/**",
-            "/location/**",
+            "/location/*",
+            "/location/*/static/**",
             "/static/**",
             "/assets/**",
             "/favicon.ico",
             "/manifest.json",
             "/*.js",
             "/*.css",
-            "/*.html",
-            "/**/*.js",
-            "/**/*.css",
-            "/**/*.png",
-            "/**/*.jpg",
-            "/**/*.gif",
-            "/**/*.ico",
-            "/**/*.woff",
-            "/**/*.woff2",
-            "/**/*.ttf",
-            "/**/*.eot",
-            "/**/*.svg",
-            "/**/*.map"
+            "/*.html"
         )
         
         val ADMIN_API_PATTERNS = arrayOf(
             "/api/v1/admin/locations/**",
-            "/api/v1/admin/stats/**"
+            "/api/v1/admin/stats/**",
+            "/actuator/prometheus",
+            "/actuator/metrics",
+            "/actuator/configprops",
+            "/actuator/env",
+            "/actuator/beans",
+            "/actuator/mappings"
         )
         
         val CSRF_IGNORE_PATTERNS = arrayOf(
             "/api/v1/admin/auth/**",
             "/api/v1/location/*/auth/**",
-            "/api/health",
-            "/api/health/**",
-            "/actuator/**"
+            "/api/health"
         )
     }
 
@@ -112,6 +121,15 @@ class SecurityConfig(
             .cors { it.configurationSource(corsConfigurationSource()) }
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .authorizeHttpRequests { auth ->
+                // Public GETs (actuator basics + location page + assets)
+                auth.requestMatchers(org.springframework.http.HttpMethod.GET, *PUBLIC_GET_PATTERNS).permitAll()
+
+                // Admin-only metrics
+                auth.requestMatchers(*ADMIN_ONLY_PATTERNS).hasRole("ADMIN")
+
+                // Location data endpoints require location authority
+                auth.requestMatchers(*LOCATION_DATA_PROTECTED).hasAuthority("LOCATION_USER")
+                
                 // Public API endpoints - highest priority
                 auth.requestMatchers(*PUBLIC_API_PATTERNS).permitAll()
                 
@@ -130,14 +148,12 @@ class SecurityConfig(
                 auth.requestMatchers("/location/*/static/css/**").permitAll()
                 auth.requestMatchers("/location/*/static/media/**").permitAll()
                 
-                // Location-specific endpoints (handled by LocationAuthFilter)
+                // Location-specific endpoints require LOCATION_USER authority
                 auth.requestMatchers(
                     "/api/v1/calculator/calculate",
                     "/api/v1/sales-data",
-                    "/api/v1/sales-data/**",
-                    "/api/v1/marination-log",
-                    "/api/v1/marination-log/**"
-                ).permitAll()  // LocationAuthFilter handles actual auth
+                    "/api/v1/marination-log"
+                ).hasAuthority("LOCATION_USER")
                 
                 // Admin API endpoints require ADMIN role
                 auth.requestMatchers(*ADMIN_API_PATTERNS).hasRole("ADMIN")
@@ -153,17 +169,7 @@ class SecurityConfig(
                     .contentTypeOptions { }  // X-Content-Type-Options: nosniff
                     .xssProtection { }
                     .frameOptions { it.sameOrigin() }
-                    .contentSecurityPolicy { csp ->
-                        csp.policyDirectives(
-                            "default-src 'self'; " +
-                            "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
-                            "style-src 'self' 'unsafe-inline'; " +
-                            "img-src 'self' data: https:; " +
-                            "font-src 'self' data:; " +
-                            "connect-src 'self' https://*.railway.app; " +
-                            "frame-ancestors 'none'"
-                        )
-                    }
+                    // CSP is handled by CspNonceFilter for per-request nonces
             }
 
         return http.build()
@@ -177,12 +183,17 @@ class SecurityConfig(
     @Bean
     fun corsConfigurationSource(): CorsConfigurationSource {
         val configuration = CorsConfiguration()
-        configuration.allowedOriginPatterns = listOf(
-            "http://localhost:*",
-            "https://*.railway.app",
-            "https://*.up.railway.app",
-            "https://chickencalculator-production-production-2953.up.railway.app"
-        )
+        
+        // Read ALLOWED_ORIGINS from environment, fallback to defaults
+        val allowedOrigins = System.getenv("ALLOWED_ORIGINS")?.split(",")?.map { it.trim() }
+            ?: listOf(
+                "http://localhost:*",
+                "https://*.railway.app", 
+                "https://*.up.railway.app",
+                "https://chickencalculator-production-production-2953.up.railway.app"
+            )
+            
+        configuration.allowedOriginPatterns = allowedOrigins
         configuration.allowedMethods = listOf("GET", "POST", "PUT", "DELETE", "OPTIONS")
         configuration.allowedHeaders = listOf(
             "Authorization",

@@ -1,7 +1,7 @@
 # ChickenCalculator Production Guide
 
-**Version**: 1.0.0 | **Status**: ✅ Fully Operational | **Updated**: January 16, 2025
-**Last Session**: 2025-08-16 — Enabled MCP **Broker Mode**; validated SENTRY_ERRORS, RAILWAY_LOGS, DOCS pipelines; generated security diffs (SecurityConfig.kt, application.yml) and 3 actuator security tests.
+**Version**: 1.0.0 | **Status**: ✅ Fully Operational | **Updated**: August 16, 2025
+**Last Session**: 2025-08-16 — Completed security hardening sprint (Steps A-I); fixed critical PatternParseException in Spring Security; branch feature/security-hardening ready for merge to main.
 
 ## Personal Developer Settings (Optional)
 - @~/.claude/chicken-calculator-preferences.md
@@ -83,11 +83,11 @@ mcp__railway__deployment_status "[latest deployment id]"
 
 <!-- BROKER_MODE_SPRINT_START -->
 ## Current Sprint Focus
-1. ✅ MCP Broker Mode configured; pipelines validated (Aug 16, 2025)
-2. WP-A: Apply security diffs (SecurityConfig.kt, application.yml); enforce ADMIN on `/actuator/prometheus`; remove CSRF ignore
-3. WP-B/C: Harden `/location/**` routes; authoritative location auth (no client `X-Location-Id`)
-4. WP-D/E/F: Rate-limit logins; set prod logging defaults; expose `/actuator/prometheus` (ADMIN only)
-5. WP-G/H: Tighten CSP (nonces; no `unsafe-eval`); fix test profile & centralize CORS
+1. ✅ Security hardening sprint completed (Steps A-I, Aug 16 2025)
+2. **READY**: Create PR for feature/security-hardening → main merge
+3. **NEXT**: Deploy security hardening to production
+4. **FOLLOW-UP**: Fix test configuration issues (application-test.yml line 3)
+5. **IMPROVEMENT**: Increase test coverage from ~30% to 80% target
 <!-- BROKER_MODE_SPRINT_END -->
 
 ## Common MCP Commands

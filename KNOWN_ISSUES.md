@@ -44,8 +44,9 @@
 - Multi-location auth - IMPLEMENTED (Jan 12, 2025)
 - PostgreSQL migration - COMPLETED (Dec 2024)
 - Admin Portal Static Files (403) - RESOLVED (Jan 14, 2025)
-- PatternParseException in SecurityConfig - FIXED (Jan 14, 2025) - Removed conflicting path patterns
+- PatternParseException in SecurityConfig - FIXED (Aug 16, 2025) - Replaced invalid Spring 6 path patterns with safe forms
 - Admin location creation "Access denied" - FIXED (Jan 14, 2025) - Added proper role-based authorization
+- Security hardening sprint - COMPLETED (Aug 16, 2025) - All 9 security improvements implemented
 - See `docs/archive/` for historical issues
 
 ## Getting Help

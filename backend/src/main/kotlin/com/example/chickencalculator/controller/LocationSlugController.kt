@@ -46,8 +46,7 @@ class LocationSlugController(
                     "id" to location.id,
                     "slug" to location.slug,
                     "name" to location.name,
-                    "managerName" to location.managerName,
-                    "managerEmail" to location.managerEmail,
+                    "requiresAuth" to (location.requiresAuth ?: true),
                     "createdAt" to location.createdAt
                 )
                 
