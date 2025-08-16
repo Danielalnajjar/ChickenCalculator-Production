@@ -1,5 +1,4 @@
 spring:
-  profiles:
   application:
     name: chicken-calculator-test
     

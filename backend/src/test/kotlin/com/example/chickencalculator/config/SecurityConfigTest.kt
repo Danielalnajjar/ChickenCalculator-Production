@@ -270,7 +270,7 @@ class SecurityConfigTest : TestBase() {
     fun `actuator prometheus with valid admin JWT should work`() {
         // Generate valid admin token
         val adminToken = jwtService.generateToken(
-            email = TestConstants.DEFAULT_ADMIN_EMAIL,
+            email = TestBase.TestConstants.DEFAULT_ADMIN_EMAIL,
             userId = 1L,
             role = "ADMIN"
         )
