@@ -28,26 +28,26 @@ class AdminService(
         val allAdmins = adminUserRepository.findAll()
         logger.info("Total admin users in database: {}", allAdmins.size)
         allAdmins.forEach { admin ->
-            logger.info("Admin user: email={}, id={}, passwordChangeRequired={}", 
+            logger.debug("Admin user: email={}, id={}, passwordChangeRequired={}", 
                 admin.email, admin.id, admin.passwordChangeRequired)
         }
         
         val user = adminUserRepository.findByEmail(email)
         if (user == null) {
             logger.error("User not found in database: {}", email)
-            logger.info("Available emails: {}", allAdmins.map { it.email })
+            logger.debug("Available emails: {}", allAdmins.map { it.email })
             throw InvalidCredentialsException(email)
         }
         
-        logger.info("User found: email={}, id={}, passwordHash starts with: {}", 
+        logger.debug("User found: email={}, id={}, passwordHash starts with: {}", 
             user.email, user.id, user.passwordHash.take(10))
         
         val passwordMatches = verifyPassword(password, user.passwordHash)
-        logger.info("Password verification result: {}", passwordMatches)
+        logger.debug("Password verification result: {}", passwordMatches)
         
         if (!passwordMatches) {
             logger.error("Password verification failed for: {}", user.email)
-            logger.info("Provided password length: {}, Hash length: {}", 
+            logger.debug("Provided password length: {}, Hash length: {}", 
                 password.length, user.passwordHash.length)
             throw InvalidCredentialsException(email)
         }
