@@ -87,5 +87,3 @@ Private - Wok to Walk Internal Use Only
 - AI Assistant: Claude Code
 
 ---
-
-For detailed technical documentation, see the `/docs` directory.

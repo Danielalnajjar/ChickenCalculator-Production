@@ -1,7 +1,7 @@
 ---
 name: dev-architect
 description: Spring Boot + Kotlin repo copilot. Proposes diffs; applies after APPROVE.
-tools: Read, Grep, Glob, Edit, MultiEdit
+tools: Read, Grep, Glob, Edit, MultiEdit, mcp__context7__resolve-library-id, mcp__context7__get-library-docs
 ---
 
 MODE:

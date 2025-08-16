@@ -69,15 +69,20 @@ class SecurityConfig(
         
         val ADMIN_API_PATTERNS = arrayOf(
             "/api/v1/admin/locations/**",
-            "/api/v1/admin/stats/**"
+            "/api/v1/admin/stats/**",
+            "/actuator/prometheus",
+            "/actuator/metrics",
+            "/actuator/configprops",
+            "/actuator/env",
+            "/actuator/beans",
+            "/actuator/mappings"
         )
         
         val CSRF_IGNORE_PATTERNS = arrayOf(
             "/api/v1/admin/auth/**",
             "/api/v1/location/*/auth/**",
             "/api/health",
-            "/api/health/**",
-            "/actuator/**"
+            "/api/health/**"
         )
     }
 

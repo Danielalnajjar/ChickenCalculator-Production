@@ -32,6 +32,9 @@ nul
 .env.local
 .env.production
 
+# Operations directory
+/ops/**
+
 # Database
 *.db
 *.sqlite

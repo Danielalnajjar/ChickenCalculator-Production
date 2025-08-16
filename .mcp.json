@@ -1,0 +1,23 @@
+{
+  "mcpServers": {
+    "sentry": {
+      "type": "http",
+      "url": "https://mcp.sentry.dev/mcp"
+    },
+    "context7": {
+      "type": "http",
+      "url": "https://mcp.context7.com/mcp"
+    },
+    "railway": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@jasontanswe/railway-mcp"
+      ],
+      "env": {
+        "RAILWAY_API_TOKEN": "${RAILWAY_API_TOKEN}"
+      }
+    }
+  }
+}

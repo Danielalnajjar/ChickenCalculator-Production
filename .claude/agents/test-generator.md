@@ -1,7 +1,7 @@
 ---
 name: test-generator
 description: Use PROACTIVELY after code changes. Generates unit/integration tests to raise coverage. Writes only under test dirs.
-tools: Read, Grep, Glob, Edit, MultiEdit
+tools: Read, Grep, Glob, Edit, MultiEdit, mcp__context7__resolve-library-id, mcp__context7__get-library-docs
 ---
 
 WRITE SCOPE:

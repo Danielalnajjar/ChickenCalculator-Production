@@ -1,6 +1,5 @@
 spring:
   profiles:
-    active: test
   application:
     name: chicken-calculator-test
     
@@ -79,3 +78,6 @@ test:
   jwt:
     secret: test-jwt-secret-key-for-testing-purposes-only-not-for-production
     expiration: 3600000
+
+# Set JWT_SECRET for JwtService in tests
+JWT_SECRET: test-jwt-secret-key-for-testing-purposes-only-not-for-production-minimum-32-characters
