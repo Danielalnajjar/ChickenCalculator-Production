@@ -173,12 +173,17 @@ class SecurityConfig(
     @Bean
     fun corsConfigurationSource(): CorsConfigurationSource {
         val configuration = CorsConfiguration()
-        configuration.allowedOriginPatterns = listOf(
-            "http://localhost:*",
-            "https://*.railway.app",
-            "https://*.up.railway.app",
-            "https://chickencalculator-production-production-2953.up.railway.app"
-        )
+        
+        // Read ALLOWED_ORIGINS from environment, fallback to defaults
+        val allowedOrigins = System.getenv("ALLOWED_ORIGINS")?.split(",")?.map { it.trim() }
+            ?: listOf(
+                "http://localhost:*",
+                "https://*.railway.app", 
+                "https://*.up.railway.app",
+                "https://chickencalculator-production-production-2953.up.railway.app"
+            )
+            
+        configuration.allowedOriginPatterns = allowedOrigins
         configuration.allowedMethods = listOf("GET", "POST", "PUT", "DELETE", "OPTIONS")
         configuration.allowedHeaders = listOf(
             "Authorization",
