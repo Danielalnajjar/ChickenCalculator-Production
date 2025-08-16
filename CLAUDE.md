@@ -1,7 +1,7 @@
 # ChickenCalculator Production Guide
 
 **Version**: 1.0.0 | **Status**: ✅ Fully Operational | **Updated**: August 16, 2025
-**Last Session**: 2025-08-16 — Completed security hardening sprint (Steps A-I); fixed critical PatternParseException in Spring Security; branch feature/security-hardening ready for merge to main.
+**Last Session**: 2025‑08‑16 — Security hardening merged & deployed (v0.9.0-security-hardening). Fixed Spring 6 PathPattern errors; actuator secured; routes/auth/rate-limit/CSP/logging/CORS complete.
 
 ## Personal Developer Settings (Optional)
 - @~/.claude/chicken-calculator-preferences.md
@@ -83,11 +83,9 @@ mcp__railway__deployment_status "[latest deployment id]"
 
 <!-- BROKER_MODE_SPRINT_START -->
 ## Current Sprint Focus
-1. ✅ Security hardening sprint completed (Steps A-I, Aug 16 2025)
-2. **READY**: Create PR for feature/security-hardening → main merge
-3. **NEXT**: Deploy security hardening to production
-4. **FOLLOW-UP**: Fix test configuration issues (application-test.yml line 3)
-5. **IMPROVEMENT**: Increase test coverage from ~30% to 80% target
+1. ✅ MCP Broker Mode configured; pipelines validated (Aug 16, 2025)
+2. ✅ Security hardening shipped (v0.9.0-security-hardening)
+3. Next: Frontend migration to `/api/v1/location/{slug}/…`; targeted e2e tests; dashboard/checks for 401/403/429 ratios
 <!-- BROKER_MODE_SPRINT_END -->
 
 ## Common MCP Commands

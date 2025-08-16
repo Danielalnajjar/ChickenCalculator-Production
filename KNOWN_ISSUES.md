@@ -46,8 +46,14 @@
 - Admin Portal Static Files (403) - RESOLVED (Jan 14, 2025)
 - PatternParseException in SecurityConfig - FIXED (Aug 16, 2025) - Replaced invalid Spring 6 path patterns with safe forms
 - Admin location creation "Access denied" - FIXED (Jan 14, 2025) - Added proper role-based authorization
-- Security hardening sprint - COMPLETED (Aug 16, 2025) - All 9 security improvements implemented
+- Security hardening sprint - COMPLETED (Aug 16, 2025) - All 9 security improvements deployed to production (v0.9.0-security-hardening)
 - See `docs/archive/` for historical issues
+
+### ✅ RESOLVED — Spring 6 PatternParseException in Security matchers
+- **When:** Aug 16, 2025 (dev/DEV)
+- **Symptom:** `PatternParseException: No more pattern data allowed after {*…} or **`
+- **Fix:** Replaced invalid matchers with Spring 6‑safe constants; added `PathPatternSanityTest`.
+- **Status:** Resolved and deployed (v0.9.0-security-hardening).
 
 ## Getting Help
 - Check `docs/testing-guide.md` for test setup

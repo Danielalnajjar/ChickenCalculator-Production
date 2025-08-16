@@ -57,9 +57,10 @@ mcp__railway__deployment_status(deploymentId: "[latest]")
 # Wait 2-3 minutes
 mcp__sentry__search_issues(organizationSlug: "wok-to-walk", naturalLanguageQuery: "new errors last 5 minutes")
 
-# Security Hardening Verification (Aug 16, 2025)
-# Check PatternParseException resolved
+# Security Hardening Verification (Aug 16, 2025) - DEPLOYED v0.9.0
+# Verify security improvements are active in production
 mcp__sentry__search_events(organizationSlug: "wok-to-walk", naturalLanguageQuery: "PatternParseException last 2 hours")
+curl -I https://chickencalculator-production-production-2953.up.railway.app/actuator/prometheus  # Should require ADMIN auth
 
 # Environment Update Pattern
 mcp__railway__list_service_variables(projectId: "767deec0-30ac-4238-a57b-305f5470b318", environmentId: "f57580c2-24dc-4c4e-adf2-313399c855a9")
