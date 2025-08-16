@@ -159,17 +159,7 @@ class SecurityConfig(
                     .contentTypeOptions { }  // X-Content-Type-Options: nosniff
                     .xssProtection { }
                     .frameOptions { it.sameOrigin() }
-                    .contentSecurityPolicy { csp ->
-                        csp.policyDirectives(
-                            "default-src 'self'; " +
-                            "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
-                            "style-src 'self' 'unsafe-inline'; " +
-                            "img-src 'self' data: https:; " +
-                            "font-src 'self' data:; " +
-                            "connect-src 'self' https://*.railway.app; " +
-                            "frame-ancestors 'none'"
-                        )
-                    }
+                    // CSP is handled by CspNonceFilter for per-request nonces
             }
 
         return http.build()
